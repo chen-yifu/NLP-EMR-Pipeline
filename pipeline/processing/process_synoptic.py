@@ -3,6 +3,7 @@ import pandas as pd
 from collections import defaultdict
 from pipeline import utils
 from nltk.metrics.distance import edit_distance
+from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 
 from pipeline.processing.columns import load_excluded_columns_as_list
 
@@ -119,7 +120,7 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pri
         elif pair["treatment_effect"]:
             result["treatment effect"] = cleanse_value(pair["treatment_effect"])
         elif pair["pathologic_stage"]:
-            result["pathologic stage"] = cleanse_value(pair["pathologic_stage"])  # TODO resolve OCR spaces
+            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"])
         elif pair["comments"]:
             result["comments"] = cleanse_value(pair["comments"])
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
