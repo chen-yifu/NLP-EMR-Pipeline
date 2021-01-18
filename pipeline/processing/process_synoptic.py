@@ -97,8 +97,6 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pri
     result["study_id"] = study_id
 
     # iterate through generic matches of the pattern "- col_name: value"
-    if study_id in ["104","105L","105R","111","112","115","133","134R","150"]:
-        print(study_id + ": "+ str(pairs))
     for pair in pairs:
         if pair["column"] and len(pair["value"].strip()) > 0:
             clean_column = cleanse_column(pair["column"])
