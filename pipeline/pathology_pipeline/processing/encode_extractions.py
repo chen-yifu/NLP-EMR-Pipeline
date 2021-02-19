@@ -2,8 +2,6 @@ import re
 
 from nltk import edit_distance
 
-from pipeline import utils
-
 
 def encode_extractions_to_dataframe(df, print_debug=True):
     """

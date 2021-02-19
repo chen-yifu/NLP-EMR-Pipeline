@@ -1,14 +1,13 @@
 from collections import defaultdict
 
 import pandas as pd
-import xlsxwriter
-from pipeline import utils
-from pipeline.processing import columns
+
+from pipeline.pathology_pipeline.processing import columns
 
 zero_empty_columns = columns.get_zero_empty_columns()
 
 
-def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path, print_debug=True,):
+def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path, print_debug=True, ):
     """
     given two csv files to compare, merge the data into a xlsx file, while highlighting the cells that are different
     :param csv_path_coded:      str;            path to csv file that has been codified
@@ -31,7 +30,8 @@ def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path,
     num_same, num_different, num_missing, num_extra = overall_accuracy
 
     # rename the output path to show overall_accuracy
-    output_path = output_excel_path.replace("STAT", "s{}_d{}_m{}_e{}".format(num_same, num_different, num_missing,num_extra))
+    output_path = output_excel_path.replace("STAT",
+                                            "s{}_d{}_m{}_e{}".format(num_same, num_different, num_missing, num_extra))
 
     # create xlsx writer object, tutorial link: https://xlsxwriter.readthedocs.io/working_with_pandas.html
     writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
@@ -106,7 +106,8 @@ def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path,
             highlight_style = None
             # if exactly the same
             if (coded_val == "" and human_val == "") or \
-                    ((coded_val == "" and human_val == "0") or (coded_val == "0" and human_val == "") and col_name in zero_empty_columns) or \
+                    ((coded_val == "" and human_val == "0") or (
+                            coded_val == "0" and human_val == "") and col_name in zero_empty_columns) or \
                     not are_different(coded_val, human_val):
                 highlight_style = no_highlight
             # if human-annotated value is present but coded value is missing
@@ -125,7 +126,8 @@ def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path,
             worksheet.write(row_index + 1, col_index, coded_val + "\n[{}]".format(human_val), highlight_style)
 
     for col_index, col_name in enumerate(df_coded.columns):
-        statistics_labels = ["num_same", "num_different", "num_missing", "num_extra"]  #, "num_empty_zeros", "num_empty"]
+        statistics_labels = ["num_same", "num_different", "num_missing",
+                             "num_extra"]  # , "num_empty_zeros", "num_empty"]
         if col_index == 0:
             for row_index in range(df_coded.shape[0], df_coded.shape[0] + len(statistics_labels)):
                 worksheet.write(row_index + 1, col_index, statistics_labels.pop(0))
@@ -138,11 +140,12 @@ def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path,
     statistics_labels = ["num_same", "num_different", "num_missing", "num_extra"]
     for col_index, col_name in enumerate(df_coded.columns):
         if col_index == 0:
-            worksheet.write(df_coded.shape[0] + len(statistics_labels) + 1, col_index, "(same + empty) / (all except extra)")
+            worksheet.write(df_coded.shape[0] + len(statistics_labels) + 1, col_index,
+                            "(same + empty) / (all except extra)")
             continue
         temp = column_accuracies[col_name]
         # accuracy = (same + empty-empty) / (all except extra)
-        accuracy = (temp["num_same"]) / (sum(temp.values())-temp["num_extra"])
+        accuracy = (temp["num_same"]) / (sum(temp.values()) - temp["num_extra"])
         accuracy = round(accuracy, 2)  # round to 2 decimal places
         worksheet.write(df_coded.shape[0] + len(statistics_labels) + 1, col_index, accuracy)
 
@@ -167,7 +170,7 @@ By comparing the extracted annotations by human and this converter, we found:\n
         {} Excel cells are identical in both human and converter annotations    (e.g. human=A, converter=A)\n
         {} cells are missed by converter but annotated by human                 (e.g. human=A, converter=None)\n
         {} cells are annotated by both human and converter, but are different   (e.g. human=A, converter=B)\n
-        {} cells are found by converter but human did not annotate              (e.g. human=None, converter=A)\n"""\
+        {} cells are found by converter but human did not annotate              (e.g. human=None, converter=A)\n""" \
             .format(num_same,
                     num_missing,
                     num_different,
@@ -175,11 +178,11 @@ By comparing the extracted annotations by human and this converter, we found:\n
         # following is deprecated
         # {} cells are empty by human but '0' by converter, or vise versa.        (e.g. human=0/None, converter=None/0)\n
         # {} cells are empty in both human and converter annotations              (e.g. human=None, converter=None)""" \
-                    # num_empty_zeros,
-                    # num_empty_empty)
+        # num_empty_zeros,
+        # num_empty_empty)
         print(s)
 
-    stats = (num_same, num_different, num_missing, num_extra)  #, num_empty_zeros, num_empty_empty)
+    stats = (num_same, num_different, num_missing, num_extra)  # , num_empty_zeros, num_empty_empty)
     return stats
 
 
@@ -196,9 +199,9 @@ def are_different(val1, val2):
     val1_str = str(val1).lower()
     val2_str = str(val2).lower()
     if val1 == val2:
-        return False    # they are NOT different
+        return False  # they are NOT different
     try:
-        return float(val1) != float(val2)   # try to cast them into floats and compare
+        return float(val1) != float(val2)  # try to cast them into floats and compare
     except ValueError:
         val1_str = val1_str.replace(" ", "")
         val2_str = val2_str.replace(" ", "")
@@ -245,7 +248,7 @@ def calculate_statistics(df_coded, df_human):
             if human_val == "nan" or human_val == None:
                 human_val = ""
 
-            # if both pipeline and human extracted empty cells
+            # if both pathology_pipeline and human extracted empty cells
             if (coded_val == "" and human_val == "") or \
                     ((coded_val == "" and human_val == "0") or (
                             coded_val == "0" and human_val == "") and col_name in zero_empty_columns) or \
@@ -271,7 +274,8 @@ def calculate_statistics(df_coded, df_human):
     # for study_id that are in human-annotated but not in difference, count the entire row as missing
     coded_ids = list(df_coded["Study #"])
     human_ids = list(df_human["Study #"])
-    print("There are {} rows extracted by humans, and {} rows by the pipeline".format(len(human_ids), len(coded_ids)))
+    print("There are {} rows extracted by humans, and {} rows by the pathology_pipeline".format(len(human_ids),
+                                                                                                len(coded_ids)))
 
     statistics = (num_same, num_different, num_missing, num_extra)
 

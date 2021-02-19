@@ -1,14 +1,13 @@
-import os
 import re
 import pdftotext
-from pipeline import utils
+from pipeline.pathology_pipeline.pathology_pipeline import utils
 
 
 def get_input_paths(pdf_id_beginning, pdf_id_end):
     """
     Given the starting and ending pdf ids, return the full path of all documents
     REQUIRES the pdfs to be located in "../data/input" folder
-    e.g. 101 Path_Redacted.pdf /Users/yifu/PycharmProjects/pipeline/data/input/101 Path_Redacted.pdf data/input/101 Path_Redacted.pdf
+    e.g. 101 Path_Redacted.pdf /Users/yifu/PycharmProjects/pathology_pipeline/data/input/101 Path_Redacted.pdf data/input/101 Path_Redacted.pdf
     :param pdf_id_beginning: int;   first pdf
     :param pdf_id_end:       int;   last pdf
     :return:        list of str;    the list of paths for each pdf
@@ -18,7 +17,7 @@ def get_input_paths(pdf_id_beginning, pdf_id_end):
     for i in range(pdf_id_beginning, pdf_id_end + 1):
         if i == 140:
             continue  # note: PDF for id 140 is missing
-        temp_path = utils.get_full_path("data/input/{} Path_Redacted.pdf".format(i))
+        temp_path = "../data/input/{} Path_Redacted.pdf".format(i)
         input_pdf_paths.append(temp_path)
 
     return input_pdf_paths
@@ -74,5 +73,3 @@ def preprocess_remove_extra_text(input_report):
     res = re.sub(regex, "", input_report)  # remove footer, separator, and distracting texts
     res = re.sub(r"\n{1,}", "\n", res)  # remove redundant linebreak
     return res
-
-

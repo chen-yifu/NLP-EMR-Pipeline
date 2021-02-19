@@ -1,11 +1,11 @@
 import re
 import pandas as pd
 from collections import defaultdict
-from pipeline import utils
+from pipeline.pathology_pipeline.pathology_pipeline import utils
 from nltk.metrics.distance import edit_distance
-from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 
-from pipeline.processing.columns import load_excluded_columns_as_list
+from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
+from pipeline.pathology_pipeline.processing.columns import load_excluded_columns_as_list
 
 
 def process_synoptics_and_ids(synoptics_and_ids, column_mappings, print_debug=True, max_edit_distance_missing=5,

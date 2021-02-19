@@ -1,7 +1,7 @@
 import pickle
 import pandas as pd
 
-from pipeline import utils
+from pipeline.pathology_pipeline.pathology_pipeline import utils
 
 
 def get_column_mappings():
@@ -88,7 +88,7 @@ def get_zero_empty_columns():
     return zero_empty_columns
 
 
-def load_excluded_columns_as_df(path="pipeline/processing/excluded_autocorrect_column_pairs.data"):
+def load_excluded_columns_as_df(path="pathology_pipeline/processing/excluded_autocorrect_column_pairs.data"):
     """
     Load a list of excluded columns from pickle file
     :return:        pandas DataFrame;            columns to be excluded
@@ -108,7 +108,7 @@ def load_excluded_columns_as_df(path="pipeline/processing/excluded_autocorrect_c
         return excl_df
 
 
-def load_excluded_columns_as_list(path="pipeline/processing/excluded_autocorrect_column_pairs.data"):
+def load_excluded_columns_as_list(path="pathology_pipeline/processing/excluded_autocorrect_column_pairs.data"):
     """
     Load a list of excluded columns from pickle file
     :return:        list of str;            columns to be excluded
@@ -127,7 +127,7 @@ def load_excluded_columns_as_list(path="pipeline/processing/excluded_autocorrect
 
 
 def save_excluded_columns(list_of_cols,
-                          path="pipeline/processing/excluded_autocorrect_column_pairs.data"):
+                          path="pathology_pipeline/processing/excluded_autocorrect_column_pairs.data"):
     """
     Given a list of columns, save the excluded columns to a pickle file locally
     :param list_of_cols:        list of str;        list of columns to be excluded

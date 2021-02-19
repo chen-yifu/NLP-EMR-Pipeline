@@ -1,6 +1,6 @@
 import re
 from nltk.corpus import stopwords
-from pipeline import utils
+from pipeline.pathology_pipeline.pathology_pipeline import utils
 import pandas as pd
 from nltk import edit_distance
 
@@ -137,7 +137,7 @@ def find_pathologic_stage(stage:str) -> str:
     :return edited_stage: str
     """
     stage = stage.replace("\n", " ").strip()
-    categories_dict = categories(utils.get_full_path("data/stages/Stages.csv"))
+    categories_dict = categories("../data/stages/Stages.csv")
         # categories("Stages.csv")
     edited_stage = ""
     to_skip = 0
