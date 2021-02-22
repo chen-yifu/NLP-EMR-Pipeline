@@ -15,4 +15,5 @@ This repository does not contain the folders for data input and output.
 - Step 4: In the data/output/operative_results folder, make two subfolders, one named compare and the other named raw. 
 
 It should look something like this! 
+
 ![folder structure](imgs/folder_structure.png)
