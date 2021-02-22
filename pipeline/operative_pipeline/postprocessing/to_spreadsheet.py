@@ -1,10 +1,9 @@
 import os
 from typing import List
 import pandas as pd
-
-from pipeline.operative_pipeline.util import import_tools
-from pipeline.operative_pipeline.util.report import Report
-from pipeline.operative_pipeline.util.utils import get_current_time
+from pipeline.util import import_tools
+from pipeline.util.report import Report
+from pipeline.util.utils import get_current_time
 
 
 def to_spreadsheet(dataframe: pd.DataFrame, type_of_output: str):
@@ -12,9 +11,9 @@ def to_spreadsheet(dataframe: pd.DataFrame, type_of_output: str):
     :param dataframe:
     :param type_of_output:
     """
-    if not os.path.exists("data/outputs/raw"):
-        os.makedirs("data/outputs/raw")
-    dataframe.to_excel("data/outputs/raw/" + type_of_output + str(get_current_time()) + ".xlsx", index=False)
+    if not os.path.exists("../data/outputs/raw"):
+        os.makedirs("../data/outputs/raw")
+    dataframe.to_excel("../data/outputs/raw/" + type_of_output + str(get_current_time()) + ".xlsx", index=False)
 
 
 def add_report_id(report: Report) -> dict:

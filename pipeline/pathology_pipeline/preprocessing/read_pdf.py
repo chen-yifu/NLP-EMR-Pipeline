@@ -1,6 +1,7 @@
 import re
 import pdftotext
-from pipeline.pathology_pipeline.pathology_pipeline import utils
+
+from pipeline.util import utils
 
 
 def get_input_paths(pdf_id_beginning, pdf_id_end):

@@ -1,11 +1,11 @@
 import re
 import pandas as pd
 from collections import defaultdict
-from pipeline.pathology_pipeline.pathology_pipeline import utils
 from nltk.metrics.distance import edit_distance
 
 from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.pathology_pipeline.processing.columns import load_excluded_columns_as_list
+from pipeline.util import utils
 
 
 def process_synoptics_and_ids(synoptics_and_ids, column_mappings, print_debug=True, max_edit_distance_missing=5,
@@ -154,12 +154,12 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pri
         pair["value"] = re.sub(" +", " ", pair["value"]).strip()
     for pair in pairs:
         nearest_column = find_nearest_alternative(pair["column"],
-                                                        columns_missing,
-                                                        study_id,
-                                                        pair["value"],
-                                                        df,
-                                                        max_edit_distance=max_edit_distance_missing,
-                                                        substitution_cost=substitution_cost)
+                                                  columns_missing,
+                                                  study_id,
+                                                  pair["value"],
+                                                  df,
+                                                  max_edit_distance=max_edit_distance_missing,
+                                                  substitution_cost=substitution_cost)
         if nearest_column in columns_missing:
             result[nearest_column] = pair["value"]
         elif nearest_column:
@@ -177,7 +177,8 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pri
     return result
 
 
-def autocorrect_columns(correct_col_names, dictionary, study_id, df, max_edit_distance=5, substitution_cost=2, print_debug=True):
+def autocorrect_columns(correct_col_names, dictionary, study_id, df, max_edit_distance=5, substitution_cost=2,
+                        print_debug=True):
     """
     using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
     :param correct_col_names:       list of str;            a list of correct column names
@@ -215,7 +216,6 @@ def autocorrect_columns(correct_col_names, dictionary, study_id, df, max_edit_di
             if nearest_column:
                 dictionary[nearest_column] = dictionary[col]
 
-
     # resolve column that have multiple aliases
     # the column "Total LN Examined" could be either, but keep only one
     if (dictionary["number of lymph nodes examined"] != ""):
@@ -234,7 +234,8 @@ def autocorrect_columns(correct_col_names, dictionary, study_id, df, max_edit_di
     return dictionary
 
 
-def find_nearest_alternative(source, possible_candidates, study_id, value, df, max_edit_distance=2, substitution_cost=1):
+def find_nearest_alternative(source, possible_candidates, study_id, value, df, max_edit_distance=2,
+                             substitution_cost=1):
     """
     find the nearest alternative by choosing the element in possible_candidates with nearest edit distance to source
     if multiple candidates have the nearest distance, return the first candidate by position
@@ -267,8 +268,7 @@ def find_nearest_alternative(source, possible_candidates, study_id, value, df, m
 
     # add the auto-correct information to DataFrame
     if res != source:
-        df.loc[-1] = [study_id, source, res, edit_distance(source, res),str(value).replace("\n", " ")]  # adding a row
+        df.loc[-1] = [study_id, source, res, edit_distance(source, res), str(value).replace("\n", " ")]  # adding a row
         df.index = df.index + 1  # shifting index
 
     return res
-

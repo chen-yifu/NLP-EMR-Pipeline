@@ -1,21 +1,21 @@
 from typing import List
-
 import pytesseract
 from pdf2image import convert_from_path
 import os
 import io
 from appdirs import unicode
+from pipeline.util.report import Report
 
-from pipeline.operative_pipeline.util.report import Report
 
-
-def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, path_to_ocr: str):
+def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, path_to_ocr: str, path_to_input: str):
     """
-     :param skip:
-     :param path_to_outputs:
-     :param path_to_reports:
-     :param start:                       first OR
-     :param end:                         last OR
+     Converts pdf reports into images that is finally converted to text by optical character recognition
+     :param path_to_input:        path to inputs
+     :param path_to_ocr:          path to where the generated text of the pdf reports should be put
+     :param skip:                 reports to skip
+     :param path_to_reports:      path to pdf reports
+     :param start:                first report
+     :param end:                  last report
      """
     for index in range(start, end + 1):
         if index in skip:
@@ -28,7 +28,7 @@ def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, pa
             pages = convert_from_path(pdf_path)
             pg_cntr = 1
 
-            sub_dir = str("data/outputs/" + "images/" + pdf_path.split('/')[-1].replace('.pdf', '')[0:20] + "/")
+            sub_dir = str(path_to_input + "images/" + pdf_path.split('/')[-1].replace('.pdf', '')[0:20] + "/")
             if not os.path.exists(sub_dir):
                 os.makedirs(sub_dir)
 
@@ -43,11 +43,12 @@ def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, pa
 
 def load_in_txts(start: int, end: int, skip: List[int], path_to_txt: str) -> List[Report]:
     """
-    :param path_to_txt:
-    :param start:
-    :param end:
-    :param skip:
-    :return:
+    The pdf reports are converted into text files, which is read into the pipeline by this function
+    :param path_to_txt:      the path to where the report text files are
+    :param start:            first report
+    :param end:              last report
+    :param skip:             reports to skip
+    :return:                 returns a list of Report objects with only report and id field initialized
     """
     emr_study_id = []
     for index in range(start, end + 1):

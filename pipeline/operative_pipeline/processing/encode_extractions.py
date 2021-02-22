@@ -3,8 +3,8 @@ import string
 
 from nltk import edit_distance
 
-from pipeline.operative_pipeline.util import import_tools
-from pipeline.operative_pipeline.util.report import Report
+from pipeline.util import import_tools
+from pipeline.util.report import Report
 
 
 def code_extractions(reports: List[Report], substitution_cost: int, largest_cost: int,

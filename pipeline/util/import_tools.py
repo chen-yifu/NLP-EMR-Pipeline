@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Dict
 
-from pipeline.operative_pipeline.util.tuning import Tuning
+from pipeline.util.tuning import Tuning
 
 
 def import_other_cols(path_to_other_cols: str) -> Dict[str, str]:

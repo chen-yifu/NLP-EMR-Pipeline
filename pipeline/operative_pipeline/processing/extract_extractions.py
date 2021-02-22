@@ -1,7 +1,7 @@
 import string
 from typing import List
 
-from pipeline.operative_pipeline.util.report import Report
+from pipeline.util.report import Report
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
 

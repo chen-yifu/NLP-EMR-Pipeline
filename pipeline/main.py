@@ -20,7 +20,7 @@ def run_pipeline(start: int, end: int, skip: List[int]):
 
 
 # run below for operative pipeline
-# run_pipeline(start=1, end=48, skip=[22, 43])
+run_pipeline(start=1, end=48, skip=[22, 43])
 
 # run below for pathology pipeline
-run_pipeline(101, 156, skip=[])
+# run_pipeline(101, 156, skip=[])

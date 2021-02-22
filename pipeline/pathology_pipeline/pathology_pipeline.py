@@ -1,4 +1,3 @@
-from pipeline.pathology_pipeline import utils
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.pathology_pipeline.preprocessing import read_pdf
@@ -8,6 +7,7 @@ from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preproc
 from pipeline.pathology_pipeline.processing.columns import get_column_mappings
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
+from pipeline.util import utils
 
 
 def run_pathology_pipeline(start,

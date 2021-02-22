@@ -1,7 +1,11 @@
 import collections
+import os
 import re
 from datetime import datetime
+from typing import List
+
 from nltk.corpus import words
+from pathlib import Path
 
 
 def add_asterisk(word: str) -> str:
@@ -9,28 +13,69 @@ def add_asterisk(word: str) -> str:
     :param word:
     :return:
     """
-    return "".join([l + " *" if l != " " else l for l in word.split()])
+    letters = list(word)
+    result = ""
+    for index in range(len(letters) - 1):
+        curr = letters[index]
+        next = letters[index + 1]
+        if curr != " " and next != " ":
+            curr += " *"
+        result += curr
+    result += letters[-1]
+    if letters[0] == "-" and letters[1] == " ":
+        result = "-+ *" + result[2:]
+    elif letters[0] == " ":
+        result = " *" + result[1:]
+    elif letters[0] == "-":
+        result = "-+" + result[1:]
+    return re.sub(' +', ' ', result)
+
+
+def convert_to_regex(list_of_words: List[str]) -> str:
+    """
+    :param capture_first_line:
+    :param list_of_words:
+    :return:
+    """
+    result = ""
+    for word in list_of_words[:-1]:
+        if word == " ":
+            result += " "
+        else:
+            result += add_asterisk(word) + ".*"
+    result += add_asterisk(list_of_words[-1])
+    return result
 
 
 def capture_singular_regex(starting_word: str) -> str:
-    modified_starting_word = add_asterisk(starting_word)
+    """
+
+    :param starting_word:
+    :return:
+    """
+    modified_starting_word = convert_to_regex(starting_word)
     modified_regex = r"[\n\r](?i) *{modified_starting_word}\s*([^\n\r]*)".format(
         modified_starting_word=modified_starting_word)
     return modified_regex
 
 
-def capture_between_regex(starting_word: str, ending_word: str) -> str:
+def capture_double_regex(starting_word: List[str], ending_word: List[str], capture_first_line: bool = False) -> str:
     """
+    :param capture_first_line:
     :param starting_word:
     :param ending_word:
     :return:
     """
-    modified_starting_word = add_asterisk(starting_word)
-    modified_ending_word = add_asterisk(ending_word)
+    modified_starting_word = convert_to_regex(starting_word)
+    if capture_first_line:
+        modified_starting_word += ".+"
+    modified_ending_word = convert_to_regex(ending_word)
     modified_regex = r"(?i){starting_word}(?P<capture>(?:(?!{ending_word})[\s\S])+)".format(
         starting_word=modified_starting_word, ending_word=modified_ending_word)
     return modified_regex
 
+
+# print(capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], True))
 
 def get_current_time():
     """
@@ -94,3 +139,21 @@ def get_english_dictionary_as_list():
     # get all words that are longer than one except "I" and "a"
     res = [w for w in words.words() if len(w) > 1] + ["a", "i"]
     return res
+
+
+def get_next_col_name(col, keys):
+    i = 2
+    next_col = col + "{}".format(i)
+    while next_col in keys:
+        i += 1
+        next_col = col + "{}".format(i)
+    return next_col
+
+
+def get_project_root():
+    return Path(__file__).parent.parent
+
+
+def get_full_path(path):
+    full_path = os.path.join(get_project_root(), path)
+    return "../" + path

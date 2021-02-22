@@ -1,13 +1,11 @@
 from typing import List
 import nltk
+from pipeline.util import import_tools
+from pipeline.util.report import Report
 
-from pipeline.operative_pipeline.util import import_tools
-from pipeline.operative_pipeline.util.report import Report
 
-
-def extract_cols(reports: List[Report], pdf_human_cols_path="../data/inputs/pdf_cols_human_cols.ods",
-                 other_cols_path="../data/inputs/other_cols.xlsx") -> List[
-    Report]:
+def extract_cols(reports: List[Report], pdf_human_cols_path="../data/inputs/operative_column_mappings.ods",
+                 other_cols_path="../data/inputs/other_cols.xlsx") -> List[Report]:
     """
     :param other_cols_path:
     :param pdf_human_cols_path: str

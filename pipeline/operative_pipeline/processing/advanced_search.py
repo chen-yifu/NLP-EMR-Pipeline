@@ -1,8 +1,8 @@
 from typing import Tuple, Any, Union
 import re
-from util.report import Report
-from util.import_tools import import_other_cols
-from util.utils import capture_between_regex
+from pipeline.util.import_tools import import_other_cols
+from pipeline.util.report import Report
+from pipeline.util.utils import capture_between_regex
 
 
 def extensive_search(report: Report, path_to_other_cols: str = "data/inputs/other_cols_human_cols.xlsx"):

@@ -1,6 +1,6 @@
 def is_pathologic():
-    return True
+    return False
 
 
 def is_operative():
-    return False
+    return True

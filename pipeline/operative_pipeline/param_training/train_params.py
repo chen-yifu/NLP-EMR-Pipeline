@@ -1,9 +1,8 @@
-from typing import List, Tuple
+from typing import List
 import pandas as pd
-from pipeline import run_pipeline
-from util.tuning import Tuning
-from util.import_tools import import_code_book
-from util.utils import get_current_time
+from pipeline.main import run_pipeline
+from pipeline.util.import_tools import import_code_book
+from pipeline.util.utils import get_current_time
 
 
 def find_cost(col_dict: dict) -> int:
@@ -48,7 +47,7 @@ def train_params(substitution_cost: List[int], largest_cost: List[int], skip: Li
     accumulated_wrong_missing_correct = []
     for sub_cost in substitution_cost:
         for large_cost in largest_cost:
-            result_dict = run_pipeline(start, end, skip, substitution_cost=sub_cost, largest_cost=large_cost)
+            result_dict = run_pipeline(start, end, skip)
             iter_dict = {"sub cost": sub_cost, "large cost": large_cost}
             for col, val in result_dict.items():
                 iter_dict[col] = val["Accuracy"]

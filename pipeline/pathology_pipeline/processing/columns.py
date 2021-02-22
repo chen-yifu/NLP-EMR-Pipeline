@@ -1,7 +1,7 @@
 import pickle
 import pandas as pd
 
-from pipeline.pathology_pipeline.pathology_pipeline import utils
+from pipeline.util import utils
 
 
 def get_column_mappings():
@@ -136,4 +136,3 @@ def save_excluded_columns(list_of_cols,
     path = utils.get_full_path(path)
     with open(path, 'wb') as f:
         pickle.dump(list_of_cols, f)
-
