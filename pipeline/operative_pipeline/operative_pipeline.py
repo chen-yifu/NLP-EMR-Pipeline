@@ -65,7 +65,6 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
         print(report.preoperative_breast)
         print(report.operative_breast)
         print(report.operative_axilla)
-        print(report.advanced)
 
     studies_with_cleaned_extractions = extract_cols(reports=studies_with_general_extractions,
                                                     pdf_human_cols_path=path_to_pdf_human_cols)

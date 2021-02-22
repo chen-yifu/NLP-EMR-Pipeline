@@ -5,9 +5,9 @@ from pipeline.util.report_type import ReportType
 
 class Report:
 
-    def __init__(self, report_type: ReportType, report: str, report_id: str, operative_breast: Union[dict, list] = None,
+    def __init__(self, report: str, report_id: str, operative_breast: Union[dict, list] = None,
                  operative_axilla: Union[dict, list] = None, preoperative_breast: Union[dict, list] = None,
-                 laterality: str = "", not_found: list = None, encoded=None):
+                 laterality: str = "", not_found: list = None, encoded=None, report_type: ReportType = None):
         """
         :param report_type:
         :param report:
