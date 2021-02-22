@@ -64,12 +64,14 @@ def capture_double_regex(starting_word: List[str], ending_word: List[str], captu
                          capture_last_line: bool = False) -> str:
     """
     for spaces:
-    ["cat dog"],["fish"], True->   r"(?i)c *a *t d *o *g.+(?P<capture>(?:(?!f *i *s *h)[\s\S])+)"
+    ["cat dog"],["fish"], True ->  r"(?i)c *a *t d *o *g(?P<capture>(?:(?!f *i *s *h.*)[\s\S])+)"
+    ["cat dog"],["fish"], True ->  r"(?i)c *a *t d *o *g.+(?P<capture>(?:(?!f *i *s *h)[\s\S])+)"
     ["cat dog"],["fish"] ->        r"(?i)c *a *t d *o *g(?P<capture>(?:(?!f *i *s *h)[\s\S])+)"
     ["cat"," ","dog"],["fish"] ->  r"(?i)c *a *t.* d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
     ["cat "," ","dog"],["fish"] -> r"(?i)c *a *t .* d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
     ["cat"," dog"],["fish"] ->     r"(?i)c *a *t.* *d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
-    :param capture_first_line:      whether or not you want your regex to capture everything after
+    :param capture_last_line:       whether or not you want your regex to capture everything after the last word
+    :param capture_first_line:      whether or not you want your regex to capture everything after the first word
     :param starting_word:           the first word to look for
     :param ending_word:             the word to stop at
     :return:

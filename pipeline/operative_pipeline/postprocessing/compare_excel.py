@@ -119,8 +119,8 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
 
     current_time = str(get_current_time())
     coloring_comparison_dataframe.to_excel(
-        path_to_outputs + "compare/compare_with_" + baseline_version + current_time + ".xlsx")
+        path_to_outputs + "compare/compare_with_" + baseline_version[:-4] + current_time + ".xlsx")
     wrong_missing_correct_df.to_excel(
-        path_to_outputs + "compare/accuracy_results_" + baseline_version + current_time + ".xlsx")
+        path_to_outputs + "compare/accuracy_results_" + baseline_version[:-4] + current_time + ".xlsx")
 
     return wrong_missing_correct_dict

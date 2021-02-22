@@ -13,7 +13,6 @@ def extract_cols(reports: List[Report], pdf_human_cols_path="../data/inputs/oper
     :return studies: List[Report]
     """
     cols_to_find = import_tools.import_pdf_human_cols(pdf_human_cols_path)  # this is a dict
-    other_cols_to_find = import_tools.import_other_cols(other_cols_path)  # this is also a dict
     already_found = set()
 
     def extract_operative_cols_single(single_report: Report):
@@ -32,15 +31,9 @@ def extract_cols(reports: List[Report], pdf_human_cols_path="../data/inputs/oper
             for extracted_col, extracted_val in subsection.items():
                 for pdf_col in copy_cols_to_find:
 
-                    def search_in_additional_data():
-                        for other_col, human_col in other_cols_to_find.items():
-                            if pdf_col.lower() in extracted_col.lower():
-                                single_report.advanced[human_col] = extracted_val
-
                     if pdf_col.lower() == "reconstruction mentioned":
                         continue
                     else:
-                        search_in_additional_data()
                         if nltk.edit_distance(pdf_col.lower(), extracted_col.lower()) < 3:
                             if pdf_col.lower() == "reconstruction":
                                 extracted_pdf.update({"Immediate Reconstruction Mentioned": 1})

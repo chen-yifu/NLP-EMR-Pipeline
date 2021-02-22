@@ -4,16 +4,6 @@ from typing import Dict
 from pipeline.util.tuning import Tuning
 
 
-def import_other_cols(path_to_other_cols: str) -> Dict[str, str]:
-    """
-    :param path_to_other_cols:
-    :return:
-    """
-    other_cols_dict = {}
-    other_cols_exl = pd.read_excel(path_to_other_cols)
-    return other_cols_dict
-
-
 def import_weights(path_to_weights: str) -> Dict[str, Tuning]:
     """
     :param path_to_weights:

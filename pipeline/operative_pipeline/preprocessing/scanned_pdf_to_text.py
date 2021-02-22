@@ -7,11 +7,11 @@ from appdirs import unicode
 from pipeline.util.report import Report
 
 
-def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, path_to_ocr: str, path_to_input: str):
+def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, path_to_text: str, path_to_input: str):
     """
      Converts pdf reports into images that is finally converted to text by optical character recognition
      :param path_to_input:        path to inputs
-     :param path_to_ocr:          path to where the generated text of the pdf reports should be put
+     :param path_to_text:          path to where the generated text of the pdf reports should be put
      :param skip:                 reports to skip
      :param path_to_reports:      path to pdf reports
      :param start:                first report
@@ -22,9 +22,9 @@ def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, pa
             continue
         else:
             pdf_path = path_to_reports + str(index) + ' OR_Redacted.pdf'
-            if not os.path.exists(path_to_ocr):
-                os.makedirs(path_to_ocr)
-            output_filename = path_to_ocr + str(index) + " OR_Redacted.txt"
+            if not os.path.exists(path_to_text):
+                os.makedirs(path_to_text)
+            output_filename = path_to_text + str(index) + " OR_Redacted.txt"
             pages = convert_from_path(pdf_path)
             pg_cntr = 1
 
