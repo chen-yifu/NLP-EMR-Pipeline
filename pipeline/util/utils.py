@@ -60,7 +60,8 @@ def capture_singular_regex(starting_word: str) -> str:
     return modified_regex
 
 
-def capture_double_regex(starting_word: List[str], ending_word: List[str], capture_first_line: bool = False) -> str:
+def capture_double_regex(starting_word: List[str], ending_word: List[str], capture_first_line: bool = False,
+                         capture_last_line: bool = False) -> str:
     """
     for spaces:
     ["cat dog"],["fish"], True->   r"(?i)c *a *t d *o *g.+(?P<capture>(?:(?!f *i *s *h)[\s\S])+)"
@@ -77,12 +78,15 @@ def capture_double_regex(starting_word: List[str], ending_word: List[str], captu
     if capture_first_line:
         modified_starting_word += ".+"
     modified_ending_word = convert_to_regex(ending_word)
+    if capture_last_line:
+        modified_ending_word += ".*"
     modified_regex = r"(?i){starting_word}(?P<capture>(?:(?!{ending_word})[\s\S])+)".format(
         starting_word=modified_starting_word, ending_word=modified_ending_word)
     return modified_regex
 
 
 # print(capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], True))
+
 
 def get_current_time():
     """

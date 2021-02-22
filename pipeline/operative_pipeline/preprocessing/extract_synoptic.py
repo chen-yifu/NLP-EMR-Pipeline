@@ -82,17 +82,19 @@ def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List
         :return:
         """
         # https://regex101.com/r/kT4aT7/1
-        left_regex_1 = r"(?i)L *e *f *t b *r *e *a *s *t *:(?P<capture>(?:(?!(?i)R *i *g *h *t b *r *e *a *s *t *:)[\s\S])+)"
         # https://regex101.com/r/l760jr/1
-        left_regex_2 = r"(?i)PREOPERATIVE EVALUATION.*RATIONALE FOR SURGERY LEFT BREAST*(?P<capture>(?:(?!(?i)PREOPERATIVE EVALUATION.*)[\s\S])+)"
-        left_regexs = [(left_regex_1, ""), (left_regex_2, "PREOPERATIVE RATIONALE FOR SURGERY")]
+        left_regexs = [(capture_double_regex(["Left breast:"], ["Right breast:"]), ""),
+                       (capture_double_regex(["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"],
+                                             ["PREOPERATIVE EVALUATION"], capture_last_line=True),
+                        "PREOPERATIVE RATIONALE FOR SURGERY")]
         left_breast = extract_section(left_regexs)
 
         # https://regex101.com/r/AE3qZs/1
-        right_regex_1 = r"(?i)R *i *g *h *t b *r *e *a *s *t *:(?P<capture>(?:(?!(?i)R *i *g *h *t b *r *e *a *s *t *:)[\s\S])+)"
         # https://regex101.com/r/rdPUIj/1
-        right_regex_2 = r"(?i)PREOPERATIVE EVALUATION.*RATIONALE FOR SURGERY RIGHT BREAST*(?P<capture>(?:(?!(?i)PREOPERATIVE EVALUATION.*RATIONALE FOR SURGERY LEFT BREAST)[\s\S])+)"
-        right_regexs = [(right_regex_1, ""), (right_regex_2, "PREOPERATIVE RATIONALE FOR SURGERY")]
+        right_regexs = [(capture_double_regex(["Right breast:"], ["Right breast:"]), ""),
+                        (capture_double_regex(["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY RIGHT BREAST"],
+                                              ["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"]),
+                         "PREOPERATIVE RATIONALE FOR SURGERY")]
         right_breast = extract_section(right_regexs)
 
         return extract_synoptic_operative_report(left_breast[0] if len(left_breast) > 0 else "",
