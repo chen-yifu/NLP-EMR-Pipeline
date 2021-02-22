@@ -10,6 +10,7 @@ from pathlib import Path
 
 def add_asterisk(word: str) -> str:
     """
+    Adds asterisk where appropriate
     :param word:
     :return:
     """
@@ -33,7 +34,7 @@ def add_asterisk(word: str) -> str:
 
 def convert_to_regex(list_of_words: List[str]) -> str:
     """
-    :param capture_first_line:
+    Helper function to convert a string into regex
     :param list_of_words:
     :return:
     """
@@ -61,9 +62,15 @@ def capture_singular_regex(starting_word: str) -> str:
 
 def capture_double_regex(starting_word: List[str], ending_word: List[str], capture_first_line: bool = False) -> str:
     """
-    :param capture_first_line:
-    :param starting_word:
-    :param ending_word:
+    for spaces:
+    ["cat dog"],["fish"], True->   r"(?i)c *a *t d *o *g.+(?P<capture>(?:(?!f *i *s *h)[\s\S])+)"
+    ["cat dog"],["fish"] ->        r"(?i)c *a *t d *o *g(?P<capture>(?:(?!f *i *s *h)[\s\S])+)"
+    ["cat"," ","dog"],["fish"] ->  r"(?i)c *a *t.* d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
+    ["cat "," ","dog"],["fish"] -> r"(?i)c *a *t .* d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
+    ["cat"," dog"],["fish"] ->     r"(?i)c *a *t.* *d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
+    :param capture_first_line:      whether or not you want your regex to capture everything after
+    :param starting_word:           the first word to look for
+    :param ending_word:             the word to stop at
     :return:
     """
     modified_starting_word = convert_to_regex(starting_word)
