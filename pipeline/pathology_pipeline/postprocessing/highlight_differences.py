@@ -1,7 +1,5 @@
 from collections import defaultdict
-
 import pandas as pd
-
 from pipeline.pathology_pipeline.processing import columns
 
 zero_empty_columns = columns.get_zero_empty_columns()

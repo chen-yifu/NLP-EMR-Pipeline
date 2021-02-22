@@ -4,7 +4,7 @@ import pandas as pd
 from pipeline.util import utils
 
 
-def get_column_mappings():
+def get_column_mappings(path_to_mappings):
     """
     :return: a list of tuples ;     mapping of PDF to Excel
     """
@@ -88,14 +88,13 @@ def get_zero_empty_columns():
     return zero_empty_columns
 
 
-def load_excluded_columns_as_df(path="pathology_pipeline/processing/excluded_autocorrect_column_pairs.data"):
+def load_excluded_columns_as_df(pickle_path):
     """
     Load a list of excluded columns from pickle file
     :return:        pandas DataFrame;            columns to be excluded
     """
-    path = utils.get_full_path(path)
     try:
-        with open(path, 'rb') as filehandle:
+        with open(pickle_path, 'rb') as filehandle:
             # read the data as binary data stream
             excl_list = pickle.load(filehandle)
             data = {"Original": [tupl[0] for tupl in excl_list], "Corrected": [tupl[1] for tupl in excl_list]}
@@ -103,24 +102,25 @@ def load_excluded_columns_as_df(path="pathology_pipeline/processing/excluded_aut
             return df
     except:
         s = "Loading excluded column pairs as dataframe" \
-            "\nDid not find a list of excluded column pairs, please ensure it is a Pickle file at {}".format(path)
+            "\nDid not find a list of excluded column pairs, please ensure it is a Pickle file at {}".format(
+            pickle_path)
         excl_df = pd.DataFrame()
         return excl_df
 
 
-def load_excluded_columns_as_list(path="pathology_pipeline/processing/excluded_autocorrect_column_pairs.data"):
+def load_excluded_columns_as_list(pickle_path):
     """
     Load a list of excluded columns from pickle file
     :return:        list of str;            columns to be excluded
     """
-    path = utils.get_full_path(path)
     try:
-        with open(path, 'rb') as filehandle:
+        with open(pickle_path, 'rb') as filehandle:
             # read the data as binary data stream
             excl_list = pickle.load(filehandle)
     except:
         s = "Loading excluded column pairs as list" \
-            "\nDid not find a list of excluded column pairs, please ensure it is a Pickle file at {}".format(path)
+            "\nDid not find a list of excluded column pairs, please ensure it is a Pickle file at {}".format(
+            pickle_path)
         print(s)
         excl_list = []
     return excl_list

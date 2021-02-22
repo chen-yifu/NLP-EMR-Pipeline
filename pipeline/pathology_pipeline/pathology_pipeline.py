@@ -7,7 +7,7 @@ from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preproc
 from pipeline.pathology_pipeline.processing.columns import get_column_mappings
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
-from pipeline.util import utils
+from pipeline.util.utils import get_full_path, get_current_time, find_all_vocabulary
 
 
 def run_pathology_pipeline(start,
@@ -17,49 +17,66 @@ def run_pathology_pipeline(start,
                            max_edit_distance_missing=5,
                            max_edit_distance_autocorrect=5,
                            substitution_cost=2,
-                           resolve_ocr=True):
+                           resolve_ocr=True,
+                           path_to_output_csv=get_full_path("data/output/pathology_results/csv_files/"),
+                           path_to_output_excel=get_full_path("data/output/pathology_results/excel_files/"),
+                           path_to_baselines=get_full_path("data/baselines/"),
+                           path_to_mappings=get_full_path("data/utils/pathology_column_mappings.xlsx"),
+                           path_to_reports=get_full_path("data/input/pathology_reports/"),
+                           path_to_stages=get_full_path("data/utils/stages.csv"),
+                           pickle_path=get_full_path("data/utils/excluded_autocorrect_column_pairs.data")):
     """
     REQUIRES: the pdf document must be converted to searchable format by Adobe OCR in advance
-    :param input_pdf_paths:             list of str;    each str is the path to a PDF report
-    :param print_debug:                 boolean;        print debug statements in Terminal if True
-    :param max_edit_distance_autocorrect:int;           the maximum edit distance for autocorrecting extracted pairs
-    :param max_edit_distance_missing:   int;            the maximum edit distance for searching for missing cell values
-    :param substitution_cost:           int;            the substitution cost for edit distance
-    :param resolve_ocr:                 boolean;         resolve ocr white space if true
-    :return:                     a list of tuples;       e.g. (5,6,1 (1600,20,30,100,70)) means missing dist. = 5, auto dist. = 6, sub_cost=1, same=1600, diff=20,missing=30, extra=100, zero=70.
-    :return:                    pandas DataFrame;        information about auto-correct
+
+    :param path_to_output_excel:
+    :param path_to_output_csv:
+    :param pickle_path:
+    :param path_to_stages:
+    :param path_to_reports:
+    :param path_to_mappings:
+    :param path_to_baselines:
+    :param path_to_output:                str;              path to output
+    :param start:
+    :param end:
+    :param skip:
+    :param print_debug:                   boolean;          print debug statements in Terminal if True
+    :param max_edit_distance_autocorrect: int;              the maximum edit distance for autocorrecting extracted pairs
+    :param max_edit_distance_missing:     int;              the maximum edit distance for searching for missing cell values
+    :param substitution_cost:             int;              the substitution cost for edit distance
+    :param resolve_ocr:                   boolean;          resolve ocr white space if true
+    :return:                              a list of tuples; e.g. (5,6,1 (1600,20,30,100,70)) means missing dist. = 5, auto dist. = 6, sub_cost=1, same=1600, diff=20,missing=30, extra=100, zero=70.
+    :return:                              pandas DataFrame; information about auto-correct
     """
 
     # input pdf paths
-    input_pdf_paths = read_pdf.get_input_paths(start, end)
+    input_pdf_paths = read_pdf.get_input_paths(start, end, skip=skip, path_to_reports=path_to_reports)
 
     # the path to save raw data
-    timestamp = utils.get_current_time()
-    csv_path_raw = utils.get_full_path("data/output/csv_files/raw_{}.csv".format(timestamp))
+    timestamp = get_current_time()
+    csv_path_raw = path_to_output_csv + "raw_{}.csv".format(timestamp)
 
     # the path to save raw & coded data
-    csv_path_coded = utils.get_full_path("data/output/csv_files/coded_{}.csv".format(timestamp))
+    csv_path_coded = path_to_output_csv + "coded_{}.csv".format(timestamp)
 
     # the path to save excel sheet that highlights the errors/differences
-    excel_path_highlight_differences = utils.get_full_path(
-        "data/output/csv_files/compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(
-            timestamp, max_edit_distance_autocorrect, max_edit_distance_missing, substitution_cost))
+    excel_path_highlight_differences = path_to_output_excel + "compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(
+        timestamp, max_edit_distance_autocorrect, max_edit_distance_missing, substitution_cost)
 
     # the path to the csv sheet for the human-annotated baseline csv file
     # Vito's extracted encodings
-    csv_path_baseline_VZ = utils.get_full_path("data/baselines/data_collection_baseline_VZ.csv")
+    csv_path_baseline_VZ = path_to_baselines + "data_collection_baseline_VZ.csv"
     # Sean's extracted encodings
-    csv_path_baseline_SY = utils.get_full_path("data/baselines/data_collection_baseline_SY.csv")
+    csv_path_baseline_SY = path_to_baselines + "data_collection_baseline_SY.csv"
 
-    column_mappings = get_column_mappings()
+    column_mappings = get_column_mappings(path_to_mappings)
 
     # convert pdf reports to a list of (pdf_string, study_id) tuples
     strings_and_ids = read_pdf.pdfs_to_strings(input_pdf_paths, do_preprocessing=True, print_debug=print_debug)
     print(strings_and_ids[1][0])
 
-    medical_vocabulary = utils.find_all_vocabulary([string for (string, study_id) in strings_and_ids],
-                                                   print_debug=print_debug,
-                                                   min_freq=40)
+    medical_vocabulary = find_all_vocabulary([string for (string, study_id) in strings_and_ids],
+                                             print_debug=print_debug,
+                                             min_freq=40)
     if resolve_ocr:
         strings_and_ids = preprocess_resolve_ocr_spaces(strings_and_ids,
                                                         print_debug=print_debug,
@@ -84,10 +101,12 @@ def run_pathology_pipeline(start,
             print(s)
 
     synoptic_dictionaries, autocorrect_df = process_synoptics_and_ids(synoptics_and_ids, column_mappings,
+                                                                      path_to_stages=path_to_stages,
                                                                       print_debug=print_debug,
                                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                                      substitution_cost=substitution_cost)
+                                                                      substitution_cost=substitution_cost,
+                                                                      pickle_path=pickle_path)
 
     synoptic_dictionaries = [d for d in synoptic_dictionaries if d]  # remove None from list
 

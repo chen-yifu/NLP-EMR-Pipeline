@@ -6,7 +6,8 @@ from nltk import edit_distance
 from pipeline.util import utils
 
 
-def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True, log_box=None, app=None):
+def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True,
+                                  log_box=None, app=None):
     """
     given a list of strings and ids, using a english vocabulary, resolve redundant white spaces from OCR.
     Example: "Inv asive Carcinoma" should be corrected as "Invasive Carcinoma" because "Inv" and "Asive" are not in the
@@ -134,13 +135,13 @@ def find_category(index: int, category_dict: list, stage: str) -> (str, int):
     return stage[index], 0
 
 
-def find_pathologic_stage(stage: str) -> str:
+def find_pathologic_stage(stage: str, path_to_stages) -> str:
     """
     :param stage: str
     :return edited_stage: str
     """
     stage = stage.replace("\n", " ").strip()
-    categories_dict = categories("../data/stages/stages.csv")
+    categories_dict = categories(path_to_stages)
     # categories("stages.csv")
     edited_stage = ""
     to_skip = 0

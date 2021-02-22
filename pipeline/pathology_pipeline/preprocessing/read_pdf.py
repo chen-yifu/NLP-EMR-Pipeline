@@ -4,7 +4,7 @@ import pdftotext
 from pipeline.util import utils
 
 
-def get_input_paths(pdf_id_beginning, pdf_id_end):
+def get_input_paths(pdf_id_beginning, pdf_id_end, skip, path_to_reports):
     """
     Given the starting and ending pdf ids, return the full path of all documents
     REQUIRES the pdfs to be located in "../data/input" folder
@@ -16,9 +16,9 @@ def get_input_paths(pdf_id_beginning, pdf_id_end):
     root = utils.get_project_root()
     input_pdf_paths = []
     for i in range(pdf_id_beginning, pdf_id_end + 1):
-        if i == 140:
+        if i in skip:
             continue  # note: PDF for id 140 is missing
-        temp_path = "../data/input/{} Path_Redacted.pdf".format(i)
+        temp_path = path_to_reports + "{} Path_Redacted.pdf".format(i)
         input_pdf_paths.append(temp_path)
 
     return input_pdf_paths

@@ -8,7 +8,8 @@ from pipeline.pathology_pipeline.processing.columns import load_excluded_columns
 from pipeline.util import utils
 
 
-def process_synoptics_and_ids(synoptics_and_ids, column_mappings, print_debug=True, max_edit_distance_missing=5,
+def process_synoptics_and_ids(synoptics_and_ids, column_mappings, path_to_stages, pickle_path, print_debug=True,
+                              max_edit_distance_missing=5,
                               max_edit_distance_autocorrect=5, substitution_cost=2):
     """
     process and extract data from a list of synoptic reports by using regular expression
@@ -35,7 +36,9 @@ def process_synoptics_and_ids(synoptics_and_ids, column_mappings, print_debug=Tr
         columns_and_values = process_synoptic_section(synoptic, study_id, column_mappings, df, print_debug=print_debug,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                      substitution_cost=substitution_cost)
+                                                      substitution_cost=substitution_cost,
+                                                      path_to_stages=path_to_stages,
+                                                      pickle_path=pickle_path)
         result.append(columns_and_values)
 
     # sort DataFrame by study ID
@@ -48,7 +51,8 @@ def process_synoptics_and_ids(synoptics_and_ids, column_mappings, print_debug=Tr
     return result, df
 
 
-def process_synoptic_section(synoptic_report, study_id, column_mappings, df, print_debug=True,
+def process_synoptic_section(synoptic_report, study_id, column_mappings, df, path_to_stages, pickle_path,
+                             print_debug=True,
                              max_edit_distance_missing=5, max_edit_distance_autocorrect=5, substitution_cost=2,
                              skip_threshold=0.95):
     """
@@ -120,7 +124,7 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pri
         elif pair["treatment_effect"]:
             result["treatment effect"] = cleanse_value(pair["treatment_effect"])
         elif pair["pathologic_stage"]:
-            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"])
+            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"], path_to_stages=path_to_stages)
         elif pair["comments"]:
             result["comments"] = cleanse_value(pair["comments"])
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
@@ -144,7 +148,8 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pri
     # auto-correct the matches by using a predefined list of correct column names in "column_mappings"
     result = autocorrect_columns(correct_col_names, result, study_id, df,
                                  max_edit_distance=max_edit_distance_autocorrect,
-                                 substitution_cost=substitution_cost)
+                                 substitution_cost=substitution_cost,
+                                 pickle_path=pickle_path)
 
     find_missing_regex = re.compile(r"(?P<column>.*):(?P<value>.*)")
     pairs = [(m.groupdict()) for m in find_missing_regex.finditer(synoptic_report)]
@@ -159,7 +164,8 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pri
                                                   pair["value"],
                                                   df,
                                                   max_edit_distance=max_edit_distance_missing,
-                                                  substitution_cost=substitution_cost)
+                                                  substitution_cost=substitution_cost,
+                                                  pickle_path=pickle_path)
         if nearest_column in columns_missing:
             result[nearest_column] = pair["value"]
         elif nearest_column:
@@ -177,7 +183,8 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pri
     return result
 
 
-def autocorrect_columns(correct_col_names, dictionary, study_id, df, max_edit_distance=5, substitution_cost=2,
+def autocorrect_columns(correct_col_names, dictionary, study_id, df, pickle_path, max_edit_distance=5,
+                        substitution_cost=2,
                         print_debug=True):
     """
     using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
@@ -201,7 +208,8 @@ def autocorrect_columns(correct_col_names, dictionary, study_id, df, max_edit_di
                                                       dictionary[col],
                                                       df,
                                                       max_edit_distance=max_edit_distance,
-                                                      substitution_cost=substitution_cost)
+                                                      substitution_cost=substitution_cost,
+                                                      pickle_path=pickle_path)
             # if the nearest column is already extracted, find the next alternative
             while nearest_column is not None and nearest_column in dictionary.keys():
                 correct_col_names.remove(nearest_column)
@@ -211,7 +219,8 @@ def autocorrect_columns(correct_col_names, dictionary, study_id, df, max_edit_di
                                                           dictionary[col],
                                                           df,
                                                           max_edit_distance=max_edit_distance,
-                                                          substitution_cost=substitution_cost)
+                                                          substitution_cost=substitution_cost,
+                                                          pickle_path=pickle_path)
             # copy the value from incorrect column name to correct column name
             if nearest_column:
                 dictionary[nearest_column] = dictionary[col]
@@ -234,7 +243,7 @@ def autocorrect_columns(correct_col_names, dictionary, study_id, df, max_edit_di
     return dictionary
 
 
-def find_nearest_alternative(source, possible_candidates, study_id, value, df, max_edit_distance=2,
+def find_nearest_alternative(source, possible_candidates, study_id, value, df, pickle_path, max_edit_distance=2,
                              substitution_cost=1):
     """
     find the nearest alternative by choosing the element in possible_candidates with nearest edit distance to source
@@ -249,7 +258,7 @@ def find_nearest_alternative(source, possible_candidates, study_id, value, df, m
     """
 
     # get a list of excluded source-target column name pairs that we saved earlier
-    all_excluded_columns = load_excluded_columns_as_list()
+    all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path)
     excluded_columns = [tupl[1] for tupl in all_excluded_columns if tupl[0] == source]
     possible_candidates = list(set(possible_candidates) - set(excluded_columns))
 
