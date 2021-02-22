@@ -5,6 +5,7 @@ import os
 import io
 from appdirs import unicode
 from pipeline.util.report import Report
+from pipeline.util.report_type import ReportType
 
 
 def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, path_to_text: str, path_to_input: str):
@@ -58,6 +59,6 @@ def load_in_txts(start: int, end: int, skip: List[int], path_to_txt: str) -> Lis
             file_name = path_to_txt + str(index) + " OR_Redacted.txt"
             emr_file_text = open(file_name, "r")
             emr_text = emr_file_text.read()
-            emr_study_id.append(Report(report=emr_text, report_id=str(index)))
+            emr_study_id.append(Report(report=emr_text, report_id=str(index), report_type=ReportType.OPERATIVE))
             emr_file_text.close()
     return emr_study_id
