@@ -1,7 +1,7 @@
 from pipeline.operative_pipeline.postprocessing.compare_excel import nice_compare
 from pipeline.operative_pipeline.postprocessing.to_spreadsheet import *
 from pipeline.operative_pipeline.preprocessing.extract_cols import extract_cols
-from pipeline.operative_pipeline.preprocessing.extract_synoptic import clean_up_reports
+from pipeline.operative_pipeline.preprocessing.extract_synoptic_operative import clean_up_reports
 from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_in_pdfs, load_in_txts
 from pipeline.operative_pipeline.processing.encode_extractions import code_extractions
 from pipeline.operative_pipeline.processing.extract_extractions import get_general_extractions
@@ -46,11 +46,12 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
         load_in_pdfs(start=start, end=end, skip=skip, path_to_reports=path_to_reports, path_to_text=path_to_text,
                      path_to_input=path_to_input)
 
+    # the pdfs are converted into text files which is read into the pipeline with this function.
+    # returns list[Report] with only report and id and report type
     uncleaned_text = load_in_txts(start=start, end=end, skip=skip, path_to_txt=path_to_text)
-    # returns list[Report] with only report and id
 
+    # returns list[Report] with everything BUT encoded and not_found initialized
     cleaned_emr = clean_up_reports(emr_text=uncleaned_text)
-    # returns list[Report] with everything BUT advanced, encoded, not_found initialized
 
     # and all the subsections are lists
     studies_with_general_extractions = get_general_extractions(list_reports=cleaned_emr)
@@ -62,9 +63,7 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
 
     for report in studies_with_general_extractions:
         print(report.report_id)
-        print(report.preoperative_breast)
-        print(report.operative_breast)
-        print(report.operative_axilla)
+        print(report.extractions)
 
     studies_with_cleaned_extractions = extract_cols(reports=studies_with_general_extractions,
                                                     pdf_human_cols_path=path_to_pdf_human_cols)

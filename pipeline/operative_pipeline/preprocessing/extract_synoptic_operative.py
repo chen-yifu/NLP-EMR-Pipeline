@@ -6,8 +6,10 @@ from pipeline.util.utils import capture_double_regex
 
 def find_laterality(laterality: List[List[str]]) -> str:
     """
-    :param laterality:
-    :return:
+    Determines laterality of a report
+
+    :param laterality:      list of regex results. regex results is a list of string
+    :return:                the laterality the pipeine found
     """
     for list_result in laterality:
         for possible_lat in list_result:
@@ -28,6 +30,7 @@ def find_laterality(laterality: List[List[str]]) -> str:
 def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dict, str]]:
     """
     Takes in a single report and extracts useful sections as well as laterality of report.
+
     :param lat:                the laterality associated with a report
     :param uncleaned_txt:      just a string of the pdf text
     :return:                   list of tuple of a dictionary of extracted sections and report laterality, if found
@@ -35,6 +38,8 @@ def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List
 
     def regex_extract(regex: str) -> list:
         """
+        General function to extract text with regex
+
         :param regex:      a general regex string
         :return:           list of text or empty list if the regex did not find any
         """
@@ -44,6 +49,9 @@ def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List
     def extract_laterality() -> str:
         # TODO: need to fix -> cannot just use operation performed to determine
         """
+        The function that searches for laterality
+        Your list of possible locations of laterality should be in highest priority to lowest priority
+
         :return:      laterality, which can be left, right or bilateral
         """
         # https://rubular.com/r/TAsSFuPoU8X13N
@@ -65,6 +73,8 @@ def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List
 
     def extract_section(regexs: List[Tuple[str, str]]) -> list:
         """
+        General function that takes in a list of regex and returns the first one that returns a result
+
         :param regexs:      list of tuple(regex,to_append) and the list should ne entered in priority
         :return:
         """
@@ -79,6 +89,8 @@ def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List
 
     def split_report_find_left_right() -> List[Tuple[dict, str]]:
         """
+        Splits a report into right and left breast if it is found that there are two synoptic reports
+
         :return:
         """
         # https://regex101.com/r/kT4aT7/1
@@ -135,6 +147,7 @@ def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List
 def clean_up_reports(emr_text: List[Report]) -> List[Report]:
     """
     Wrapper function to clean up list of reports
+
     :param emr_text:              list of reports that is currently not sorted or filtered
     :return cleaned_reports:      returns list of reports that have been separated into preoperative breast, operative breast and operative axilla
     """
@@ -147,8 +160,7 @@ def clean_up_reports(emr_text: List[Report]) -> List[Report]:
             cleaned_reports.append(Report(report=text,
                                           report_id=str(study.report_id) + cleaned_report[1][0].upper() if len(
                                               cleaned_report[1]) > 0 else str(study.report_id) + cleaned_report[1],
-                                          preoperative_breast=report_info["preoperative rational"],
-                                          operative_breast=report_info['operative breast details'],
-                                          operative_axilla=report_info['operative axilla details'],
-                                          laterality=report_info['laterality']))
+                                          laterality=report_info['laterality'],
+                                          extractions=report_info["preoperative rational"] + report_info[
+                                              "operative breast details"] + report_info["operative axilla details"]))
     return cleaned_reports

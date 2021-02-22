@@ -8,6 +8,8 @@ table = str.maketrans(dict.fromkeys(string.punctuation))
 
 def clean_up_txt(txt: str) -> str:
     """
+    Removes punctuation and lowers all the letters.
+
     :param txt:
     :return:
     """
@@ -17,6 +19,8 @@ def clean_up_txt(txt: str) -> str:
 
 def remove_nums(txt: str) -> str:
     """
+    Removes numbers because there should not be any numbers in operative reports.
+
     :param txt:
     :return:
     """
@@ -25,6 +29,8 @@ def remove_nums(txt: str) -> str:
 
 def replace_is_with_colon(txt: str) -> str:
     """
+    Replaces is with :, which is seen in some reports .
+
     :param txt:
     :return:
     """
@@ -35,6 +41,8 @@ def replace_is_with_colon(txt: str) -> str:
 
 def clean_up_txt_list(uncleaned_txt: List[str]) -> List[str]:
     """
+    Removes punctuation and other info like dates and pages numbers.
+
     :param uncleaned_txt:
     :return:
     """
@@ -48,7 +56,9 @@ def clean_up_txt_list(uncleaned_txt: List[str]) -> List[str]:
 
 def general_extraction_per_subsection(unfiltered_str: list) -> dict:
     """
-    :param unfiltered_str:
+    Separates the string into col val pairs based on a colon.
+
+    :param unfiltered_str:      string that represents one report
     :return:
     """
     unfiltered_extractions = {}
@@ -90,15 +100,13 @@ def general_extraction_per_subsection(unfiltered_str: list) -> dict:
 
 def get_general_extractions(list_reports: List[Report]) -> List[Report]:
     """
-    :param list_reports:
+    Gets all the column:value pairs out of the report
+
+    :param list_reports:      list of reports, in one large string
     :return:
     """
 
     for study in list_reports:
-        raw_preoperative = study.preoperative_breast
-        raw_operative_breast = study.operative_breast
-        raw_operative_axilla = study.operative_axilla
-        study.preoperative_breast = general_extraction_per_subsection(raw_preoperative)
-        study.operative_breast = general_extraction_per_subsection(raw_operative_breast)
-        study.operative_axilla = general_extraction_per_subsection(raw_operative_axilla)
+        raw_extractions = study.extractions
+        study.extractions = general_extraction_per_subsection(raw_extractions)
     return list_reports

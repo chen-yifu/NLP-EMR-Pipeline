@@ -4,13 +4,14 @@ from pipeline.util import import_tools
 from pipeline.util.report import Report
 
 
-def extract_cols(reports: List[Report], pdf_human_cols_path="../data/inputs/operative_column_mappings.ods",
-                 other_cols_path="../data/inputs/other_cols.xlsx") -> List[Report]:
+def extract_cols(reports: List[Report],
+                 pdf_human_cols_path="../data/inputs/operative_column_mappings.ods") -> List[Report]:
     """
-    :param other_cols_path:
-    :param pdf_human_cols_path: str
-    :param reports: List[Report]
-    :return studies: List[Report]
+    Extracts the columns that someone wants. This function will filter the columns.
+
+    :param pdf_human_cols_path:      the path to the excel with all the column mappings
+    :param reports: List[Report]     list of reports
+    :return reports_cleaned:         list of filtered reports
     """
     cols_to_find = import_tools.import_pdf_human_cols(pdf_human_cols_path)  # this is a dict
     already_found = set()
@@ -41,13 +42,8 @@ def extract_cols(reports: List[Report], pdf_human_cols_path="../data/inputs/oper
                             already_found.add(pdf_col)
             return extracted_pdf
 
-        preoperative = single_report.preoperative_breast
-        operative_breast = single_report.operative_breast
-        operative_axilla = single_report.operative_axilla
-
-        single_report.preoperative_breast = find_match(preoperative)
-        single_report.operative_axilla = find_match(operative_axilla)
-        single_report.operative_breast = find_match(operative_breast)
+        uncleaned_extractions = single_report.extractions
+        single_report.extractions = find_match(uncleaned_extractions)
         single_report.not_found = [x for x in copy_cols_to_find if x not in already_found]
 
     for study in reports:

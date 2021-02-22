@@ -7,6 +7,7 @@ class Report:
 
     def __init__(self, report: str, report_id: str, operative_breast: Union[dict, list] = None,
                  operative_axilla: Union[dict, list] = None, preoperative_breast: Union[dict, list] = None,
+                 extractions: Union[dict, list] = None,
                  laterality: str = "", not_found: list = None, encoded=None, report_type: ReportType = None):
         """
         :param report_type:
@@ -21,6 +22,8 @@ class Report:
         """
         if encoded is None:
             self.encoded = {}
+        if extractions is None:
+            self.extractions = []
         if not_found is None:
             self.not_found = []
         if operative_breast is None:
@@ -38,3 +41,4 @@ class Report:
         self.operative_axilla = operative_axilla
         self.not_found = not_found
         self.encoded = encoded
+        self.extractions = extractions

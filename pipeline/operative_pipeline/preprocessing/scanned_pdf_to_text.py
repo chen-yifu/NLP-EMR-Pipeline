@@ -11,6 +11,7 @@ from pipeline.util.report_type import ReportType
 def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, path_to_text: str, path_to_input: str):
     """
      Converts pdf reports into images that is finally converted to text by optical character recognition
+
      :param path_to_input:        path to inputs
      :param path_to_text:          path to where the generated text of the pdf reports should be put
      :param skip:                 reports to skip
@@ -44,7 +45,8 @@ def load_in_pdfs(start: int, end: int, skip: List[int], path_to_reports: str, pa
 
 def load_in_txts(start: int, end: int, skip: List[int], path_to_txt: str) -> List[Report]:
     """
-    The pdf reports are converted into text files, which is read into the pipeline by this function
+    The pdf reports that were converted into text files are read into the pipeline by this function
+
     :param path_to_txt:      the path to where the report text files are
     :param start:            first report
     :param end:              last report

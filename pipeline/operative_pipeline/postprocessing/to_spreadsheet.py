@@ -8,9 +8,11 @@ from pipeline.util.utils import get_current_time
 
 def to_spreadsheet(dataframe: pd.DataFrame, type_of_output: str, path_to_output: str):
     """
-    :param path_to_output:
-    :param dataframe:
-    :param type_of_output:
+    Takes a dataframe and changes it into a spreadsheet.
+
+    :param path_to_output:      the path where you want to save the spreadsheet
+    :param dataframe:           a dataframe that is ready to be converted to excel
+    :param type_of_output:      the report type
     """
     if not os.path.exists(path_to_output + "raw/"):
         os.makedirs(path_to_output + "raw/")
@@ -19,7 +21,9 @@ def to_spreadsheet(dataframe: pd.DataFrame, type_of_output: str, path_to_output:
 
 def add_report_id(report: Report) -> dict:
     """
-    :param report:
+    Adds report id and laterality to a dictionary
+
+    :param report:      a single report
     :return:
     """
     new_dict = {"Study #": report.report_id, "Laterality": report.laterality}
@@ -29,22 +33,24 @@ def add_report_id(report: Report) -> dict:
 
 def change_unfiltered_to_dict(report):
     """
-    :param report:
+    Changing the report into one dictionary to be converted into a dataframe
+
+    :param report:      a single report
     :return:
     """
     new_dict = {"Study #": report.report_id, "Laterality": report.laterality}
-    new_dict.update(report.preoperative_breast)
-    new_dict.update(report.operative_breast)
-    new_dict.update(report.operative_axilla)
+    new_dict.update(report.extractions)
     return new_dict
 
 
 def reports_to_spreadsheet(reports: List[Report], path_to_output: str, type_of_report: str, function) -> pd.DataFrame:
     """
-    :param function:
-    :param type_of_report:
-    :param path_to_output:
-    :param reports:
+    Converts a general extraction to spreadsheet.
+
+    :param function:            depending on the report type, there is a different function to clean up the reports
+    :param type_of_report:      unfiltered, cleaned, encoded, etc
+    :param path_to_output:      path to where the spreadsheet should be saved
+    :param reports:             list of reports
     :return:
     """
 
@@ -61,6 +67,8 @@ def reports_to_spreadsheet(reports: List[Report], path_to_output: str, type_of_r
 
 def raw_reports_to_spreadsheet(reports: List[Report], pdf_human_cols_path: str, path_to_output: str):
     """
+    Filters the unfiltered extractions and turns into a spreadsheet.
+
     :param path_to_output:
     :param reports:
     :param pdf_human_cols_path:
@@ -80,15 +88,9 @@ def raw_reports_to_spreadsheet(reports: List[Report], pdf_human_cols_path: str, 
             not_found_per_report = {report_id: []}
             row_dict = {"Study #": report_id, "Laterality": report.laterality}
             for col_name in cols:
-                preop = report.preoperative_breast
-                op_b = report.operative_breast
-                op_ax = report.operative_axilla
-                if col_name in preop:
-                    row_dict[col_name] = preop[col_name]
-                elif col_name in op_b:
-                    row_dict[col_name] = op_b[col_name]
-                elif col_name in op_ax:
-                    row_dict[col_name] = op_ax[col_name]
+                extracted = report.extractions
+                if col_name in extracted:
+                    row_dict[col_name] = extracted[col_name]
                 else:
                     not_found_per_report[report_id].append(col_name)
             rows_list.append(row_dict)

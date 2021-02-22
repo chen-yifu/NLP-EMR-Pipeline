@@ -26,9 +26,7 @@ def code_extractions(reports: List[Report], substitution_cost: int, largest_cost
         :param single_report:
         :return:
         """
-        preop = single_report.preoperative_breast
-        op_breast = single_report.operative_breast
-        op_axilla = single_report.operative_axilla
+        extracted = single_report.extractions
 
         encoded_dict = {}
 
@@ -91,12 +89,8 @@ def code_extractions(reports: List[Report], substitution_cost: int, largest_cost
             if human_col == "Laterality":
                 lat = single_report.laterality
                 single_report.laterality = code_book["Laterality"][lat] if lat in code_book['Laterality'] else lat
-            elif human_col in preop.keys():
-                extract_from(preop)
-            elif human_col in op_breast.keys():
-                extract_from(op_breast)
-            elif human_col in op_axilla.keys():
-                extract_from(op_axilla)
+            elif human_col in extracted.keys():
+                extract_from(extracted)
         return encoded_dict
 
     for report in reports:
