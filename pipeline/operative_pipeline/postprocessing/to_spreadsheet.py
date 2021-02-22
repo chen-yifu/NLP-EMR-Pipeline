@@ -6,14 +6,15 @@ from pipeline.util.report import Report
 from pipeline.util.utils import get_current_time
 
 
-def to_spreadsheet(dataframe: pd.DataFrame, type_of_output: str):
+def to_spreadsheet(dataframe: pd.DataFrame, type_of_output: str, path_to_output: str):
     """
+    :param path_to_output:
     :param dataframe:
     :param type_of_output:
     """
-    if not os.path.exists("../data/outputs/raw"):
-        os.makedirs("../data/outputs/raw")
-    dataframe.to_excel("../data/outputs/raw/" + type_of_output + str(get_current_time()) + ".xlsx", index=False)
+    if not os.path.exists(path_to_output + "raw/"):
+        os.makedirs(path_to_output + "raw/")
+    dataframe.to_excel(path_to_output + "raw/" + type_of_output + str(get_current_time()) + ".xlsx", index=False)
 
 
 def add_report_id(report: Report) -> dict:
@@ -58,8 +59,9 @@ def reports_to_spreadsheet(reports: List[Report], path_to_output: str, type_of_r
     return dataframe_coded
 
 
-def raw_reports_to_spreadsheet(reports: List[Report], pdf_human_cols_path: str):
+def raw_reports_to_spreadsheet(reports: List[Report], pdf_human_cols_path: str, path_to_output: str):
     """
+    :param path_to_output:
     :param reports:
     :param pdf_human_cols_path:
     :return:
@@ -93,4 +95,4 @@ def raw_reports_to_spreadsheet(reports: List[Report], pdf_human_cols_path: str):
         dataframe = pd.DataFrame(rows_list)
         return dataframe, not_found
 
-    to_spreadsheet(to_dataframe()[0], type_of_output="raw_output")
+    to_spreadsheet(to_dataframe()[0], type_of_output="raw_output", path_to_output=path_to_output)

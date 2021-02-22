@@ -70,7 +70,8 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
     studies_with_cleaned_extractions = extract_cols(reports=studies_with_general_extractions,
                                                     pdf_human_cols_path=path_to_pdf_human_cols)
     # turning raw text values into spreadsheet
-    raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols_path=path_to_pdf_human_cols)
+    raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols_path=path_to_pdf_human_cols,
+                               path_to_output=path_to_output)
 
     # changing the raw text into codes
     encoded_reports = code_extractions(reports=studies_with_cleaned_extractions, substitution_cost=substitution_cost,
