@@ -4,6 +4,7 @@ import pandas as pd
 from nltk import edit_distance
 
 from pipeline.util import utils
+from pipeline.util.report import Report
 
 
 def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True,
@@ -82,7 +83,7 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
     for index, (string, study_id) in enumerate(strings_and_ids):
         resolved_string = resolve_ocr(string, medical_vocabulary=medical_vocabulary)
         resolved_string = re.sub(" +", " ", resolved_string)
-        result.append((resolved_string, study_id))
+        result.append(Report(text=resolved_string, report_id=study_id))
 
     return result
 

@@ -8,16 +8,16 @@ from pipeline.pathology_pipeline.processing.columns import load_excluded_columns
 from pipeline.util import utils
 
 
-def process_synoptics_and_ids(synoptics_and_ids, column_mappings, path_to_stages, pickle_path, print_debug=True,
+def process_synoptics_and_ids(unfiltered_reports, column_mappings, path_to_stages, pickle_path, print_debug=True,
                               max_edit_distance_missing=5,
                               max_edit_distance_autocorrect=5, substitution_cost=2):
     """
     process and extract data from a list of synoptic reports by using regular expression
-    :param synoptics_and_ids:       a list of (str, str) tuples;            synoptic sections and study IDs
-    :param column_mappings:         a list of (str, str);   first str is col name from PDF, second str is col from Excel
+    :param unfiltered_reports:      a list of Report;                       synoptic sections and study IDs
+    :param column_mappings:         a dict                                  first str is col name from PDF, second str is col from Excel
     :param print_debug:             boolean;                                print debug statements in Terminal if True
-    :param max_edit_distance:       int;                                max allowed edit distance to find missing cells
-    :return:                        a list of dict;                         extracted data of the form (col_name: value)
+    :param max_edit_distance:       int;                                    max allowed edit distance to find missing cells
+    :return:                        a list of Report;                       extracted data of the form (col_name: value)
     :return:                        pandas DataFrame                        the auto-correct information to be shown
     """
 
@@ -32,17 +32,19 @@ def process_synoptics_and_ids(synoptics_and_ids, column_mappings, path_to_stages
     df = df.fillna("")  # with ""s rather than NaNs
 
     # split the synoptic report into multiple sub-sections using ALL-CAPITALIZED headings as delimiter
-    for (synoptic, study_id) in synoptics_and_ids:
-        columns_and_values = process_synoptic_section(synoptic, study_id, column_mappings, df, print_debug=print_debug,
+    for report in unfiltered_reports:
+        columns_and_values = process_synoptic_section(report.text, report.report_id, column_mappings, df,
+                                                      print_debug=print_debug,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost,
                                                       path_to_stages=path_to_stages,
                                                       pickle_path=pickle_path)
-        result.append(columns_and_values)
+        report.extractions = columns_and_values
+        result.append(report)
 
     # sort DataFrame by study ID
-    df.sort_values("Study ID")
+    df.sort_values("Study ID") # todo: is this really needed
 
     if print_debug:
         s = "Auto-correct Information:\n" + df.to_string()

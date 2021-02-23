@@ -13,7 +13,7 @@ def extensive_search(report: Report, path_to_other_cols: str = "data/inputs/othe
     other_cols = import_other_cols(path_to_other_cols)
     for human_col, tuple_other in other_cols.items():
         start, end = tuple_other
-        found, result = unstructured_search(report.report, capture_between_regex(start, end))
+        found, result = unstructured_search(report.text, capture_between_regex(start, end))
         report.advanced[human_col] = result if found else ""
 
 

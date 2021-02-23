@@ -2,6 +2,8 @@ import re
 import pdftotext
 
 from pipeline.util import utils
+from pipeline.util.report import Report
+from pipeline.util.report_type import ReportType
 
 
 def get_input_paths(pdf_id_beginning, pdf_id_end, skip, path_to_reports):
@@ -27,10 +29,11 @@ def get_input_paths(pdf_id_beginning, pdf_id_end, skip, path_to_reports):
 def pdfs_to_strings(pdf_paths, do_preprocessing=True, print_debug=False):
     """
     takes in a list of pdf paths and extract the textual content into a list of (str, str) tuples
+
     :param pdf_paths:           a list of string;               paths to input pdfs
     :param do_preprocessing:    boolean;                        apply preprocessing to each pdf's string if True
     :param print_debug:         boolean;                        print debugging statements if True
-    :return:                    a list of tuples (str, str);    str is extracted text, str is the study ID of pdf
+    :return:                    a list of reports               the report will have the fields text,id and type initialized
     """
 
     result_texts = []
@@ -57,7 +60,7 @@ def pdfs_to_strings(pdf_paths, do_preprocessing=True, print_debug=False):
         if do_preprocessing:
             pdf_text_str = preprocess_remove_extra_text(pdf_text_str)
         # append result for this iteration
-        result_texts.append((pdf_text_str, study_id))
+        result_texts.append(Report(text=pdf_text_str, report_id=study_id, report_type=ReportType.PATHOLOGY))
 
     return result_texts
 

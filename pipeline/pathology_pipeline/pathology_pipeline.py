@@ -7,6 +7,7 @@ from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preproc
 from pipeline.pathology_pipeline.processing.columns import get_column_mappings
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
+from pipeline.util.import_tools import import_pdf_human_cols
 from pipeline.util.utils import get_full_path, get_current_time, find_all_vocabulary
 
 
@@ -21,7 +22,7 @@ def run_pathology_pipeline(start,
                            path_to_output_csv=get_full_path("data/output/pathology_results/csv_files/"),
                            path_to_output_excel=get_full_path("data/output/pathology_results/excel_files/"),
                            path_to_baselines=get_full_path("data/baselines/"),
-                           path_to_mappings=get_full_path("data/utils/pathology_column_mappings.xlsx"),
+                           path_to_mappings=get_full_path("data/utils/pathology_column_mappings.csv"),
                            path_to_reports=get_full_path("data/input/pathology_reports/"),
                            path_to_stages=get_full_path("data/utils/stages.csv"),
                            pickle_path=get_full_path("data/utils/excluded_autocorrect_column_pairs.data")):
@@ -68,30 +69,28 @@ def run_pathology_pipeline(start,
     # Sean's extracted encodings
     csv_path_baseline_SY = path_to_baselines + "data_collection_baseline_SY.csv"
 
-    column_mappings = get_column_mappings(path_to_mappings)
+    column_mappings = import_pdf_human_cols(path_to_mappings)
 
-    # convert pdf reports to a list of (pdf_string, study_id) tuples
-    strings_and_ids = read_pdf.pdfs_to_strings(input_pdf_paths, do_preprocessing=True, print_debug=print_debug)
-    print(strings_and_ids[1][0])
+    # convert pdf reports to a list of reports with report.text and report.report_id
+    reports_string_form = read_pdf.pdfs_to_strings(input_pdf_paths, do_preprocessing=True, print_debug=print_debug)
 
-    medical_vocabulary = find_all_vocabulary([string for (string, study_id) in strings_and_ids],
+    medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
                                              print_debug=print_debug,
                                              min_freq=40)
     if resolve_ocr:
-        strings_and_ids = preprocess_resolve_ocr_spaces(strings_and_ids,
-                                                        print_debug=print_debug,
-                                                        medical_vocabulary=medical_vocabulary)
+        reports_string_form = preprocess_resolve_ocr_spaces(reports_string_form, print_debug=print_debug,
+                                                            medical_vocabulary=medical_vocabulary)
 
     # isolate and extract the synoptic reports from all data
-    synoptics_and_ids, ids_without_synoptics = isolate_synoptic_sections(strings_and_ids,
+    synoptic_reports, ids_without_synoptics = isolate_synoptic_sections(reports_string_form,
                                                                          print_debug=print_debug)
 
     # this is the str of PDFs that do not contain any Synoptic Report section
-    without_synoptics_strs_and_ids = [(string, study_id) for string, study_id in strings_and_ids if
-                                      study_id in ids_without_synoptics]
+    without_synoptics_strs_and_ids = [report for report in reports_string_form if
+                                      report.report_id in ids_without_synoptics]
 
     # If the PDF doesn't contain a synoptic section, use the Final Diagnosis section instead
-    final_diagnosis_and_ids, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
+    final_diagnosis_reports, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
         without_synoptics_strs_and_ids,
         print_debug=print_debug)
 
@@ -100,7 +99,7 @@ def run_pathology_pipeline(start,
             s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
             print(s)
 
-    synoptic_dictionaries, autocorrect_df = process_synoptics_and_ids(synoptics_and_ids, column_mappings,
+    synoptic_dictionaries, autocorrect_df = process_synoptics_and_ids(synoptic_reports, column_mappings,
                                                                       path_to_stages=path_to_stages,
                                                                       print_debug=print_debug,
                                                                       max_edit_distance_missing=max_edit_distance_missing,

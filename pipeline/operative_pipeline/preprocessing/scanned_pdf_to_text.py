@@ -61,6 +61,6 @@ def load_in_txts(start: int, end: int, skip: List[int], path_to_txt: str) -> Lis
             file_name = path_to_txt + str(index) + " OR_Redacted.txt"
             emr_file_text = open(file_name, "r")
             emr_text = emr_file_text.read()
-            emr_study_id.append(Report(report=emr_text, report_id=str(index), report_type=ReportType.OPERATIVE))
+            emr_study_id.append(Report(text=emr_text, report_id=str(index), report_type=ReportType.OPERATIVE))
             emr_file_text.close()
     return emr_study_id

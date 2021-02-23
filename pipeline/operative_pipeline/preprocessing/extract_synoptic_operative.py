@@ -153,11 +153,11 @@ def clean_up_reports(emr_text: List[Report]) -> List[Report]:
     """
     cleaned_reports = []
     for study in emr_text:
-        text = study.report
+        text = study.text
         cleaned_pdf = extract_synoptic_operative_report(text)
         for cleaned_report in cleaned_pdf:
             report_info = cleaned_report[0]
-            cleaned_reports.append(Report(report=text,
+            cleaned_reports.append(Report(text=text,
                                           report_id=str(study.report_id) + cleaned_report[1][0].upper() if len(
                                               cleaned_report[1]) > 0 else str(study.report_id) + cleaned_report[1],
                                           laterality=report_info['laterality'],
