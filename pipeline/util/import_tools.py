@@ -18,13 +18,13 @@ def import_weights(path_to_weights: str) -> Dict[str, Tuning]:
     return tuning_dict
 
 
-def import_pdf_human_cols(pdf_human_excel_sheet: str) -> dict:
+def import_pdf_human_cols(pdf_human_csv: str) -> dict:
     """
-    :type pdf_human_excel_sheet: str
+    :type pdf_human_csv: str
     :return List[Tuple[str, Any]]
     """
     pdf_cols_human_cols_dict = {}
-    pdf_cols_human_cols = pd.read_excel(pdf_human_excel_sheet)
+    pdf_cols_human_cols = pd.read_csv(pdf_human_csv)
     for index, row in pdf_cols_human_cols.iterrows():
         pdf_cols = row[0]
         human_col = row[1]
