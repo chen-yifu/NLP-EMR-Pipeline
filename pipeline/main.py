@@ -13,8 +13,8 @@ def run_pipeline(start: int, end: int, skip: List[int]):
     """
     if is_pathologic():
         run_pathology_pipeline(start=start, end=end, skip=skip)
-    # elif is_operative():
-    #     run_operative_pipeline(start=start, end=end, skip=skip)
+    elif is_operative():
+        run_operative_pipeline(start=start, end=end, skip=skip)
     else:
         print("The report is not pathologic or operative.")
 

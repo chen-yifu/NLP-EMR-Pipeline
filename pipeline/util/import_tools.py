@@ -26,9 +26,12 @@ def import_pdf_human_cols(pdf_human_csv: str) -> List[Tuple[str, str]]:
     pdf_cols_human_cols_list = []
     pdf_cols_human_cols = pd.read_csv(pdf_human_csv)
     for index, row in pdf_cols_human_cols.iterrows():
-        pdf_col = row[0]
+        pdf_cols = row[0]
         human_col = row[1]
-        pdf_cols_human_cols_list.append((pdf_col, human_col))
+        pdf_cols_list = pdf_cols.split(",")
+        cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
+        for pdf_col in cleaned_pdf_col_list:
+            pdf_cols_human_cols_list.append((pdf_col, human_col))
     return pdf_cols_human_cols_list
 
 

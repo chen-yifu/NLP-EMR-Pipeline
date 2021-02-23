@@ -5,6 +5,7 @@ from pipeline.operative_pipeline.preprocessing.extract_synoptic_operative import
 from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_in_pdfs, load_in_txts
 from pipeline.operative_pipeline.processing.encode_extractions import code_extractions
 from pipeline.operative_pipeline.processing.extract_extractions import get_general_extractions
+from pipeline.util.import_tools import import_pdf_human_cols, import_code_book
 from pipeline.util.utils import get_full_path
 
 
@@ -14,8 +15,8 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
                            path_to_text: str = get_full_path("data/input/operative_reports/operative_reports_text/"),
                            path_to_reports: str = get_full_path("data/input/operative_reports/"),
                            path_to_code_book: str = get_full_path("data/utils/operative_code_book.ods"),
-                           path_to_pdf_human_cols: str = get_full_path("data/utils/operative_column_mappings.ods"),
-                           baseline_version: str = "data_collection_baseline_VZ_48.csv",  # must be csv format
+                           path_to_pdf_human_cols: str = get_full_path("data/utils/operative_column_mappings.csv"),
+                           baseline_version: str = "data_collection_baseline_VZ_48.csv",
                            baseline_path: str = get_full_path("data/baselines/"),
                            path_to_weights: str = get_full_path("data/utils/training_metrics/params/tuning.csv"),
                            substitution_cost: int = 1,
@@ -39,6 +40,9 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
     :param end:                         the last report
     :param path_to_reports:             path to where the pdf reports are held
     """
+
+    pdf_col_human_col = import_pdf_human_cols(path_to_pdf_human_cols)
+    code_book = import_code_book(path_to_code_book)
 
     # this is only needed to run once. converts pdfs to images that can be changed to text with ocr. all the images and
     # text are saved in path_to_ocr
@@ -66,9 +70,9 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
         print(report.extractions)
 
     studies_with_cleaned_extractions = extract_cols(reports=studies_with_general_extractions,
-                                                    pdf_human_cols_path=path_to_pdf_human_cols)
+                                                    pdf_human_cols=pdf_col_human_col)
     # turning raw text values into spreadsheet
-    raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols_path=path_to_pdf_human_cols,
+    raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols=pdf_col_human_col,
                                path_to_output=path_to_output)
 
     # changing the raw text into codes
