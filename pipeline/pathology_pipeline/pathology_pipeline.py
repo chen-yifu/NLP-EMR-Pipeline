@@ -4,7 +4,6 @@ from pipeline.pathology_pipeline.preprocessing import read_pdf
 from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_synoptic_sections, \
     isolate_final_diagnosis_sections
 from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
-from pipeline.pathology_pipeline.processing.columns import get_column_mappings
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols
