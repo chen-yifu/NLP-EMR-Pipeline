@@ -80,10 +80,11 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
         return resolved_words
 
     result = []
-    for index, (string, study_id) in enumerate(strings_and_ids):
-        resolved_string = resolve_ocr(string, medical_vocabulary=medical_vocabulary)
+    for index, report in enumerate(strings_and_ids):
+        resolved_string = resolve_ocr(report.text, medical_vocabulary=medical_vocabulary)
         resolved_string = re.sub(" +", " ", resolved_string)
-        result.append(Report(text=resolved_string, report_id=study_id))
+        report.text = resolved_string
+        result.append(report)
 
     return result
 

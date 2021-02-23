@@ -35,7 +35,7 @@ def isolate_synoptic_sections(reports_string_form, print_debug=True):
             # if pdf contains more than 1 synoptic reports, it contains both breasts, label study_id with L or R
             for m in matches:
                 label = report.report_id + find_left_right_label_synoptic(m, report.report_id, print_debug=print_debug)
-                synoptics_and_ids.append((m, label))
+                synoptics_and_ids.append(Report(text=m, report_id=label))
         else:
             synoptics_and_ids.append(Report(text=matches[0], report_id=report.report_id))
 
@@ -86,7 +86,7 @@ def isolate_final_diagnosis_sections(no_synoptic_reports, print_debug=True, log_
 
     if print_debug and len(no_synoptic_reports):
         s = "Isolating Final Diagnosis for those that don't have a Synoptic Report section: {}".format(
-            [study_id for string, study_id in no_synoptic_reports])
+            [report.report_id for report in no_synoptic_reports])
         print(s)
 
     # placeholders

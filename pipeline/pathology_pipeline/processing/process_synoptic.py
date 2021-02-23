@@ -44,7 +44,7 @@ def process_synoptics_and_ids(unfiltered_reports, column_mappings, path_to_stage
         result.append(report)
 
     # sort DataFrame by study ID
-    df.sort_values("Study ID") # todo: is this really needed
+    df.sort_values("Study ID")
 
     if print_debug:
         s = "Auto-correct Information:\n" + df.to_string()

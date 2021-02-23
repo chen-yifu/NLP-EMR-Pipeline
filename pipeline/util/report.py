@@ -18,7 +18,7 @@ class Report:
         if encoded is None:
             self.encoded = {}
         if extractions is None:
-            self.extractions = []
+            self.extractions = {}
         if not_found is None:
             self.not_found = []
         self.report_type = report_type

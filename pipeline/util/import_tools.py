@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Dict
+from typing import Dict, List, Tuple
 
 from pipeline.util.tuning import Tuning
 
@@ -18,21 +18,18 @@ def import_weights(path_to_weights: str) -> Dict[str, Tuning]:
     return tuning_dict
 
 
-def import_pdf_human_cols(pdf_human_csv: str) -> dict:
+def import_pdf_human_cols(pdf_human_csv: str) -> List[Tuple[str, str]]:
     """
     :type pdf_human_csv: str
     :return List[Tuple[str, Any]]
     """
-    pdf_cols_human_cols_dict = {}
+    pdf_cols_human_cols_list = []
     pdf_cols_human_cols = pd.read_csv(pdf_human_csv)
     for index, row in pdf_cols_human_cols.iterrows():
-        pdf_cols = row[0]
+        pdf_col = row[0]
         human_col = row[1]
-        pdf_cols_list = pdf_cols.split(",")
-        cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
-        for pdf_col in cleaned_pdf_col_list:
-            pdf_cols_human_cols_dict[pdf_col] = human_col
-    return pdf_cols_human_cols_dict
+        pdf_cols_human_cols_list.append((pdf_col, human_col))
+    return pdf_cols_human_cols_list
 
 
 def import_code_book(code_book_path: str):

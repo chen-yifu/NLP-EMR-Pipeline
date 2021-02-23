@@ -83,7 +83,7 @@ def run_pathology_pipeline(start,
 
     # isolate and extract the synoptic reports from all data
     synoptic_reports, ids_without_synoptics = isolate_synoptic_sections(reports_string_form,
-                                                                         print_debug=print_debug)
+                                                                        print_debug=print_debug)
 
     # this is the str of PDFs that do not contain any Synoptic Report section
     without_synoptics_strs_and_ids = [report for report in reports_string_form if
@@ -99,20 +99,20 @@ def run_pathology_pipeline(start,
             s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
             print(s)
 
-    synoptic_dictionaries, autocorrect_df = process_synoptics_and_ids(synoptic_reports, column_mappings,
-                                                                      path_to_stages=path_to_stages,
-                                                                      print_debug=print_debug,
-                                                                      max_edit_distance_missing=max_edit_distance_missing,
-                                                                      max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                                      substitution_cost=substitution_cost,
-                                                                      pickle_path=pickle_path)
+    filtered_reports, autocorrect_df = process_synoptics_and_ids(synoptic_reports, column_mappings,
+                                                                 path_to_stages=path_to_stages,
+                                                                 print_debug=print_debug,
+                                                                 max_edit_distance_missing=max_edit_distance_missing,
+                                                                 max_edit_distance_autocorrect=max_edit_distance_autocorrect,
+                                                                 substitution_cost=substitution_cost,
+                                                                 pickle_path=pickle_path)
 
-    synoptic_dictionaries = [d for d in synoptic_dictionaries if d]  # remove None from list
+    filtered_reports = [report for report in filtered_reports if report.extractions]  # remove None from list
 
-    final_diagnosis_dictionaries = []
+    final_diagnosis_reports = []
 
-    all_dictionaries = synoptic_dictionaries + final_diagnosis_dictionaries
-    df_raw = save_dictionaries_into_csv_raw(all_dictionaries,
+    all_reports = filtered_reports + final_diagnosis_reports
+    df_raw = save_dictionaries_into_csv_raw(all_reports,
                                             column_mappings,
                                             csv_path=csv_path_raw,
                                             print_debug=print_debug)
