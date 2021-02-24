@@ -1,3 +1,4 @@
+import time
 from typing import List
 
 from pipeline.check_report import *
@@ -5,22 +6,26 @@ from pipeline.operative_pipeline.operative_pipeline import run_operative_pipelin
 from pipeline.pathology_pipeline.pathology_pipeline import run_pathology_pipeline
 
 
-def run_pipeline(start: int, end: int, skip: List[int]):
+def run_pipeline():
     """
+    start: int, end: int, skip: List[int]
+
     :param start:
     :param end:
     :param skip:
     """
-    if is_pathologic():
-        run_pathology_pipeline(start=start, end=end, skip=skip)
-    elif is_operative():
-        run_operative_pipeline(start=start, end=end, skip=skip)
-    else:
-        print("The report is not pathologic or operative.")
+    start = time.time()
+    run_pathology_pipeline(101, 156, skip=[140])
+    end = time.time()
+    pathology = end - start
+
+    start = time.time()
+    run_operative_pipeline(start=1, end=48, skip=[22, 43])
+    end = time.time()
+    op = end - start
+
+    print("Pathology Time: {}".format(pathology))
+    print("Operative Time: {}".format(op))
 
 
-# run below for operative pipeline
-# run_pipeline(start=1, end=48, skip=[22, 43])
-
-# run below for pathology pipeline
-run_pipeline(101, 156, skip=[140])
+run_pipeline()
