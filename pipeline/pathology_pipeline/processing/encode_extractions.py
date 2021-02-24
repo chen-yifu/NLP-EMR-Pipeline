@@ -2,8 +2,6 @@ import re
 
 from nltk import edit_distance
 
-from pipeline import utils
-
 
 def encode_extractions_to_dataframe(df, print_debug=True):
     """
@@ -140,8 +138,6 @@ def encode_extractions_to_dataframe(df, print_debug=True):
         elif "cannotbedetermined" in value:
             return "cannot be determined"
 
-
-
     def tumour_site(value):
         """
         clock orientation
@@ -154,7 +150,7 @@ def encode_extractions_to_dataframe(df, print_debug=True):
         if "mm" in value:
             return ""
         regex_full = re.compile(r"(\d+:\d+)")  # 12:00
-        regex_part = re.compile(r"(\d+)")      # 12 o' clock
+        regex_part = re.compile(r"(\d+)")  # 12 o' clock
         matches_full = re.findall(regex_full, value)
         matches_part = re.findall(regex_part, value)
         if matches_full:
@@ -280,7 +276,6 @@ def encode_extractions_to_dataframe(df, print_debug=True):
         if matches:
             return matches[0]
 
-
     def closest_margin(value):
         """
         0=N/A 1=Posterior 2=Anterior 3=Lateral 4=Medial 5=Anterior and posterior 6=Inferior 7=Superior 8=Other (Specify)
@@ -313,7 +308,7 @@ def encode_extractions_to_dataframe(df, print_debug=True):
         """
         value = str(value).lower().replace(" ", "")
         if "invasivecarcinoma" in value:
-            return ""   # the DCIS Margin data is missing and we wrongly extracted Invasive Carcinoma Margins instead
+            return ""  # the DCIS Margin data is missing and we wrongly extracted Invasive Carcinoma Margins instead
         if "negative" in value:
             return "0"
         elif "positive" in value:
@@ -498,7 +493,8 @@ def encode_extractions_to_dataframe(df, print_debug=True):
     # make a copy of dataframe to save results
     result_df = df.copy()
     result_df["Invasive Carcinoma"] = df["Invasive Carcinoma"].apply(invasive_carcinoma)
-    result_df["Invasive Histologic Type"] = result_df.apply(lambda x: invasive_histologic_type(x["Invasive Carcinoma"], x["Invasive Histologic Type"]), axis=1)
+    result_df["Invasive Histologic Type"] = result_df.apply(
+        lambda x: invasive_histologic_type(x["Invasive Carcinoma"], x["Invasive Histologic Type"]), axis=1)
     result_df["Glandular Differentiation"] = df["Glandular Differentiation"].apply(glandular_nuclear_mitotic)
     result_df["Nuclear Pleomorphism"] = df["Nuclear Pleomorphism"].apply(glandular_nuclear_mitotic)
     result_df["Mitotic Rate"] = df["Mitotic Rate"].apply(glandular_nuclear_mitotic)
@@ -522,12 +518,14 @@ def encode_extractions_to_dataframe(df, print_debug=True):
     result_df["Distance from Closest Margin"] = df["Distance from Closest Margin"].apply(distance_from_closest_margin)
     result_df["Closest Margin"] = df["Closest Margin"].apply(closest_margin)
     result_df["DCIS Margins"] = df["DCIS Margins"].apply(dcis_margins)
-    result_df["Distance of DCIS from Closest Margin (mm)"] = df["Distance of DCIS from Closest Margin (mm)"].apply(distance_dcis_closest_margin)
+    result_df["Distance of DCIS from Closest Margin (mm)"] = df["Distance of DCIS from Closest Margin (mm)"].apply(
+        distance_dcis_closest_margin)
     result_df["Closest Margin DCIS"] = df["Closest Margin DCIS"].apply(closest_margin_dcis)
     result_df["# LN w/ Micrometastasis"] = df["# LN w/ Micrometastasis"].apply(micro_nodes)
     result_df["# LN w/ Macrometastasis"] = df["# LN w/ Macrometastasis"].apply(macro_nodes)
     result_df["Micro/macro metastasis"] = df["Micro/macro metastasis"].apply(micro_macro_metastasis)
-    result_df["Size of Largest Macrometastasis Deposit"] = df["Size of Largest Macrometastasis Deposit"].apply(size_largest_macrometastasis_deposit)
+    result_df["Size of Largest Macrometastasis Deposit"] = df["Size of Largest Macrometastasis Deposit"].apply(
+        size_largest_macrometastasis_deposit)
     result_df["Extranodal Extension"] = df["Extranodal Extension"].apply(extranodal_extension)
     result_df["Extent (mm)"] = df["Extent (mm)"].apply(extent)
     result_df["InvasiveTumourSize (mm)"] = df["InvasiveTumourSize (mm)"].apply(invasive_tumour_size)
@@ -539,4 +537,3 @@ def encode_extractions_to_dataframe(df, print_debug=True):
         print(result_df)
 
     return result_df
-

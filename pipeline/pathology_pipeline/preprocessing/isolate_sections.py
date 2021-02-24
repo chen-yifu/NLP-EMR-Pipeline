@@ -1,5 +1,6 @@
 import re
 
+
 def isolate_synoptic_sections(strings_and_ids, print_debug=True):
     """
     for each pdf string, isolate the synoptic report section and return it as a (string, study_id) tuple
@@ -82,7 +83,8 @@ def isolate_final_diagnosis_sections(strings_and_ids, print_debug=True, log_box=
     regex = re.compile(regex)
 
     if print_debug and len(strings_and_ids):
-        s = "Isolating Final Diagnosis for those that don't have a Synoptic Report section: {}".format([study_id for string, study_id in strings_and_ids])
+        s = "Isolating Final Diagnosis for those that don't have a Synoptic Report section: {}".format(
+            [study_id for string, study_id in strings_and_ids])
         print(s)
 
     # placeholders
@@ -113,7 +115,8 @@ def isolate_specimens_received(s, print_debug=True, log_box=None, app=None):
     :return:        str;            the section for specimens received
     """
     # demo: https://regex101.com/r/Ier1pa/2
-    regex = re.compile("S *p *e *c *i *m *e *n *\( *s *\) *R *e *c *e *i *v *e *d.*\n(?P<specimens>((?!F*i *n *a *l *|G *r *o *s *s *|C *o *m *m *e *n *t|S *y *n *o *p *t)[\s\S])*)")
+    regex = re.compile(
+        "S *p *e *c *i *m *e *n *\( *s *\) *R *e *c *e *i *v *e *d.*\n(?P<specimens>((?!F*i *n *a *l *|G *r *o *s *s *|C *o *m *m *e *n *t|S *y *n *o *p *t)[\s\S])*)")
     match = re.search(regex, s)
     if match:
         return match[0]
@@ -121,7 +124,8 @@ def isolate_specimens_received(s, print_debug=True, log_box=None, app=None):
         return None
 
 
-def find_left_right_label_final_diagnosis(final_diagnosis, study_id, specimens_received, print_debug=True, log_box=None, app=None):
+def find_left_right_label_final_diagnosis(final_diagnosis, study_id, specimens_received, print_debug=True, log_box=None,
+                                          app=None):
     """
     given the final diagnosis and specimen(s) received, if there are information for left and right breast, then group
     each bullet point in the final diagnosis into left and right, and append it to result.
@@ -141,10 +145,10 @@ def find_left_right_label_final_diagnosis(final_diagnosis, study_id, specimens_r
     :return:            list of (str, str);         the grouped final diagnosis and study_ids
     """
 
-    left_indices = []     # e.g. [A]
-    right_indices = []    # e.g. [B]
-    left_fds = []         # e.g. ["A. ... (left)"]
-    right_fds = []        # e.g. ["B. ... (right, a separate row in Excel sheet)"]
+    left_indices = []  # e.g. [A]
+    right_indices = []  # e.g. [B]
+    left_fds = []  # e.g. ["A. ... (left)"]
+    right_fds = []  # e.g. ["B. ... (right, a separate row in Excel sheet)"]
 
     # demo: https://regex101.com/r/t3CCXu/3
     specimen_regex = re.compile("\n *(?P<index>[a-z]) *:(?P<value>((?!\n *[a-z] *:)[\s\S])*)")
@@ -178,7 +182,8 @@ def find_left_right_label_final_diagnosis(final_diagnosis, study_id, specimens_r
     return res
 
 
-def split_final_diagnosis_by_laterality(strings_and_ids, final_diagnosis_and_ids, print_debug=True, log_box=None, app=None):
+def split_final_diagnosis_by_laterality(strings_and_ids, final_diagnosis_and_ids, print_debug=True, log_box=None,
+                                        app=None):
     result = []
     for i, (final_diagnosis, study_id) in enumerate(final_diagnosis_and_ids):
         # retrieve the pdf string for the current final diagnosis
@@ -190,7 +195,8 @@ def split_final_diagnosis_by_laterality(strings_and_ids, final_diagnosis_and_ids
                 print(s)
             result.append((final_diagnosis, study_id))
         else:
-            left_and_right_fd = find_left_right_label_final_diagnosis(final_diagnosis, study_id, specimens_received, print_debug=print_debug, log_box=log_box, app=app)
+            left_and_right_fd = find_left_right_label_final_diagnosis(final_diagnosis, study_id, specimens_received,
+                                                                      print_debug=print_debug, log_box=log_box, app=app)
             if len(left_and_right_fd) == 1:
                 # in this case, the final diagnosis wasn't split because it contains info about only left or right breast
                 result.append((final_diagnosis, study_id))
@@ -200,4 +206,3 @@ def split_final_diagnosis_by_laterality(strings_and_ids, final_diagnosis_and_ids
                 for (fd, study_id2) in left_and_right_fd:
                     result.append((fd, study_id2))
     return result
-

@@ -3,8 +3,16 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/data/baselines" />
+      <excludeFolder url="file://$MODULE_DIR$/data/input" />
+      <excludeFolder url="file://$MODULE_DIR$/data/inputs" />
+      <excludeFolder url="file://$MODULE_DIR$/data/misc" />
+      <excludeFolder url="file://$MODULE_DIR$/data/output" />
+      <excludeFolder url="file://$MODULE_DIR$/data/outputs" />
+      <excludeFolder url="file://$MODULE_DIR$/data/reports" />
+      <excludeFolder url="file://$MODULE_DIR$/data/reports_many" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.8 (2)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="3.8 @ Ubuntu (2)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

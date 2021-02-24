@@ -1,11 +1,13 @@
 import re
 from nltk.corpus import stopwords
-from pipeline import utils
 import pandas as pd
 from nltk import edit_distance
 
+from pipeline.util import utils
 
-def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True, log_box=None, app=None):
+
+def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True,
+                                  log_box=None, app=None):
     """
     given a list of strings and ids, using a english vocabulary, resolve redundant white spaces from OCR.
     Example: "Inv asive Carcinoma" should be corrected as "Invasive Carcinoma" because "Inv" and "Asive" are not in the
@@ -84,17 +86,19 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
 
     return result
 
-def categories(stages_path:str) -> dict:
+
+def categories(stages_path: str) -> dict:
     """
     :param stages_path: str
     :return categories: dict
     """
     categories_csv = pd.read_csv(stages_path)
-    return  {"T": [t for t in categories_csv["T"].tolist() if "T" in str(t)],
-             "N": [n for n in categories_csv["N"].tolist() if "N" in str(n)],
-             "M": [m for m in categories_csv["M"].tolist() if "M" in str(m)]}
+    return {"T": [t for t in categories_csv["T"].tolist() if "T" in str(t)],
+            "N": [n for n in categories_csv["N"].tolist() if "N" in str(n)],
+            "M": [m for m in categories_csv["M"].tolist() if "M" in str(m)]}
 
-def find_category(index:int, category_dict:list, stage:str) -> (str,int):
+
+def find_category(index: int, category_dict: list, stage: str) -> (str, int):
     """
     given a stage, compute the edit distance for it based on the category
     :param category_dict: dict
@@ -105,12 +109,12 @@ def find_category(index:int, category_dict:list, stage:str) -> (str,int):
                                                                            [mpTla] pNlmi -> skip 1
     """
     if index + 4 <= len(stage):
-        supposed_category = stage[index:index+4].replace("l", "1").replace("O", "0")
+        supposed_category = stage[index:index + 4].replace("l", "1").replace("O", "0")
         for category in category_dict:
             if edit_distance(supposed_category, category) == 0:
                 return category + " ", len(supposed_category) - 1
     if index + 3 <= len(stage):
-        supposed_category = stage[index:index+3].replace("l", "1").replace("O", "0")
+        supposed_category = stage[index:index + 3].replace("l", "1").replace("O", "0")
         for category in category_dict:
             if edit_distance(supposed_category, category) == 0:
                 return category + " ", len(supposed_category) - 1
@@ -131,18 +135,18 @@ def find_category(index:int, category_dict:list, stage:str) -> (str,int):
     return stage[index], 0
 
 
-def find_pathologic_stage(stage:str) -> str:
+def find_pathologic_stage(stage: str, path_to_stages) -> str:
     """
     :param stage: str
     :return edited_stage: str
     """
     stage = stage.replace("\n", " ").strip()
-    categories_dict = categories(utils.get_full_path("data/stages/Stages.csv"))
-        # categories("Stages.csv")
+    categories_dict = categories(path_to_stages)
+    # categories("stages.csv")
     edited_stage = ""
     to_skip = 0
     for index, letter in enumerate(stage):
-        if letter == "T": # tumor
+        if letter == "T":  # tumor
             category_skip = find_category(index, categories_dict["T"], stage)
             edited_stage += category_skip[0]
             to_skip = category_skip[1]
