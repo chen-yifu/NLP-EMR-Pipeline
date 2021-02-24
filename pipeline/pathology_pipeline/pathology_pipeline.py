@@ -1,13 +1,12 @@
-import pipeline.util.import_tools
+from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_in_txts
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
-from pipeline.pathology_pipeline.preprocessing import read_pdf
 from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_synoptic_sections, \
     isolate_final_diagnosis_sections
 from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
-from pipeline.util.import_tools import import_pdf_human_cols
+from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths
 from pipeline.util.utils import get_full_path, get_current_time, find_all_vocabulary
 
 
@@ -49,8 +48,8 @@ def run_pathology_pipeline(start,
     """
 
     # input pdf paths
-    input_pdf_paths = pipeline.util.import_tools.get_input_paths(start, end, skip=skip, path_to_reports=path_to_reports,
-                                                                 report_str="{} Path_Redacted.pdf")
+    input_pdf_paths = get_input_paths(start, end, skip=skip, path_to_reports=path_to_reports,
+                                      report_str="{} Path_Redacted.pdf")
 
     # the path to save raw data
     timestamp = get_current_time()
@@ -72,7 +71,7 @@ def run_pathology_pipeline(start,
     column_mappings = import_pdf_human_cols(path_to_mappings)
 
     # convert pdf reports to a list of reports with report.text and report.report_id
-    reports_string_form = read_pdf.pdfs_to_strings(input_pdf_paths, do_preprocessing=True, print_debug=print_debug)
+    reports_string_form = load_in_txts(start=start, end=end, skip=skip, paths_to_texts=input_pdf_paths)
 
     medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
                                              print_debug=print_debug,

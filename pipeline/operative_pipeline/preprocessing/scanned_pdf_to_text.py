@@ -1,11 +1,30 @@
+import re
 from typing import List
+
+import pdftotext
 import pytesseract
 from pdf2image import convert_from_path
 import os
 import io
 from appdirs import unicode
+
+from pipeline.util import utils
 from pipeline.util.report import Report
 from pipeline.util.report_type import ReportType
+
+
+def preprocess_remove_extra_text(input_report):
+    """
+    helper function to preprocess reports
+    :param input_report:        string;         the raw extracted text from pdf
+    :return:                    string;         preprocessed string
+    """
+
+    regex = r".*(?:Resuts For|Based on.*AJCC|Prepared.*PLEXIA.*|FINAL RESULTS|Based on.*AJCC|.*Page\s*\d\s*of\s*\d.*|https.*|For VCH|For VPP|For PHC).*"
+    utils.util_resolve_ocr_spaces(regex)
+    res = re.sub(regex, "", input_report)  # remove footer, separator, and distracting texts
+    res = re.sub(r"\n{1,}", "\n", res)  # remove redundant linebreak
+    return res
 
 
 def load_in_pdfs(path_to_text: str, path_to_input: str, paths_to_pdfs: List[str], paths_to_texts: List[str]):
@@ -36,10 +55,12 @@ def load_in_pdfs(path_to_text: str, path_to_input: str, paths_to_pdfs: List[str]
                 pg_cntr += 1
 
 
-def load_in_txts(start: int, end: int, skip: List[int], paths_to_texts: List[str]) -> List[Report]:
+def load_in_txts(start: int, end: int, skip: List[int], paths_to_texts: List[str],
+                 do_preprocessing: bool = True) -> List[Report]:
     """
     The pdf reports that were converted into text files are read into the pipeline by this function
 
+    :param do_preprocessing:
     :param paths_to_texts:   the path to where the report text files are
     :param start:            first report
     :param end:              last report
@@ -51,8 +72,24 @@ def load_in_txts(start: int, end: int, skip: List[int], paths_to_texts: List[str
     text_paths_and_id = zip(paths_to_texts, nums)
 
     for text_path, num in text_paths_and_id:
-        emr_file_text = open(text_path, "r")
-        emr_text = emr_file_text.read()
-        emr_study_id.append(Report(text=emr_text, report_id=str(num), report_type=ReportType.OPERATIVE))
-        emr_file_text.close()
+        if text_path[-3:] == "txt":
+            emr_file_text = open(text_path, "r")
+            emr_text = emr_file_text.read()
+            emr_study_id.append(Report(text=emr_text, report_id=str(num), report_type=ReportType.OPERATIVE))
+            emr_file_text.close()
+        elif text_path[-3:] == "pdf":
+            # extract text
+            pdfFileObj = open(text_path, "rb")
+            pdf_text_obj = pdftotext.PDF(pdfFileObj)
+            pdf_text_str = ""
+            # process each page
+            for page_num in range(len(pdf_text_obj)):
+                raw_text = pdf_text_obj[page_num]
+                pdf_text_str += raw_text
+            if do_preprocessing:
+                pdf_text_str = preprocess_remove_extra_text(pdf_text_str)
+            # append result for this iteration
+            emr_study_id.append(Report(text=pdf_text_str, report_id=str(num), report_type=ReportType.PATHOLOGY))
+        else:
+            print("File must be in either pdf format or text format for extraction!")
     return emr_study_id
