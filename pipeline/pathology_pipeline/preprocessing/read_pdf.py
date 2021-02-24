@@ -6,26 +6,6 @@ from pipeline.util.report import Report
 from pipeline.util.report_type import ReportType
 
 
-def get_input_paths(pdf_id_beginning, pdf_id_end, skip, path_to_reports):
-    """
-    Given the starting and ending pdf ids, return the full path of all documents
-    REQUIRES the pdfs to be located in "../data/input" folder
-    e.g. 101 Path_Redacted.pdf /Users/yifu/PycharmProjects/pathology_pipeline/data/input/101 Path_Redacted.pdf data/input/101 Path_Redacted.pdf
-    :param pdf_id_beginning: int;   first pdf
-    :param pdf_id_end:       int;   last pdf
-    :return:        list of str;    the list of paths for each pdf
-    """
-    root = utils.get_project_root()
-    input_pdf_paths = []
-    for i in range(pdf_id_beginning, pdf_id_end + 1):
-        if i in skip:
-            continue  # note: PDF for id 140 is missing
-        temp_path = path_to_reports + "{} Path_Redacted.pdf".format(i)
-        input_pdf_paths.append(temp_path)
-
-    return input_pdf_paths
-
-
 def pdfs_to_strings(pdf_paths, do_preprocessing=True, print_debug=False):
     """
     takes in a list of pdf paths and extract the textual content into a list of (str, str) tuples

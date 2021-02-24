@@ -3,7 +3,6 @@ import os
 import re
 from datetime import datetime
 from typing import List
-
 from nltk.corpus import words
 from pathlib import Path
 

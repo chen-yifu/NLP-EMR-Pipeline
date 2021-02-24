@@ -1,6 +1,7 @@
 import pandas as pd
 from typing import Dict, List, Tuple
-
+from pipeline.util import utils
+from pipeline.util.report_type import ReportType
 from pipeline.util.tuning import Tuning
 
 
@@ -54,3 +55,22 @@ def import_code_book(code_book_path: str):
         for cleaned_val in cleaned_val_list:
             val_dict[cleaned_val] = encoded_val
     return code_book
+
+
+def get_input_paths(start: int, end: int, skip: List[int], path_to_reports: str,
+                    report_str: str) -> List[str]:
+    """
+    Given the starting and ending pdf ids, return the full path of all documents
+    REQUIRES the pdfs to be located in "../data/input" folder
+    e.g. 101 Path_Redacted.pdf /Users/yifu/PycharmProjects/pathology_pipeline/data/input/101 Path_Redacted.pdf data/input/101 Path_Redacted.pdf
+
+    :param report_str:            the report str for example {} OR_Redacted.text or {} Path_Redacted.pdf
+    :param path_to_reports:       general path to all the reports
+    :param skip:                  ids to skip
+    :param start:                 the first pdf id
+    :param end:                   the last pdf id
+    :return:                      list of paths
+    """
+    # make general list of paths
+    nums_list = [n for n in range(start, end + 1) if n not in skip]
+    return [path_to_reports + report_str.format(i) for i in nums_list]

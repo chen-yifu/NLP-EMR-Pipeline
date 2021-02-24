@@ -1,3 +1,4 @@
+import pipeline.util.import_tools
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.pathology_pipeline.preprocessing import read_pdf
@@ -35,7 +36,6 @@ def run_pathology_pipeline(start,
     :param path_to_reports:
     :param path_to_mappings:
     :param path_to_baselines:
-    :param path_to_output:                str;              path to output
     :param start:
     :param end:
     :param skip:
@@ -49,7 +49,8 @@ def run_pathology_pipeline(start,
     """
 
     # input pdf paths
-    input_pdf_paths = read_pdf.get_input_paths(start, end, skip=skip, path_to_reports=path_to_reports)
+    input_pdf_paths = pipeline.util.import_tools.get_input_paths(start, end, skip=skip, path_to_reports=path_to_reports,
+                                                                 report_str="{} Path_Redacted.pdf")
 
     # the path to save raw data
     timestamp = get_current_time()
@@ -98,8 +99,8 @@ def run_pathology_pipeline(start,
             s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
             print(s)
 
-    filtered_reports, autocorrect_df = process_synoptics_and_ids(synoptic_reports, column_mappings,
-                                                                 path_to_stages=path_to_stages,
+    filtered_reports, autocorrect_df = process_synoptics_and_ids(synoptic_reports,
+                                                                 column_mappings, path_to_stages=path_to_stages,
                                                                  print_debug=print_debug,
                                                                  max_edit_distance_missing=max_edit_distance_missing,
                                                                  max_edit_distance_autocorrect=max_edit_distance_autocorrect,
