@@ -2,7 +2,7 @@ import collections
 import os
 import re
 from datetime import datetime
-from typing import List
+from typing import List, Union
 from nltk.corpus import words
 from pathlib import Path
 
@@ -31,19 +31,27 @@ def add_asterisk(word: str) -> str:
     return re.sub(' +', ' ', result)
 
 
-def convert_to_regex(list_of_words: List[str]) -> str:
+def convert_to_regex(list_of_words: List[Union[str, List[str]]]) -> str:
     """
     Helper function to convert a string into regex
+
     :param list_of_words:
     :return:
     """
     result = ""
     for word in list_of_words[:-1]:
-        if word == " ":
+        if isinstance(word, list):
+            result += "".join([add_asterisk(or_word) + "|" for or_word in word])
+        elif word == " ":
             result += " "
         else:
             result += add_asterisk(word) + ".*"
-    result += add_asterisk(list_of_words[-1])
+
+    last_word = list_of_words[-1]
+    if isinstance(last_word, list):
+        result += "".join([add_asterisk(or_word) + "|" for or_word in last_word[:-1]]) + add_asterisk(last_word[-1])
+    else:
+        result += add_asterisk(last_word)
     return result
 
 
@@ -59,8 +67,11 @@ def capture_singular_regex(starting_word: str) -> str:
     return modified_regex
 
 
-def capture_double_regex(starting_word: List[str], ending_word: List[str], capture_first_line: bool = False,
-                         capture_last_line: bool = False) -> str:
+def capture_double_regex(starting_word: List[Union[str, List[str]]],
+                         ending_word: List[Union[str, List[str]]],
+                         capture_first_line: bool = False,
+                         capture_last_line: bool = False,
+                         ignore_capials: bool = True) -> str:
     """
     for spaces:
     ["cat dog"],["fish"], True ->  r"(?i)c *a *t d *o *g(?P<capture>(?:(?!f *i *s *h.*)[\s\S])+)"
@@ -69,6 +80,7 @@ def capture_double_regex(starting_word: List[str], ending_word: List[str], captu
     ["cat"," ","dog"],["fish"] ->  r"(?i)c *a *t.* d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
     ["cat "," ","dog"],["fish"] -> r"(?i)c *a *t .* d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
     ["cat"," dog"],["fish"] ->     r"(?i)c *a *t.* *d *o *g(?P<capture>(?:(?!f *i * s *h)[\s\S])+)"
+
     :param capture_last_line:       whether or not you want your regex to capture everything after the last word
     :param capture_first_line:      whether or not you want your regex to capture everything after the first word
     :param starting_word:           the first word to look for
@@ -81,12 +93,27 @@ def capture_double_regex(starting_word: List[str], ending_word: List[str], captu
     modified_ending_word = convert_to_regex(ending_word)
     if capture_last_line:
         modified_ending_word += ".*"
-    modified_regex = r"(?i){starting_word}(?P<capture>(?:(?!{ending_word})[\s\S])+)".format(
-        starting_word=modified_starting_word, ending_word=modified_ending_word)
+    modified_regex = r"{capitalize}{starting_word}(?P<capture>(?:(?!{ending_word})[\s\S])+)".format(
+        capitalize="(?i)" if ignore_capials else "",
+        starting_word=modified_starting_word,
+        ending_word=modified_ending_word)
     return modified_regex
 
 
-# print(capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], True))
+def capture_laterality() -> str:
+    print("laterality")
+
+
+# https://regex101.com/r/2dxpIX/1
+# print(capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], capture_first_line=True, ignore_capials=False))
+# print(
+#     r"S *y *n *o *p *t *i *c R *e *p *o *r *t *: .+(?P<capture>(?:(?!-+ *E *n *d *of *S *y *n *o *p *t *i *c)[\s\S])+)")
+#
+# print(capture_double_regex([" FinalDiagnosis"],
+#                            [["Comment:", "COMMENT", "ClinicalHistoryas", "CasePathologist:", "Electronicallysignedby"]],
+#                            ignore_capials=False))
+# print(
+#     r" *F *i *n *a *l *D *i *a *g *n *o *s *i *s(?P<capture>(?:(?!C *o *m *m *e *n *t *:|C *O *M *M *E *N *T|C *l *i *n *i *c *a *l *H *i *s *t *o *r *y *a *s|C *a *s *e *P *a *t *h *o *l *o *g *i *s *t *:|E *l *e *c *t *r *o *n *i *c *a *l *l *y *s *i *g *n *e *d *b *y)[\s\S])+)")
 
 
 def get_current_time():

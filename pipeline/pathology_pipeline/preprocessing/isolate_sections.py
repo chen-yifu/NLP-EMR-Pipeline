@@ -1,6 +1,7 @@
 import re
 
 from pipeline.util.report import Report
+from pipeline.util.utils import capture_double_regex
 
 
 def isolate_synoptic_sections(reports_string_form, print_debug=True):
@@ -13,8 +14,9 @@ def isolate_synoptic_sections(reports_string_form, print_debug=True):
     :return                     a list of Report                     a list of detected synoptic sections and study ID
     :return                     a list of strs;                      study IDs that did not contain any synoptic report
     """
-    # regex demo: https://regex101.com/r/FX8VfI/7
-    regex = r"S *y *n *o *p *t *i *c R *e *p *o *r *t *: .+(?P<capture>(?:(?!-+ *E *n *d *of *S *y *n *o *p *t *i *c *)[\s\S])+)"
+    # regex demo: # https://regex101.com/r/2dxpIX/1
+    regex = capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], capture_first_line=True,
+                                 ignore_capials=False)
     regex = re.compile(regex)
 
     if print_debug:
@@ -81,7 +83,10 @@ def isolate_final_diagnosis_sections(no_synoptic_reports, print_debug=True, log_
     :return                     a list of Report;                    a list of detected synoptic sections and study ID
     :return                     a list of str;                       study IDs that did not contain a Final Diagnosis
     """
-    regex = r" *F *i *n *a *l *D *i *a *g *n *o *s *i *s(?P<capture>(?:(?!C *o *m *m *e *n *t *:|C *O *M *M *E *N *T *|C *l *i *n *i *c *a *l *H *i *s *t *o *r *y *a *s *|C *a *s *e *P *a *t *h *o *l *o *g *i *s *t *: *|E *l *e *c *t *r *o *n *i *c *a *l *l *y *s *i *g *n *e *d *b *y *)[\s\S])+)"
+    regex = capture_double_regex([" FinalDiagnosis"],
+                                 [["Comment:", "COMMENT", "ClinicalHistoryas", "CasePathologist:",
+                                   "Electronicallysignedby"]],
+                                 ignore_capials=False)
     regex = re.compile(regex)
 
     if print_debug and len(no_synoptic_reports):
