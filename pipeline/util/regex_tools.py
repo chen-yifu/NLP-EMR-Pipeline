@@ -36,5 +36,5 @@ left_operative_report = [(capture_double_regex(["Left breast:"], ["Right breast:
 
 # regex patterns for pathology reports
 # https://regex101.com/r/2dxpIX/1
-pathology_synoptic_regex = capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], capture_first_line=True,
-                                                ignore_capials=False)
+pathology_synoptic_regex = [(capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], capture_first_line=True,
+                                                  ignore_capials=False), "")]

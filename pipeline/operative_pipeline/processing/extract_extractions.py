@@ -107,6 +107,6 @@ def get_general_extractions(list_reports: List[Report]) -> List[Report]:
     """
 
     for study in list_reports:
-        raw_extractions = study.extractions
+        raw_extractions = study.text
         study.extractions = general_extraction_per_subsection(raw_extractions)
     return list_reports

@@ -1,7 +1,7 @@
 import re
 from typing import Tuple, List
 from pipeline.util.regex_tools import preoperative_rational_regex, operative_breast_regex, operative_axilla_regex, \
-    right_operative_report, left_operative_report
+    right_operative_report, left_operative_report, pathology_synoptic_regex
 from pipeline.util.report import Report
 from pipeline.util.report_type import ReportType
 
@@ -88,7 +88,7 @@ def extract_synoptic_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dic
                 return [result]
         return []
 
-    def split_report_find_left_right() -> List[Tuple[dict, str]]:
+    def split_report_find_left_right_operative() -> List[Tuple[dict, str]]:
         """
         Splits a report into right and left breast if it is found that there are two synoptic reports
 
@@ -101,15 +101,27 @@ def extract_synoptic_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dic
                                        lat="left") + extract_synoptic_report(
             right_breast[0] if len(right_breast) > 0 else "", lat="right")
 
+    # pathology report
+    pathology_report = extract_section(pathology_synoptic_regex)
+
+    # operative report
     preoperative_rational = extract_section(preoperative_rational_regex)
     operative_breast = extract_section(operative_breast_regex)
     operative_axilla = extract_section(operative_axilla_regex)
 
-    if len(preoperative_rational) > 1:
-        return split_report_find_left_right()
+    is_pathology = len(pathology_report) > 0
+    is_operative = len(preoperative_rational) > 0 or len(operative_breast) > 0 or len(operative_axilla) > 0
 
-    return [({"extractions": preoperative_rational + operative_breast + operative_axilla,
-              "laterality": lat if lat != "" else extract_laterality()}, lat)]
+    if len(preoperative_rational) > 1:
+        return split_report_find_left_right_operative()
+    if is_pathology > 1:
+        print("find other")
+
+    if is_operative:
+        return [({"filtered text": preoperative_rational + operative_breast + operative_axilla,
+                  "laterality": lat if lat != "" else extract_laterality()}, lat)]
+    elif is_pathology:
+        return [({"filtered text": pathology_report, "laterality": ""}, lat)]
 
 
 def clean_up_reports(emr_text: List[Report]) -> List[Report]:
@@ -125,9 +137,8 @@ def clean_up_reports(emr_text: List[Report]) -> List[Report]:
         cleaned_pdf = extract_synoptic_report(uncleaned_txt=text)
         for cleaned_report in cleaned_pdf:
             report_info = cleaned_report[0]
-            cleaned_reports.append(Report(text=text,
+            cleaned_reports.append(Report(text=report_info["filtered text"],
                                           report_id=str(report.report_id) + cleaned_report[1][0].upper() if len(
                                               cleaned_report[1]) > 0 else str(report.report_id) + cleaned_report[1],
-                                          laterality=report_info['laterality'],
-                                          extractions=report_info["extractions"]))
+                                          laterality=report_info['laterality']))
     return cleaned_reports
