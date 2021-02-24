@@ -1,6 +1,7 @@
 import re
 from typing import Tuple, List
 from pipeline.util.report import Report
+from pipeline.util.report_type import ReportType
 from pipeline.util.utils import capture_double_regex
 
 
@@ -27,10 +28,12 @@ def find_laterality(laterality: List[List[str]]) -> str:
     return ""
 
 
-def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dict, str]]:
+def extract_synoptic_report(uncleaned_txt: str, report_type: ReportType, lat: str = "") -> List[
+    Tuple[dict, str]]:
     """
     Takes in a single report and extracts useful sections as well as laterality of report.
 
+    :param report_type:
     :param lat:                the laterality associated with a report
     :param uncleaned_txt:      just a string of the pdf text
     :return:                   list of tuple of a dictionary of extracted sections and report laterality, if found
@@ -109,8 +112,8 @@ def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List
                          "PREOPERATIVE RATIONALE FOR SURGERY")]
         right_breast = extract_section(right_regexs)
 
-        return extract_synoptic_operative_report(left_breast[0] if len(left_breast) > 0 else "",
-                                                 "left") + extract_synoptic_operative_report(
+        return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
+                                       "left") + extract_synoptic_report(
             right_breast[0] if len(right_breast) > 0 else "", "right")
 
     # https://regex101.com/r/kEj3Fs/1
@@ -138,9 +141,7 @@ def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List
     if len(preoperative_rational) > 1:
         return split_report_find_left_right()
 
-    return [({"preoperative rational": preoperative_rational,
-              "operative breast details": operative_breast,
-              "operative axilla details": operative_axilla,
+    return [({"extractions": preoperative_rational + operative_breast + operative_axilla,
               "laterality": lat if lat != "" else extract_laterality()}, lat)]
 
 
@@ -152,15 +153,14 @@ def clean_up_reports(emr_text: List[Report]) -> List[Report]:
     :return cleaned_reports:      returns list of reports that have been separated into preoperative breast, operative breast and operative axilla
     """
     cleaned_reports = []
-    for study in emr_text:
-        text = study.text
-        cleaned_pdf = extract_synoptic_operative_report(text)
+    for report in emr_text:
+        text = report.text
+        cleaned_pdf = extract_synoptic_report(uncleaned_txt=text, report_type=report.report_type)
         for cleaned_report in cleaned_pdf:
             report_info = cleaned_report[0]
             cleaned_reports.append(Report(text=text,
-                                          report_id=str(study.report_id) + cleaned_report[1][0].upper() if len(
-                                              cleaned_report[1]) > 0 else str(study.report_id) + cleaned_report[1],
+                                          report_id=str(report.report_id) + cleaned_report[1][0].upper() if len(
+                                              cleaned_report[1]) > 0 else str(report.report_id) + cleaned_report[1],
                                           laterality=report_info['laterality'],
-                                          extractions=report_info["preoperative rational"] + report_info[
-                                              "operative breast details"] + report_info["operative axilla details"]))
+                                          extractions=report_info["extractions"]))
     return cleaned_reports
