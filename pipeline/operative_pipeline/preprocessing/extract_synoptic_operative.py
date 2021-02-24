@@ -36,7 +36,7 @@ def find_laterality(laterality: List[List[str]]) -> str:
     return ""
 
 
-def extract_synoptic_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dict, str]]:
+def extract_synoptic_report(uncleaned_txt: str, report_id: str, lat: str = "", is_bilateral=False) -> List[Report]:
     """
     Takes in a single report and extracts useful sections as well as laterality of report.
 
@@ -88,7 +88,7 @@ def extract_synoptic_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dic
                 return [result]
         return []
 
-    def split_report_find_left_right_operative() -> List[Tuple[dict, str]]:
+    def split_report_find_left_right_operative() -> List[Report]:
         """
         Splits a report into right and left breast if it is found that there are two synoptic reports
 
@@ -98,8 +98,8 @@ def extract_synoptic_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dic
         right_breast = extract_section(right_operative_report)
 
         return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
-                                       lat="left") + extract_synoptic_report(
-            right_breast[0] if len(right_breast) > 0 else "", lat="right")
+                                       report_id=report_id, lat="left", is_bilateral=True) + extract_synoptic_report(
+            right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="right", is_bilateral=True)
 
     # pathology report
     pathology_report = extract_section(pathology_synoptic_regex)
@@ -109,19 +109,29 @@ def extract_synoptic_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dic
     operative_breast = extract_section(operative_breast_regex)
     operative_axilla = extract_section(operative_axilla_regex)
 
-    is_pathology = len(pathology_report) > 0
-    is_operative = len(preoperative_rational) > 0 or len(operative_breast) > 0 or len(operative_axilla) > 0
+    is_pathology = len(pathology_report) == 1
+    is_operative = len(preoperative_rational) == 1 or len(operative_breast) == 1 or len(operative_axilla) == 1
 
+    # means multiple
     if len(preoperative_rational) > 1:
         return split_report_find_left_right_operative()
-    if is_pathology > 1:
+
+    if len(pathology_report) > 1:
         print("find other")
 
     if is_operative:
-        return [({"filtered text": preoperative_rational + operative_breast + operative_axilla,
-                  "laterality": lat if lat != "" else extract_laterality()}, lat)]
+        laterality = lat if lat != "" else extract_laterality()
+        to_append = laterality[0].upper() if len(laterality) > 0 else ""
+        return [Report(text=preoperative_rational + operative_breast + operative_axilla,
+                       report_id=report_id + to_append if is_bilateral else report_id,
+                       laterality=laterality)]
+        # return [({"filtered text": preoperative_rational + operative_breast + operative_axilla,
+        #           "laterality": lat if lat != "" else extract_laterality()}, is_bilateral)]
     elif is_pathology:
-        return [({"filtered text": pathology_report, "laterality": ""}, lat)]
+        return [({"filtered text": pathology_report[0]}, is_bilateral)]
+
+    else:
+        return ["not extractable"]
 
 
 def clean_up_reports(emr_text: List[Report]) -> List[Report]:
@@ -131,14 +141,10 @@ def clean_up_reports(emr_text: List[Report]) -> List[Report]:
     :param emr_text:              list of reports that is currently not sorted or filtered
     :return cleaned_reports:      returns list of reports that have been separated into preoperative breast, operative breast and operative axilla
     """
-    cleaned_reports = []
+    reports_and_laterality = []
     for report in emr_text:
         text = report.text
-        cleaned_pdf = extract_synoptic_report(uncleaned_txt=text)
-        for cleaned_report in cleaned_pdf:
-            report_info = cleaned_report[0]
-            cleaned_reports.append(Report(text=report_info["filtered text"],
-                                          report_id=str(report.report_id) + cleaned_report[1][0].upper() if len(
-                                              cleaned_report[1]) > 0 else str(report.report_id) + cleaned_report[1],
-                                          laterality=report_info['laterality']))
-    return cleaned_reports
+        extracted_reports = extract_synoptic_report(uncleaned_txt=text, report_id=report.report_id)
+        for cleaned_report in extracted_reports:
+            reports_and_laterality.append(cleaned_report)
+    return reports_and_laterality
