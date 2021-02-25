@@ -26,12 +26,33 @@ def find_left_right_label(string, report_type, print_debug=True):
         match = re.search(regex, string_lowered)
     elif report_type is ReportType.OPERATIVE:
         # https://regex101.com/r/ITYrAN/1
-        regex = re.compile(r"PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>(?i)l *e *f *t|r *i *g *h *t).*")
+        regex = re.compile(r"PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
         match = re.search(regex, string)
-        if match is None:
+        try:
+            laterality = match.group("laterality")
+            laterality = laterality.replace(" ", "").strip().lower()
+            if laterality == "left":
+                return "L"
+            elif laterality == "right":
+                return "R"
+            else:
+                raise AttributeError
+        except AttributeError:
             # https://regex101.com/r/P2KVkz/1
-            regex = re.compile(r"OPERATION PERFORMED[\s\S]*?(?P<laterality>(?i)l *e *f *t|r *i *g *h *t).*")
+            regex = re.compile(r"OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
             match = re.search(regex, string)
+            try:
+                laterality = match.group("laterality")
+                laterality = laterality.replace(" ", "").strip().lower()
+                if laterality == "left":
+                    return "L"
+                elif laterality == "right":
+                    return "R"
+                else:
+                    raise AttributeError
+            except AttributeError:
+                regex = re.compile(r"(?i)CLINICAL PREAMBLE[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
+                match = re.search(regex, string)
     try:
         laterality = match.group("laterality")
         laterality = laterality.replace(" ", "").strip()
