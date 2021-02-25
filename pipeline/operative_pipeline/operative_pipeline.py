@@ -6,6 +6,7 @@ from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_i
 from pipeline.operative_pipeline.processing.encode_extractions import code_extractions
 from pipeline.operative_pipeline.processing.extract_extractions import get_general_extractions
 from pipeline.util.import_tools import import_pdf_human_cols, import_code_book, get_input_paths
+from pipeline.util.regex_tools import preoperative_rational_regex, operative_axilla_regex, operative_breast_regex
 from pipeline.util.utils import get_full_path
 
 
@@ -41,6 +42,7 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
     :param path_to_reports:             path to where the pdf reports are held
     """
 
+    list_of_regex = [preoperative_rational_regex, operative_breast_regex, operative_axilla_regex]
     pdf_col_human_col = import_pdf_human_cols(path_to_pdf_human_cols)
     code_book = import_code_book(path_to_code_book)
     paths_to_pdfs = get_input_paths(start=start, end=end, skip=skip, path_to_reports=path_to_reports,
@@ -59,7 +61,7 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
     uncleaned_text = load_in_txts(start=start, end=end, skip=skip, paths_to_texts=paths_to_texts)
 
     # returns list[Report] with everything BUT encoded and not_found initialized
-    cleaned_emr = clean_up_reports(emr_text=uncleaned_text)
+    cleaned_emr = clean_up_reports(emr_text=uncleaned_text, list_of_regex=list_of_regex)
 
     # and all the subsections are lists
     studies_with_general_extractions = get_general_extractions(list_reports=cleaned_emr)

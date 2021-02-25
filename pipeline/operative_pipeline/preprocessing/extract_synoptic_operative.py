@@ -32,6 +32,32 @@ def find_laterality(laterality: List[List[str]]) -> str:
     return ""
 
 
+def find_left_right_label_synoptic(string, study_id, print_debug=True):
+    """
+    given the synoptic report, detect it's about the left or right breast
+    :param study_id:    string;           study id of report
+    :param string:      string;           input synoptic report
+    :param print_debug: boolean;          print debug statements if True
+    :return:            string;           suffix, one of "L", "R", or "_laterality_undetected"
+    """
+    string = string.lower()
+
+    # regex demo: https://regex101.com/r/FX8VfI/8
+    regex = re.compile(
+        r"p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*")
+    match = re.search(regex, string)
+
+    try:
+        laterality = match.group("laterality")
+        laterality = laterality.replace(" ", "").strip()
+        if laterality == "left":
+            return "L"
+        else:
+            return "R"
+    except AttributeError:
+        return "unknown"
+
+
 # if the regex is able to find two preoperative, two operative breast/axilla it means that the report is bilateral
 def extract_laterality(uncleaned_txt: str) -> str:
     # TODO: need to fix -> cannot just use operation performed to determine
@@ -88,21 +114,36 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, lat: str = "", i
     :return:                   list of tuple of a dictionary of extracted sections and report laterality, if found
     """
 
-    def split_report_find_left_right_pathlogy() -> List[Report]:
-        print("yes")
+    def split_report_find_left_right_pathlogy(matches: List[str]) -> List[Report]:
+        reports_to_return = []
+        for m in matches:
+            label = report_id + find_left_right_label_synoptic(m, report_id)
+            reports_to_return.append(Report(text=m, report_id=label))
+        return reports_to_return
 
-    def split_report_find_left_right_operative() -> List[Report]:
+    def split_report_find_left_right_operative(preoperative_rational: List[str], operative_breast: List[str],
+                                               operative_axilla: List[str]) -> List[Report]:
         """
         Splits a report into right and left breast if it is found that there are two synoptic reports
 
         :return:
         """
-        left_breast = extract_section(left_operative_report, uncleaned_txt)
-        right_breast = extract_section(right_operative_report, uncleaned_txt)
+        reports_to_return = []
+        # len(preoperative_rational) == len(operative_breast) == len(operative_axilla)
+        if False:  # todo: implement this
+            for index in range(len(preoperative_rational)):
+                reports_to_return.append(
+                    Report(text=[preoperative_rational[index] + operative_breast[index] + operative_axilla[index]]))
+        else:
+            left_breast = extract_section(left_operative_report, uncleaned_txt)
+            right_breast = extract_section(right_operative_report, uncleaned_txt)
 
-        return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
-                                       report_id=report_id, lat="left", is_bilateral=True) + extract_synoptic_report(
-            right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="right", is_bilateral=True)
+            return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
+                                           report_id=report_id, lat="left",
+                                           is_bilateral=True) + extract_synoptic_report(
+                right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="right", is_bilateral=True)
+
+    # make for loop of regex
 
     # pathology report
     pathology_report = extract_section(pathology_synoptic_regex, uncleaned_txt)
@@ -117,10 +158,10 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, lat: str = "", i
 
     # means multiple
     if len(preoperative_rational) > 1:
-        return split_report_find_left_right_operative()
+        return split_report_find_left_right_operative(preoperative_rational, operative_breast, operative_axilla)
 
     if len(pathology_report) > 1:
-        return split_report_find_left_right_pathlogy()
+        return split_report_find_left_right_pathlogy(pathology_report)
 
     if is_operative:
         laterality = lat if lat != "" else extract_laterality(uncleaned_txt)
@@ -128,8 +169,7 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, lat: str = "", i
         return [Report(text=preoperative_rational + operative_breast + operative_axilla,
                        report_id=report_id + to_append if is_bilateral else report_id,
                        laterality=laterality)]
-        # return [({"filtered text": preoperative_rational + operative_breast + operative_axilla,
-        #           "laterality": lat if lat != "" else extract_laterality()}, is_bilateral)]
+
     elif is_pathology:
         return [Report(text=pathology_report[0], report_id=report_id)]
 
@@ -137,17 +177,18 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, lat: str = "", i
         return []
 
 
-def clean_up_reports(emr_text: List[Report]) -> List[Report]:
+def clean_up_reports(emr_text: List[Report], list_of_regex: List[str]) -> List[Report]:
     """
     Wrapper function to clean up list of reports
 
+    :param list_of_regex:
     :param emr_text:              list of reports that is currently not sorted or filtered
     :return cleaned_reports:      returns list of reports that have been separated into preoperative breast, operative breast and operative axilla
     """
-    reports_and_laterality = []
+    report_and_id = []
     for report in emr_text:
         text = report.text
         extracted_reports = extract_synoptic_report(uncleaned_txt=text, report_id=report.report_id)
         for cleaned_report in extracted_reports:
-            reports_and_laterality.append(cleaned_report)
-    return reports_and_laterality
+            report_and_id.append(cleaned_report)
+    return report_and_id
