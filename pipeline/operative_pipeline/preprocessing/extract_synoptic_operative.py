@@ -30,25 +30,35 @@ def find_laterality(laterality: List[List[str]]) -> str:
     return ""
 
 
-def find_left_right_label_synoptic(string, study_id, print_debug=True):
+def find_left_right_label(string, report_type, print_debug=True):
     """
     given the synoptic report, detect it's about the left or right breast
+
+    :param report_type:
     :param study_id:    string;           study id of report
     :param string:      string;           input synoptic report
     :param print_debug: boolean;          print debug statements if True
     :return:            string;           suffix, one of "L", "R", or "_laterality_undetected"
     """
     string = string.lower()
-
-    # regex demo: https://regex101.com/r/FX8VfI/8
-    regex = re.compile(
-        r"p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*")
-    match = re.search(regex, string)
-
+    match = ""
+    if report_type is ReportType.PATHOLOGY:
+        # regex demo: https://regex101.com/r/FX8VfI/8
+        regex = re.compile(
+            r"p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*")
+        match = re.search(regex, string)
+    elif report_type is ReportType.OPERATIVE:
+        # https://regex101.com/r/ITYrAN/1
+        regex = re.compile(r"(?i)PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t).*")
+        match = re.search(regex, string)
+        if match is None:
+            # https://regex101.com/r/P2KVkz/1
+            regex = re.compile(r"(?i)OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t).*")
+            match = re.search(regex, string)
     try:
         laterality = match.group("laterality")
         laterality = laterality.replace(" ", "").strip()
-        return "L" if laterality == "left" else "R"
+        return "L" if laterality.lower() == "left" else "R"
     except AttributeError:
         return "unknown"
 
@@ -98,7 +108,7 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
     def split_report_find_left_right_pathlogy(matches: List[str]) -> List[Report]:
         reports_to_return = []
         for m in matches:
-            label = report_id + find_left_right_label_synoptic(m, report_id)
+            label = report_id + find_left_right_label(m, report_type=report_type)
             reports_to_return.append(Report(text=m, report_id=label))
         return reports_to_return
 
@@ -112,10 +122,10 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
         right_breast = extract_section(right_operative_report, uncleaned_txt)
 
         return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
-                                       report_id=report_id, lat="left",
+                                       report_id=report_id, lat="L",
                                        is_bilateral=True, list_of_regex=list_of_regex,
                                        report_type=report_type) + extract_synoptic_report(
-            right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="right", is_bilateral=True,
+            right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="R", is_bilateral=True,
             list_of_regex=list_of_regex,
             report_type=report_type)
 
@@ -129,11 +139,10 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
     elif all(len(single_section) == 1 for single_section in extracted_sections):
         merged_extractions = list(itertools.chain(*extracted_sections))
         if report_type is ReportType.OPERATIVE:
-            laterality = lat if lat != "" else extract_laterality(uncleaned_txt)
-            to_append = laterality[0].upper() if len(laterality) > 0 else ""
+            laterality = lat if lat != "" else find_left_right_label(uncleaned_txt, report_type=report_type)
             return [Report(text=merged_extractions,
-                           report_id=report_id + to_append if is_bilateral else report_id,
-                           laterality=laterality)]
+                           report_id=report_id + laterality if is_bilateral else report_id,
+                           laterality="left" if laterality == "L" else "right")]
         elif report_type is ReportType.PATHOLOGY:
             return [Report(text=merged_extractions[0], report_id=report_id)]
 
