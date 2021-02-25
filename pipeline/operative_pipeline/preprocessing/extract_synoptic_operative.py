@@ -146,18 +146,11 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
 
             return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
                                            report_id=report_id, lat="left",
-                                           is_bilateral=True) + extract_synoptic_report(
-                right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="right", is_bilateral=True)
-
-    # make for loop of regex
-    regex_result = []
-    for regex in list_of_regex:
-        regex_result.append(extract_section(regex, uncleaned_txt))
-
-    if all(len(result) == 1 for result in regex_result):
-        return [Report(text=[single_result for sub_result in regex_result for single_result in sub_result],
-                       report_id=report_id,
-                       laterality=extract_laterality(uncleaned_txt) if report_type is ReportType.OPERATIVE else "")]
+                                           is_bilateral=True, list_of_regex=list_of_regex,
+                                           report_type=report_type) + extract_synoptic_report(
+                right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="right", is_bilateral=True,
+                list_of_regex=list_of_regex,
+                report_type=report_type)
 
     # pathology report
     pathology_report = extract_section(pathology_synoptic_regex, uncleaned_txt)
@@ -195,7 +188,6 @@ def clean_up_reports(emr_text: List[Report]) -> Tuple[List[Report], List[str]]:
     """
     Wrapper function to clean up list of reports
 
-    :param list_of_regex:
     :param emr_text:              list of reports that is currently not sorted or filtered
     :return cleaned_reports:      returns list of reports that have been separated into preoperative breast, operative breast and operative axilla
     """
