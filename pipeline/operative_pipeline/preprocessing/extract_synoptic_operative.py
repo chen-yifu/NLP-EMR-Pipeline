@@ -7,29 +7,6 @@ from pipeline.util.report import Report
 from pipeline.util.report_type import ReportType
 
 
-def find_laterality(laterality: List[List[str]]) -> str:
-    """
-    Determines laterality of a report # todo -> need to fix
-
-    :param laterality:      list of regex results. regex results is a list of string
-    :return:                the laterality the pipeline found
-    """
-    for list_result in laterality:
-        for possible_lat in list_result:
-            cleaned_possible_lat = possible_lat.lower()
-            right = cleaned_possible_lat.find("right")
-            left = cleaned_possible_lat.find("left")
-            if left == -1 and right == -1:
-                continue
-            elif right > -1 and left == -1:
-                return "right"
-            elif left > -1 and right == -1:
-                return "left"
-            elif right > -1 and left > -1:
-                return "bilateral"
-    return ""
-
-
 def find_left_right_label(string, report_type, print_debug=True):
     """
     given the synoptic report, detect it's about the left or right breast
@@ -40,20 +17,20 @@ def find_left_right_label(string, report_type, print_debug=True):
     :param print_debug: boolean;          print debug statements if True
     :return:            string;           suffix, one of "L", "R", or "_laterality_undetected"
     """
-    string = string.lower()
     match = ""
     if report_type is ReportType.PATHOLOGY:
+        string_lowered = string.lower()
         # regex demo: https://regex101.com/r/FX8VfI/8
         regex = re.compile(
             r"p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*")
-        match = re.search(regex, string)
+        match = re.search(regex, string_lowered)
     elif report_type is ReportType.OPERATIVE:
         # https://regex101.com/r/ITYrAN/1
-        regex = re.compile(r"(?i)PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t).*")
+        regex = re.compile(r"PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>(?i)l *e *f *t|r *i *g *h *t).*")
         match = re.search(regex, string)
         if match is None:
             # https://regex101.com/r/P2KVkz/1
-            regex = re.compile(r"(?i)OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t).*")
+            regex = re.compile(r"OPERATION PERFORMED[\s\S]*?(?P<laterality>(?i)l *e *f *t|r *i *g *h *t).*")
             match = re.search(regex, string)
     try:
         laterality = match.group("laterality")
@@ -61,32 +38,6 @@ def find_left_right_label(string, report_type, print_debug=True):
         return "L" if laterality.lower() == "left" else "R"
     except AttributeError:
         return "unknown"
-
-
-# if the regex is able to find two preoperative, two operative breast/axilla it means that the report is bilateral
-def extract_laterality(uncleaned_txt: str) -> str:
-    """
-    :param uncleaned_txt:
-    :return:
-    """
-    # TODO: need to fix -> cannot just use operation performed to determine
-
-    # https://rubular.com/r/TAsSFuPoU8X13N
-    regex_for_procedure = r"[\n\r](?i) *PROCEDURE*\s*([^\n\r]*)"
-    laterality_procedure_upper = regex_extract(regex_for_procedure, uncleaned_txt)
-
-    regex_for_postoperative_diagnosis = r"[\n\r](?i) *POSTOPERATIVE DIAGNOSIS*\s*([^\n\r]*)"
-    laterality_postop = regex_extract(regex_for_postoperative_diagnosis, uncleaned_txt)
-
-    # regex is here: https://rubular.com/r/J5CfqTgNj0xo9Q for operation performed
-    regex_for_laterality_operation_performed = r"[\n\r](?i) *O *P *E *R *A *T *I *O *N P *E *R *F *O *R *M *E *D *\s*([^\n\r]*)"
-    laterality_operation_performed = regex_extract(regex_for_laterality_operation_performed, uncleaned_txt)
-
-    # regex is here: https://rubular.com/r/rj6JsbwydrCW99 for procedure performed
-    regex_for_laterality_procedure = r"[\n\r].*(?i)P *r *o *c *e *d *u *r *e *:\s*([^\n\r]*)"
-    laterality_procedure = regex_extract(regex_for_laterality_procedure, uncleaned_txt)
-    return find_laterality(
-        [laterality_operation_performed, laterality_procedure, laterality_postop, laterality_procedure_upper])
 
 
 def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: ReportType,
