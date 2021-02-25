@@ -1,8 +1,10 @@
 import re
 from typing import Tuple, List
 from pipeline.util.regex_tools import preoperative_rational_regex, operative_breast_regex, operative_axilla_regex, \
-    right_operative_report, left_operative_report, pathology_synoptic_regex
+    right_operative_report, left_operative_report, pathology_synoptic_regex, export_operative_regex, \
+    export_pathology_regex
 from pipeline.util.report import Report
+from pipeline.util.report_type import ReportType
 
 
 def regex_extract(regex: str, uncleaned_txt: str) -> list:
@@ -103,10 +105,14 @@ def extract_section(regexs: List[Tuple[str, str]], uncleaned_txt: str) -> list:
     return []
 
 
-def extract_synoptic_report(uncleaned_txt: str, report_id: str, lat: str = "", is_bilateral=False) -> List[Report]:
+def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: ReportType,
+                            list_of_regex: List[List[Tuple[str, str]]],
+                            lat: str = "",
+                            is_bilateral=False) -> List[Report]:
     """
     Takes in a single report and extracts useful sections as well as laterality of report.
 
+    :param list_of_regex:
     :param is_bilateral:
     :param report_id:
     :param lat:                the laterality associated with a report
@@ -144,6 +150,14 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, lat: str = "", i
                 right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="right", is_bilateral=True)
 
     # make for loop of regex
+    regex_result = []
+    for regex in list_of_regex:
+        regex_result.append(extract_section(regex, uncleaned_txt))
+
+    if all(len(result) == 1 for result in regex_result):
+        return [Report(text=[single_result for sub_result in regex_result for single_result in sub_result],
+                       report_id=report_id,
+                       laterality=extract_laterality(uncleaned_txt) if report_type is ReportType.OPERATIVE else "")]
 
     # pathology report
     pathology_report = extract_section(pathology_synoptic_regex, uncleaned_txt)
@@ -174,10 +188,10 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, lat: str = "", i
         return [Report(text=pathology_report[0], report_id=report_id)]
 
     else:
-        return []
+        return report_id
 
 
-def clean_up_reports(emr_text: List[Report], list_of_regex: List[str]) -> List[Report]:
+def clean_up_reports(emr_text: List[Report]) -> Tuple[List[Report], List[str]]:
     """
     Wrapper function to clean up list of reports
 
@@ -185,10 +199,16 @@ def clean_up_reports(emr_text: List[Report], list_of_regex: List[str]) -> List[R
     :param emr_text:              list of reports that is currently not sorted or filtered
     :return cleaned_reports:      returns list of reports that have been separated into preoperative breast, operative breast and operative axilla
     """
+    ids_without_synoptic = []
     report_and_id = []
     for report in emr_text:
         text = report.text
-        extracted_reports = extract_synoptic_report(uncleaned_txt=text, report_id=report.report_id)
-        for cleaned_report in extracted_reports:
-            report_and_id.append(cleaned_report)
-    return report_and_id
+        list_of_regex = export_operative_regex if report.report_type is ReportType.OPERATIVE else export_pathology_regex
+        extracted_reports = extract_synoptic_report(uncleaned_txt=text, report_id=report.report_id,
+                                                    list_of_regex=list_of_regex, report_type=report.report_type)
+        if isinstance(extracted_reports, str):
+            ids_without_synoptic.append(extracted_reports)
+        else:
+            for cleaned_report in extracted_reports:
+                report_and_id.append(cleaned_report)
+    return report_and_id, ids_without_synoptic

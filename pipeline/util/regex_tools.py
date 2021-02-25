@@ -24,17 +24,20 @@ operative_axilla_regex = [
 # https://regex101.com/r/rdPUIj/1
 right_operative_report = [(capture_double_regex(["Right breast:"], ["Right breast:"]), ""),
                           (capture_double_regex(["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY RIGHT BREAST"],
-                                      ["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"]),
-                 "PREOPERATIVE RATIONALE FOR SURGERY")]
+                                                ["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"]),
+                           "PREOPERATIVE RATIONALE FOR SURGERY")]
 
 # https://regex101.com/r/kT4aT7/1
 # https://regex101.com/r/l760jr/1
 left_operative_report = [(capture_double_regex(["Left breast:"], ["Right breast:"]), ""),
                          (capture_double_regex(["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"],
-                                     ["PREOPERATIVE EVALUATION"], capture_last_line=True),
-                "PREOPERATIVE RATIONALE FOR SURGERY")]
+                                               ["PREOPERATIVE EVALUATION"], capture_last_line=True),
+                          "PREOPERATIVE RATIONALE FOR SURGERY")]
 
 # regex patterns for pathology reports
 # https://regex101.com/r/2dxpIX/1
 pathology_synoptic_regex = [(capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], capture_first_line=True,
                                                   ignore_capials=False), "")]
+
+export_operative_regex = [preoperative_rational_regex + operative_breast_regex + operative_axilla_regex]
+export_pathology_regex = [pathology_synoptic_regex]

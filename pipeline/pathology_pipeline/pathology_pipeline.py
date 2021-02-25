@@ -2,10 +2,12 @@ from pipeline.operative_pipeline.preprocessing.extract_synoptic_operative import
 from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_in_txts
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
+from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
 from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths
+from pipeline.util.regex_tools import export_pathology_regex
 from pipeline.util.utils import get_full_path, get_current_time, find_all_vocabulary
 
 
@@ -80,21 +82,21 @@ def run_pathology_pipeline(start,
                                                             medical_vocabulary=medical_vocabulary)
 
     # isolate and extract the synoptic reports from all data
-    synoptic_reports = clean_up_reports(reports_string_form)
+    synoptic_reports, ids_without_synoptic = clean_up_reports(reports_string_form)
 
     # this is the str of PDFs that do not contain any Synoptic Report section
-    # without_synoptics_strs_and_ids = [report for report in reports_string_form if
-    #                                   report.report_id in ids_without_synoptics]
+    without_synoptics_strs_and_ids = [report for report in reports_string_form if
+                                      report.report_id in ids_without_synoptic]
 
     # If the PDF doesn't contain a synoptic section, use the Final Diagnosis section instead
-    # final_diagnosis_reports, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
-    #     without_synoptics_strs_and_ids,
-    #     print_debug=print_debug)
+    final_diagnosis_reports, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
+        without_synoptics_strs_and_ids,
+        print_debug=print_debug)
 
-    # if print_debug:
-    #     if len(ids_without_final_diagnosis) > 0:
-    #         s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
-    #         print(s)
+    if print_debug:
+        if len(ids_without_final_diagnosis) > 0:
+            s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
+            print(s)
 
     filtered_reports, autocorrect_df = process_synoptics_and_ids(synoptic_reports,
                                                                  column_mappings, path_to_stages=path_to_stages,
