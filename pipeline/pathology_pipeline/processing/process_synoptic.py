@@ -2,7 +2,6 @@ import re
 import pandas as pd
 from collections import defaultdict
 from nltk.metrics.distance import edit_distance
-
 from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.pathology_pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.util import utils
@@ -78,21 +77,21 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
     synoptic_report_regex = re.compile(synoptic_report_regex)
     pairs = [(m.groupdict()) for m in synoptic_report_regex.finditer(synoptic_report)]
 
-    def cleanse_column(col):
+    def cleanse_column(col: str) -> str:
         """
         cleanse the column by removing "-" and ":"
-        :param col:     str;            raw column
-        :return:        str;            cleansed column
+        :param col:      raw column
+        :return:         cleansed column
         """
         col = re.sub(r"^\s*-\s*", "", col)  # remove "-"
         col = re.sub(r":\s*$", "", col)  # remove ":"
         return col.strip().lower()
 
-    def cleanse_value(val):
+    def cleanse_value(val: str) -> str:
         """
         cleanse the value by removing linebreaks
-        :param val:     str;            raw value
-        :return:        str;            cleansed value
+        :param val:      raw value
+        :return:         cleansed value
         """
         return val.replace("\n", " ").strip()
 

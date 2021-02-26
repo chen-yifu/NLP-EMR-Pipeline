@@ -18,33 +18,29 @@ def find_left_right_label(string, report_type, print_debug=True):
     :return:            string;           suffix, one of "L", "R", or "_laterality_undetected"
     """
     match = ""
-    if report_type is ReportType.PATHOLOGY:
-        string_lowered = string.lower()
-        # regex demo: https://regex101.com/r/FX8VfI/8
-        regex = re.compile(
-            r"p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*")
-        match = re.search(regex, string_lowered)
+    # https://regex101.com/r/ITYrAN/1
+    preop_diag = r"PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*"
+    # https://regex101.com/r/P2KVkz/1
+    clinical_pream = r"(?i)CLINICAL PREAMBLE[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*"
+    op_perforemd = r"OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*"
+    # regex demo: https://regex101.com/r/FX8VfI/8
+    parts_involved = r"(?i)p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*"
+    list_of_laterality_regex = [parts_involved, preop_diag, clinical_pream, op_perforemd]
 
-    elif report_type is ReportType.OPERATIVE:
-        # https://regex101.com/r/ITYrAN/1
-        preop_diag = re.compile(r"PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
-        # https://regex101.com/r/P2KVkz/1
-        clinical_pream = re.compile(
-            r"(?i)CLINICAL PREAMBLE[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
-        op_perforemd = re.compile(r"OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
-        list_of_laterality_regex = [preop_diag, clinical_pream, op_perforemd]
-        for laterality_regex in list_of_laterality_regex:
-            match = re.search(laterality_regex, string)
-            try:
-                laterality = match.group("laterality").replace(" ", "").strip().lower()
-                if laterality == "left":
-                    return "L"
-                elif laterality == "right":
-                    return "R"
-                else:
-                    raise AttributeError
-            except AttributeError:
-                continue
+    for laterality_regex in list_of_laterality_regex:
+        laterality_regex = re.compile(laterality_regex)
+        match = re.search(laterality_regex, string)
+        try:
+            laterality = match.group("laterality").replace(" ", "").strip().lower()
+            if laterality == "left":
+                return "L"
+            elif laterality == "right":
+                return "R"
+            else:
+                raise AttributeError
+        except AttributeError:
+            continue
+
     try:
         laterality = match.group("laterality").replace(" ", "").strip()
         return "L" if laterality.lower() == "left" else "R"
