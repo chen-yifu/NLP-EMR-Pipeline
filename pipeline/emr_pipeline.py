@@ -22,7 +22,8 @@ from pipeline.util.utils import find_all_vocabulary
 
 # NOT SURE IF THIS WORKS OR NOT
 
-def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType, print_debug: bool = True,
+def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
+                 print_debug: bool = True,
                  max_edit_distance_missing: int = 5,
                  max_edit_distance_autocorrect_path: int = 5,
                  substitution_cost_oper: int = 1,
@@ -48,14 +49,14 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     op_mappings = import_pdf_human_cols(operative_paths["path_op_mappings"])
     code_book = import_code_book(operative_paths["path_to_code_book"])
     paths_to_pdfs = get_input_paths(start, end, skip, operative_paths["path_to_op_reports"], "{} OR_Redacted.pdf")
-    paths_to_operative_text = get_input_paths(start, end, skip, operative_paths["path_to_op_reports"],
-                                              "{} OR_Redacted.txt")
+    operative_text_paths = get_input_paths(start, end, skip, operative_paths["path_to_text"],
+                                           "{} OR_Redacted.txt")
 
     # important paths for pathology report
     pathology_paths = export_pathology_paths
-    paths_to_pathology_pdf = get_input_paths(start, end, skip=skip,
-                                             path_to_reports=pathology_paths["path_to_path_reports"],
-                                             report_str="{} Path_Redacted.pdf")
+    pathology_pdf_paths = get_input_paths(start, end, skip=skip,
+                                          path_to_reports=pathology_paths["path_to_path_reports"],
+                                          report_str="{} Path_Redacted.pdf")
     excel_path_highlight_differences = pathology_paths["path_to_output_excel"] + \
                                        "compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(pathology_paths["timestamp"],
                                                                                           max_edit_distance_autocorrect_path,
@@ -67,11 +68,11 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     if not os.path.exists(operative_paths["path_to_text"]):
         load_in_pdfs(path_to_text=operative_paths["path_to_text"], path_to_input=operative_paths["path_to_input"],
                      paths_to_pdfs=paths_to_pdfs,
-                     paths_to_texts=paths_to_operative_text)
+                     paths_to_texts=operative_text_paths)
 
     # the pdfs are converted into text files which is read into the pipeline with this function.
     # returns list[Report] with only report and id and report type
-    correct_paths_to_reports = paths_to_operative_text if report_type is ReportType.OPERATIVE else paths_to_pathology_pdf
+    correct_paths_to_reports = operative_text_paths if report_type is ReportType.OPERATIVE else pathology_pdf_paths
     reports_string_form = load_in_txts(start=start, end=end, skip=skip, paths_to_texts=correct_paths_to_reports)
 
     if report_type is ReportType.PATHOLOGY:
@@ -126,7 +127,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
         df_coded.to_csv(pathology_paths["csv_path_coded"], index=False)
 
         stats = highlight_csv_differences(pathology_paths["csv_path_coded"],
-                                          pathology_paths["csv_path_coded"]["csv_path_baseline_SY"],
+                                          pathology_paths["csv_path_baseline_SY"],
                                           excel_path_highlight_differences,
                                           print_debug=print_debug)
 
