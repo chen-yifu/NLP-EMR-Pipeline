@@ -7,7 +7,6 @@ from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preproc
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths
-from pipeline.util.regex_tools import export_pathology_regex
 from pipeline.util.utils import get_full_path, get_current_time, find_all_vocabulary
 
 

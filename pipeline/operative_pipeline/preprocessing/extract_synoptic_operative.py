@@ -24,26 +24,19 @@ def find_left_right_label(string, report_type, print_debug=True):
         regex = re.compile(
             r"p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*")
         match = re.search(regex, string_lowered)
+
     elif report_type is ReportType.OPERATIVE:
         # https://regex101.com/r/ITYrAN/1
-        regex = re.compile(r"PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
-        match = re.search(regex, string)
-        try:
-            laterality = match.group("laterality")
-            laterality = laterality.replace(" ", "").strip().lower()
-            if laterality == "left":
-                return "L"
-            elif laterality == "right":
-                return "R"
-            else:
-                raise AttributeError
-        except AttributeError:
-            # https://regex101.com/r/P2KVkz/1
-            regex = re.compile(r"OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
-            match = re.search(regex, string)
+        preop_diag = re.compile(r"PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
+        # https://regex101.com/r/P2KVkz/1
+        clinical_pream = re.compile(
+            r"(?i)CLINICAL PREAMBLE[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
+        op_perforemd = re.compile(r"OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
+        list_of_laterality_regex = [preop_diag, clinical_pream, op_perforemd]
+        for laterality_regex in list_of_laterality_regex:
+            match = re.search(laterality_regex, string)
             try:
-                laterality = match.group("laterality")
-                laterality = laterality.replace(" ", "").strip().lower()
+                laterality = match.group("laterality").replace(" ", "").strip().lower()
                 if laterality == "left":
                     return "L"
                 elif laterality == "right":
@@ -51,11 +44,9 @@ def find_left_right_label(string, report_type, print_debug=True):
                 else:
                     raise AttributeError
             except AttributeError:
-                regex = re.compile(r"(?i)CLINICAL PREAMBLE[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*")
-                match = re.search(regex, string)
+                continue
     try:
-        laterality = match.group("laterality")
-        laterality = laterality.replace(" ", "").strip()
+        laterality = match.group("laterality").replace(" ", "").strip()
         return "L" if laterality.lower() == "left" else "R"
     except AttributeError:
         return "unknown"
@@ -85,11 +76,6 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
         return reports_to_return
 
     def split_report_find_left_right_operative() -> List[Report]:
-        """
-        Splits a report into right and left breast if it is found that there are two synoptic reports
-
-        :return:
-        """
         left_breast = extract_section(left_operative_report, uncleaned_txt)
         right_breast = extract_section(right_operative_report, uncleaned_txt)
 

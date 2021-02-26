@@ -36,7 +36,7 @@ def import_pdf_human_cols(pdf_human_csv: str) -> List[Tuple[str, str]]:
     return pdf_cols_human_cols_list
 
 
-def import_code_book(code_book_path: str):
+def import_code_book(code_book_path: str) -> dict:
     """
     :param code_book_path: str
     :return code_book: Dict of Dict

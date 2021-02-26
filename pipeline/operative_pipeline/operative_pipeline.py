@@ -60,7 +60,7 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
 
     # returns list[Report] with everything BUT encoded and not_found initialized
     cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=uncleaned_text)
-    print(ids_without_synoptic)
+
     # and all the subsections are lists
     studies_with_general_extractions = get_general_extractions(list_reports=cleaned_emr)
 
