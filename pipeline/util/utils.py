@@ -5,6 +5,7 @@ from datetime import datetime
 from typing import List, Union
 from nltk.corpus import words
 from pathlib import Path
+from string import punctuation
 
 
 def add_asterisk(word: str) -> str:
@@ -104,18 +105,6 @@ def capture_laterality() -> str:
     print("laterality")
 
 
-# https://regex101.com/r/2dxpIX/1
-# print(capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], capture_first_line=True, ignore_capials=False))
-# print(
-#     r"S *y *n *o *p *t *i *c R *e *p *o *r *t *: .+(?P<capture>(?:(?!-+ *E *n *d *of *S *y *n *o *p *t *i *c)[\s\S])+)")
-#
-# print(capture_double_regex([" FinalDiagnosis"],
-#                            [["Comment:", "COMMENT", "ClinicalHistoryas", "CasePathologist:", "Electronicallysignedby"]],
-#                            ignore_capials=False))
-# print(
-#     r" *F *i *n *a *l *D *i *a *g *n *o *s *i *s(?P<capture>(?:(?!C *o *m *m *e *n *t *:|C *O *M *M *E *N *T|C *l *i *n *i *c *a *l *H *i *s *t *o *r *y *a *s|C *a *s *e *P *a *t *h *o *l *o *g *i *s *t *:|E *l *e *c *t *r *o *n *i *c *a *l *l *y *s *i *g *n *e *d *b *y)[\s\S])+)")
-
-
 def get_current_time():
     """
     :return:
@@ -157,7 +146,7 @@ def find_all_vocabulary(list_of_strings, print_debug=True, min_freq=2):
     counter = collections.Counter(total_words)
     result = []
     for word, freq in counter.items():
-        if freq >= min_freq:
+        if freq >= min_freq and not any(l in word for l in punctuation) and all(l.isalpha() for l in word):
             result.append(word)
     english_words = [w.lower() for w in words.words() if len(w) > 1] + ["a", "i"]
     non_english_words = list(set([w.lower() for w in result]) - set(english_words))

@@ -2,9 +2,7 @@ import re
 from nltk.corpus import stopwords
 import pandas as pd
 from nltk import edit_distance
-
 from pipeline.util import utils
-from pipeline.util.report import Report
 
 
 def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True,
@@ -12,8 +10,9 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
     """
     given a list of strings and ids, using a english vocabulary, resolve redundant white spaces from OCR.
     Example: "Inv asive Carcinoma" should be corrected as "Invasive Carcinoma" because "Inv" and "Asive" are not in the
-    vocabulary, but the joint words_list of "Invasive" is in the vocabulary, so we should join the fargments together.
+    vocabulary, but the joint words_list of "Invasive" is in the vocabulary, so we should join the fragments together.
     This function cannot resolve missing white spaces, for example "InvasiveCarninoma".
+
     :param strings_and_ids:         a list of (str, str) tuples;        represents the strings and study_ids of PDFs
     :param medical_vocabulary:      a list of str;                      a list of valid english words_list common to PDFs
     :param print_debug:             boolean;                            print debug statements in Terminal if true
@@ -27,7 +26,7 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
         :return:                    str;        resolved string
         """
 
-        # words_list = [w.lower() for w in re.findall(r'\S+|\n', raw_string)]  # make everything lowecase
+        # words_list = [w.lower() for w in re.findall(r'\S+|\n', raw_string)]  # make everything lowercase
         # demo: (?<=[ \n\W])|(?=[ \n\W])
         # equivalent to string.split(), but retains linebreaks
         words_list = re.split("(?<=[ \n\W])|(?=[ \n\W])", raw_string)

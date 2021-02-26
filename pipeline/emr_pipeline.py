@@ -20,8 +20,6 @@ from pipeline.util.report_type import ReportType
 from pipeline.util.utils import find_all_vocabulary
 
 
-# NOT SURE IF THIS WORKS OR NOT
-
 def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                  print_debug: bool = True,
                  max_edit_distance_missing: int = 5,
@@ -31,22 +29,21 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                  substitution_cost_path: int = 2,
                  resolve_ocr=True):
     """
-    :type max_edit_distance_autocorrect_path: object
-    :param substitution_cost_oper:
-    :param max_edit_distance_autocorrect_oper:
-    :param substitution_cost_path:
-    :param start:
-    :param end:
-    :param skip:
-    :param report_type:
-    :param print_debug:
-    :param max_edit_distance_missing:
-    :param resolve_ocr:
+    :param start:                                   the first report id
+    :param end:                                     the last report id
+    :param skip:                                    reports to skip based on id
+    :param report_type:                             the type of report being analyzed, is an Enum
+    :param print_debug:                             print debug statements in Terminal if True
+    :param max_edit_distance_missing:               the maximum edit distance for searching for missing cell values
+    :param max_edit_distance_autocorrect_path:      the maximum edit distance for autocorrecting extracted pairs for pathology
+    :param substitution_cost_oper:                  the substitution cost for edit distance for operative
+    :param max_edit_distance_autocorrect_oper:      the maximum edit distance for autocorrecting extracted pairs for operative
+    :param substitution_cost_path:                  the substitution cost for edit distance for pathology
+    :param resolve_ocr:                             resolve ocr white space if true
     :return:
     """
     # import paths for operative report
     operative_paths = export_operative_paths
-    op_mappings = import_pdf_human_cols(operative_paths["path_op_mappings"])
     code_book = import_code_book(operative_paths["path_to_code_book"])
     paths_to_pdfs = get_input_paths(start, end, skip, operative_paths["path_to_op_reports"], "{} OR_Redacted.pdf")
     operative_text_paths = get_input_paths(start, end, skip, operative_paths["path_to_text"],
@@ -75,17 +72,18 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     correct_paths_to_reports = operative_text_paths if report_type is ReportType.OPERATIVE else pathology_pdf_paths
     reports_string_form = load_in_txts(start=start, end=end, skip=skip, paths_to_texts=correct_paths_to_reports)
 
-    if report_type is ReportType.PATHOLOGY:
-        medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
-                                                 print_debug=print_debug,
-                                                 min_freq=40)
-        if resolve_ocr:
-            reports_string_form = preprocess_resolve_ocr_spaces(reports_string_form, print_debug=print_debug,
-                                                                medical_vocabulary=medical_vocabulary)
+    medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
+                                             print_debug=print_debug,
+                                             min_freq=40)
+
+    if resolve_ocr:
+        reports_string_form = preprocess_resolve_ocr_spaces(reports_string_form, print_debug=print_debug,
+                                                            medical_vocabulary=medical_vocabulary)
 
     # returns list[Report] with everything BUT encoded and not_found initialized
     cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_string_form)
 
+    # split starts here
     if report_type is ReportType.PATHOLOGY:
         column_mappings = import_pdf_human_cols(pathology_paths["path_to_path_mappings"])
 
@@ -132,12 +130,13 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                                           print_debug=print_debug)
 
         if print_debug:
-            s = "\nPipeline process finished.\nStats:{}".format(stats)
-            print(s)
+            print("\nPipeline process finished.\nStats:{}".format(stats))
 
         return stats, autocorrect_df
 
     elif report_type is ReportType.OPERATIVE:
+        op_mappings = import_pdf_human_cols(operative_paths["path_op_mappings"])
+
         # and all the subsections are lists
         studies_with_general_extractions = get_general_extractions(list_reports=cleaned_emr)
 
