@@ -136,7 +136,6 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
     elif report_type is ReportType.OPERATIVE:
         op_mappings = import_pdf_human_cols(operative_paths["path_op_mappings"])
-
         # and all the subsections are lists
         studies_with_general_extractions = get_general_extractions(list_reports=cleaned_emr)
 
