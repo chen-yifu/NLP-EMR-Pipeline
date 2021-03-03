@@ -54,7 +54,7 @@ def clean_up_txt_list(uncleaned_txt: List[str]) -> List[str]:
             "\\" not in v and v != "\x0c" and "2020" not in v and "page" not in v.lower()]
 
 
-def general_extraction_per_subsection(unfiltered_str: list) -> dict:
+def general_extraction_per_subsection(unfiltered_str: str) -> dict:
     """
     Separates the string into col val pairs based on a colon.
 
@@ -62,39 +62,38 @@ def general_extraction_per_subsection(unfiltered_str: list) -> dict:
     :return:
     """
     unfiltered_extractions = {}
-    for subsection in unfiltered_str:
-        lines = clean_up_txt_list(subsection.split('\n')) + ["buffer"]
-        len_subsection = len(lines)
-        index = 0
-        rsf = ""
-        curr_col = ""
-        while index < len_subsection - 1:
-            curr_line = lines[index]
-            next_line = lines[index + 1]
-            colon_curr = curr_line.find(":")
-            colon_next = next_line.find(":")
-            # if both are not -1: this means both are col:val
-            if colon_curr != -1 and colon_next != -1:
-                unfiltered_extractions[remove_nums(clean_up_txt(curr_line[0:colon_curr]))] = clean_up_txt(
-                    curr_line[colon_curr + 1:])
-            # if current is negative -1 and next is positive
-            elif colon_curr == -1 and colon_next != -1:
-                rsf += " " + curr_line
-                unfiltered_extractions[remove_nums(clean_up_txt(curr_col))] = clean_up_txt(rsf)
-                rsf = ""
-                curr_col = ""
-            # current is not -1 and if next is negative -1
-            elif colon_curr != -1 and colon_next == -1:
-                curr_col = curr_line[0:colon_curr]
-                rsf += curr_line[colon_curr + 1:]
-            # both are -1
-            elif colon_curr == -1 and colon_next == -1:
-                rsf += " " + curr_line
-            # increment list lmao
-            index += 1
-        if rsf != "" and curr_col != "":
-            unfiltered_extractions[remove_nums(clean_up_txt(curr_col))] = clean_up_txt(
-                rsf)
+    lines = clean_up_txt_list(unfiltered_str.split('\n')) + ["buffer"]
+    len_subsection = len(lines)
+    index = 0
+    rsf = ""
+    curr_col = ""
+    while index < len_subsection - 1:
+        curr_line = lines[index]
+        next_line = lines[index + 1]
+        colon_curr = curr_line.find(":")
+        colon_next = next_line.find(":")
+        # if both are not -1: this means both are col:val
+        if colon_curr != -1 and colon_next != -1:
+            unfiltered_extractions[remove_nums(clean_up_txt(curr_line[0:colon_curr]))] = clean_up_txt(
+                curr_line[colon_curr + 1:])
+        # if current is negative -1 and next is positive
+        elif colon_curr == -1 and colon_next != -1:
+            rsf += " " + curr_line
+            unfiltered_extractions[remove_nums(clean_up_txt(curr_col))] = clean_up_txt(rsf)
+            rsf = ""
+            curr_col = ""
+        # current is not -1 and if next is negative -1
+        elif colon_curr != -1 and colon_next == -1:
+            curr_col = curr_line[0:colon_curr]
+            rsf += curr_line[colon_curr + 1:]
+        # both are -1
+        elif colon_curr == -1 and colon_next == -1:
+            rsf += " " + curr_line
+        # increment list lmao
+        index += 1
+    if rsf != "" and curr_col != "":
+        unfiltered_extractions[remove_nums(clean_up_txt(curr_col))] = clean_up_txt(
+            rsf)
     return unfiltered_extractions
 
 

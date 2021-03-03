@@ -75,7 +75,6 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
     # TODO use list of columns and for-loop to generate regex
     synoptic_report_regex = r"(Part\(s\) Involved:\s*(?P<parts_involved>((?!Synoptic Report)[\s\S])*)|SPECIMEN\s*-(?P<specimen>.+)|LYMPH ((?!Extent)[\s\S])*Extent:(?P<lymph_node_extent>.*)|TREATMENT EFFECT\s*-(?P<treatment_effect>.+)|MARGINS *\n *-(?P<margins>.*)|P *A *T *H *O *L *O *G *I *C *S *T *A *G *E *\s*-(?P<pathologic_stage>.*)|COMMENT\(S\)\s*-(?P<comments>((?!-|\nBased on AJCC)[\s\S])*))|(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!-|Part\(s\) Involved|SPECIMEN|MARGINS|TREATMENT EFFECT|LYMPH NODES|DCIS Estimated|P *A *T *H *|.* prepared by PLEXIA .*)[\s\S])*)"
     synoptic_report_regex = re.compile(synoptic_report_regex)
-    print([m for m in synoptic_report_regex.finditer(synoptic_report)])
     pairs = [(m.groupdict()) for m in synoptic_report_regex.finditer(synoptic_report)]
 
     def cleanse_column(col: str) -> str:

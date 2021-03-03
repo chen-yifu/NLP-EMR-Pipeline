@@ -1,5 +1,8 @@
 import re
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
+
+from pipeline.util.import_tools import import_pdf_human_cols, table
+from pipeline.util.utils import import_pdf_human_cols_as_dict
 
 
 def regex_extract(regex: str, uncleaned_txt: str) -> list:
@@ -76,8 +79,77 @@ def capture_laterality() -> str:
     return "yeet"
 
 
-def synoptic_regex() -> str:
-    return "yeet"
+def to_camel_or_underscore(col: str) -> str:
+    col = col.strip()
+    camelCase = ""
+    if len(col) > 32:
+        skip_curr = False
+        for index in range(len(col)):
+            if not skip_curr and index < 32:
+                curr_l = col[index]
+                try:
+                    next_l = col[index + 1]
+                except IndexError:
+                    next_l = ""
+                if curr_l == " ":
+                    camelCase += next_l.upper()
+                    skip_curr = True
+                else:
+                    camelCase += curr_l
+                    skip_curr = False
+            else:
+                skip_curr = False
+                continue
+        return camelCase.translate(table)
+    return col.lower().replace(" ", "_").translate(table)
+
+
+def prepend_punc(str_with_punc: str) -> str:
+    fixed_str = ""
+    punc = ("?", "(", ")")
+    for l in str_with_punc:
+        if l in punc:
+            fixed_str += "\\"
+        fixed_str += l
+    return fixed_str
+
+
+def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True,
+                           capture_only_first_line: bool = True, last_word: str = "") -> str:
+    col_keys = list(columns.keys())
+    length_of_keys = len(col_keys)
+    template_regex = r""
+    seen = set()
+    for index in range(length_of_keys - 1):
+        curr_cols = columns[col_keys[index]]
+        next_cols = columns[col_keys[index + 1]]
+        curr_col = prepend_punc(":|".join(curr_cols))
+        next_col = prepend_punc(":|".join(next_cols))
+        end_cap = ".+)"
+        if not capture_only_first_line:
+            end_cap = r"((?![^0-9]*{next_col})[\s\S])*)".format(next_col=next_col + ":")
+        front_cap = r"{curr_col}(?P<{curr_col_no_space}>".format(
+            curr_col=curr_col + ":" if len(curr_cols) == 1 else "(" + curr_col + ":)",
+            curr_col_no_space=to_camel_or_underscore(curr_col))
+        template_regex += front_cap + end_cap + "|"
+
+    # do last one
+    last_one = prepend_punc(":|".join(columns[col_keys[-1]]))
+    if last_word == "":
+        template_regex += r"{last_one}:(?P<{last_no_space}>.+)".format(last_one=last_one,
+                                                                       last_no_space=to_camel_or_underscore(last_one))
+    else:
+        end_cap = r"((?![^0-9]*{next_col})[\s\S])*)".format(next_col=last_word)
+        front_cap = r"{curr_col}:(?P<{curr_col_no_space}>".format(curr_col=last_one,
+                                                                  curr_col_no_space=to_camel_or_underscore(last_one))
+        template_regex += front_cap + end_cap
+
+    return "(?i)" + template_regex if ignore_caps else template_regex
+
+# https://regex101.com/r/b7OJnb/1
+print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/operative_column_mappings.csv",
+                                                           skip=["Immediate Reconstruction Mentioned", "Laterality"]),
+                             capture_only_first_line=False))
 
 
 def capture_double_regex(starting_word: List[Union[str, List[str]]],

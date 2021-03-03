@@ -94,7 +94,7 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
         merged_extractions = list(itertools.chain(*extracted_sections))
         if report_type is ReportType.OPERATIVE:
             laterality = lat if lat != "" else find_left_right_label(uncleaned_txt, report_type=report_type)
-            return [Report(text=merged_extractions,
+            return [Report(text="".join(merged_extractions),
                            report_id=report_id + laterality if is_bilateral else report_id,
                            laterality="left" if laterality == "L" else "right")]
         elif report_type is ReportType.PATHOLOGY:
