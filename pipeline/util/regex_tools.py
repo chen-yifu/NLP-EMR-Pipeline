@@ -117,31 +117,33 @@ def prepend_punc(str_with_punc: str) -> str:
 
 def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True,
                            capture_only_first_line: bool = True, last_word: str = "",
-                           add_generic_capture: bool = False) -> str:
+                           add_generic_capture: bool = False) -> Tuple[str, dict]:
     col_keys = list(columns.keys())
     length_of_keys = len(col_keys)
     template_regex = r""
-    seen = set()
+    mappings_to_regex_vals = {}
     cols_to_avoid = ""
     for index in range(length_of_keys - 1):
         curr_cols = columns[col_keys[index]]
         next_cols = columns[col_keys[index + 1]]
-        curr_col = prepend_punc(":|".join(curr_cols))
-        next_col = prepend_punc(":|".join(next_cols))
+        curr_col = prepend_punc("|".join(curr_cols))
+        next_col = prepend_punc("|".join(next_cols))
         end_cap = ".+)"
+        variablefied = to_camel_or_underscore(curr_col)
         cols_to_avoid += curr_col + "|"
         if not capture_only_first_line:
-            end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col + ":")
+            end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col + "")
         front_cap = r"{curr_col}(?P<{curr_col_no_space}>".format(
-            curr_col=curr_col if len(curr_cols) == 1 else "(" + curr_col + ":)",
-            curr_col_no_space=to_camel_or_underscore(curr_col))
+            curr_col=curr_col if len(curr_cols) == 1 else "(" + curr_col + ")",
+            curr_col_no_space=variablefied)
         template_regex += front_cap + end_cap + "|"
+        mappings_to_regex_vals[variablefied] = curr_cols
 
     # do last one
     last_one = prepend_punc(":|".join(columns[col_keys[-1]]))
     if last_word == "":
-        template_regex += r"{last_one}:(?P<{last_no_space}>.+)".format(last_one=last_one,
-                                                                       last_no_space=to_camel_or_underscore(last_one))
+        template_regex += r"{last_one}(?P<{last_no_space}>.+)".format(last_one=last_one,
+                                                                      last_no_space=to_camel_or_underscore(last_one))
     else:
         end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=last_word)
         front_cap = r"{curr_col}:(?P<{curr_col_no_space}>".format(curr_col=last_one,
@@ -152,13 +154,12 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
         template_regex += "|" + r"(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!{cols_to_avoid})[\s\S])*)".format(
             cols_to_avoid=cols_to_avoid)
 
-    return "(?i)" + template_regex if ignore_caps else template_regex
+    return "(?i)" + template_regex if ignore_caps else template_regex, mappings_to_regex_vals
 
 
-# https://regex101.com/r/b7OJnb/1
-# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/operative_column_mappings.csv",
-#                                                            skip=["Immediate Reconstruction Mentioned", "Laterality"]),
-#                              capture_only_first_line=False, add_generic_capture=True))
+def generic_capture_regex(negative_lookahead: str) -> str:
+    return r"(?i)(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!{negative_lookahead})[\s\S])*)".format(
+        negative_lookahead=negative_lookahead)
 
 
 def capture_double_regex(starting_word: List[Union[str, List[str]]],
@@ -236,8 +237,20 @@ pathology_synoptic_regex = [(capture_double_regex(["Synoptic Report: "], ["- End
 
 export_operative_regex = [preoperative_rational_regex, operative_breast_regex, operative_axilla_regex]
 export_pathology_regex = [pathology_synoptic_regex]
-export_operative_synoptic_regex = synoptic_capture_regex(
+# https://regex101.com/r/XWffCF/1
+export_operative_synoptic_regex, export_mappings_to_regex_vals = synoptic_capture_regex(
     import_pdf_human_cols_as_dict(get_full_path("data/utils/operative_column_mappings.csv"),
                                   skip=["Immediate Reconstruction Mentioned",
                                         "Laterality"]),
     capture_only_first_line=False)
+
+# https://regex101.com/r/XWffCF/1
+# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/operative_column_mappings.csv",
+#                                                            skip=["Immediate Reconstruction Mentioned", "Laterality"]),
+#                              capture_only_first_line=False))
+
+# https://regex101.com/r/aIH7z7/1
+export_generic_negative_lookahead = generic_capture_regex("[0-9]+\\.|\n+\\. .+")
+
+# https://regex101.com/r/lLvPFh/1
+export_single_generic = generic_capture_regex("^\\n")
