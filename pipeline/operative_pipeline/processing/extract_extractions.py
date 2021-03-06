@@ -1,13 +1,20 @@
 import re
 import string
 from typing import List, Dict
-
-from pipeline.util.regex_tools import synoptic_capture_regex, export_operative_synoptic_regex, \
-    export_generic_negative_lookahead
+from pipeline.util.regex_tools import export_operative_synoptic_regex, \
+    export_generic_negative_lookahead, export_mappings_to_regex_vals
 from pipeline.util.report import Report
-from pipeline.util.utils import import_pdf_human_cols_as_dict, get_full_path
+from nltk.corpus import stopwords
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
+stop_words = set(stopwords.words('english'))
+
+
+def clean_up_str(str_with_stopwords: str, remove_nums: bool = False) -> str:
+    str_with_stopwords = str_with_stopwords.replace("\n", "").lower().translate(table).strip()
+    if remove_nums:
+        str_with_stopwords = " ".join([w for w in str_with_stopwords.split() if w.isalpha()])
+    return " ".join([w for w in str_with_stopwords.split() if w not in stop_words])
 
 
 def clean_up_txt(txt: str) -> str:
@@ -102,35 +109,39 @@ def general_extraction_per_report(unfiltered_str: str) -> dict:
 
 
 def clean_pairs(filtered_pairs: Dict[str, str]) -> Dict[str, str]:
+    changed_keys_pairs = {}
     for key, val in filtered_pairs.items():
         splited = val.splitlines()
         split_by_newline = " ".join([splited[0]] + [l for l in splited[1:] if len(l) > 1 and ":" not in l])
         strip_stuff = [w.strip().translate(table).lower() for w in split_by_newline.split()]
         strip_not_alpha = " ".join([w for w in strip_stuff if w.isalpha() and len(w) > 1])
-        filtered_pairs[key] = strip_not_alpha
-    return filtered_pairs
+        changed_keys_pairs[export_mappings_to_regex_vals[key][-1].translate(table)] = strip_not_alpha
+    return changed_keys_pairs
 
 
-def get_extraction_via_regex(unfiltered_str: str) -> dict:
-    generic_extraction = re.compile(export_generic_negative_lookahead)
+def get_extraction_specific_regex(unfiltered_str: str) -> dict:
     synoptic_report_regex = re.compile(export_operative_synoptic_regex)
-    generic_pairs = [(m.groupdict()) for m in generic_extraction.finditer(unfiltered_str)]
     pairs = [(m.groupdict()) for m in synoptic_report_regex.finditer(unfiltered_str)]
-    filtered_generic_pairs = {}
-    for unfiltered_dict in generic_pairs:
-        unfiltered_dict = {k: v for k, v in unfiltered_dict.items() if v is not None}
-        filtered_generic_pairs.update(unfiltered_dict)
-    cleaned_generic_pairs = clean_pairs(filtered_generic_pairs)
-
     filtered_pairs = {}
     for unfiltered_dict in pairs:
         unfiltered_dict = {k: v for k, v in unfiltered_dict.items() if v is not None}
         filtered_pairs.update(unfiltered_dict)
     cleaned_pairs = clean_pairs(filtered_pairs)
-    print("generic")
-    print(generic_pairs)
     print("specific")
     print(cleaned_pairs)
+    return cleaned_pairs
+
+
+def generic_extraction_regex(unfiltered_str: str) -> dict:
+    regex = r"(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!^.+)[\s\S])*)"
+    matches = re.finditer(regex, unfiltered_str, re.MULTILINE)
+    generic_pairs = {}
+    for m in matches:
+        cleaned_column = clean_up_str(m["column"], remove_nums=True)
+        cleaned_value = clean_up_str(m["value"])
+        generic_pairs[cleaned_column] = cleaned_value
+    print("generic")
+    print(generic_pairs)
 
 
 def get_general_extractions(list_reports: List[Report]) -> List[Report]:
@@ -143,7 +154,7 @@ def get_general_extractions(list_reports: List[Report]) -> List[Report]:
 
     for study in list_reports:
         raw_extractions = study.text
-        get_extraction_via_regex(raw_extractions)
-        study.extractions = general_extraction_per_report(raw_extractions)
-        print("old\n" + str(study.extractions))
+        generic_extraction_regex(raw_extractions)
+        study.extractions = get_extraction_specific_regex(raw_extractions)
+        print("old\n" + str(general_extraction_per_report(raw_extractions)))
     return list_reports

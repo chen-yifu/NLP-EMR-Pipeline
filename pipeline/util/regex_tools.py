@@ -117,7 +117,7 @@ def prepend_punc(str_with_punc: str) -> str:
 
 def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True,
                            capture_only_first_line: bool = True, last_word: str = "",
-                           add_generic_capture: bool = False) -> Tuple[str, dict]:
+                           add_generic_capture: bool = False) -> Tuple[str, Dict[str, List[str]]]:
     col_keys = list(columns.keys())
     length_of_keys = len(col_keys)
     template_regex = r""
@@ -141,14 +141,16 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
 
     # do last one
     last_one = prepend_punc(":|".join(columns[col_keys[-1]]))
+    last_one_variable = to_camel_or_underscore(last_one)
     if last_word == "":
         template_regex += r"{last_one}(?P<{last_no_space}>.+)".format(last_one=last_one,
-                                                                      last_no_space=to_camel_or_underscore(last_one))
+                                                                      last_no_space=last_one_variable)
     else:
         end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=last_word)
         front_cap = r"{curr_col}:(?P<{curr_col_no_space}>".format(curr_col=last_one,
-                                                                  curr_col_no_space=to_camel_or_underscore(last_one))
+                                                                  curr_col_no_space=last_one_variable)
         template_regex += front_cap + end_cap
+    mappings_to_regex_vals[last_one_variable] = columns[col_keys[-1]]
 
     if add_generic_capture:
         template_regex += "|" + r"(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!{cols_to_avoid})[\s\S])*)".format(
@@ -158,7 +160,7 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
 
 
 def generic_capture_regex(negative_lookahead: str) -> str:
-    return r"(?i)(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!{negative_lookahead})[\s\S])*)".format(
+    return r"(?i)(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!{negative_lookahead})[\s\S])*)*".format(
         negative_lookahead=negative_lookahead)
 
 
@@ -244,13 +246,22 @@ export_operative_synoptic_regex, export_mappings_to_regex_vals = synoptic_captur
                                         "Laterality"]),
     capture_only_first_line=False)
 
+# https://regex101.com/r/RBWwBE/1
+export_pathology_synoptic_regex, export_pathology_mappings_to_regex_vals = synoptic_capture_regex(
+    import_pdf_human_cols_as_dict(get_full_path("data/utils/pathology_column_mappings.csv"), skip=["Study #"]))
+
 # https://regex101.com/r/XWffCF/1
 # print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/operative_column_mappings.csv",
 #                                                            skip=["Immediate Reconstruction Mentioned", "Laterality"]),
 #                              capture_only_first_line=False))
 
-# https://regex101.com/r/aIH7z7/1
-export_generic_negative_lookahead = generic_capture_regex("[0-9]+\\.|\n+\\. .+")
+# https://regex101.com/r/ppQb7E/1
+# remove the ^ to remove the left anchor
+export_generic_negative_lookahead = generic_capture_regex("^[0-9]+\\.|^\n+\\. .+")
 
 # https://regex101.com/r/lLvPFh/1
 export_single_generic = generic_capture_regex("^\\n")
+
+# https://regex101.com/r/013vC1/1
+# https://regex101.com/r/r4wOaZ/1
+export_anchor_char = generic_capture_regex("^.+")
