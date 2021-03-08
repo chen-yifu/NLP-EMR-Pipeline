@@ -9,12 +9,14 @@ from pathlib import Path
 from string import punctuation
 
 
-def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip: List[str] = []) -> Dict[str, List[str]]:
+def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip=None) -> Dict[str, List[str]]:
     """
     :param pdf_human_excel_sheet:
     :param skip:
     :return:
     """
+    if skip is None:
+        skip = []
     pdf_cols_human_cols_dict = {}
     pdf_cols_human_cols = pd.read_csv(pdf_human_excel_sheet)
     for index, row in pdf_cols_human_cols.iterrows():

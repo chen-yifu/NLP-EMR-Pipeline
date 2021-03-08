@@ -1,5 +1,6 @@
+import random
 import re
-from typing import List, Tuple, Union, Dict
+from typing import List, Tuple, Union, Dict, Set
 
 from pipeline.util.import_tools import import_pdf_human_cols, table
 from pipeline.util.utils import import_pdf_human_cols_as_dict, get_full_path
@@ -75,11 +76,7 @@ def add_asterisk(word: str) -> str:
     return re.sub(' +', ' ', result)
 
 
-def capture_laterality() -> str:
-    return "yeet"
-
-
-def to_camel_or_underscore(col: str) -> str:
+def to_camel_or_underscore(col: str, seen: set) -> Tuple[str, set]:
     col = col.strip()
     camelCase = ""
     if len(col) > 32:
@@ -100,13 +97,29 @@ def to_camel_or_underscore(col: str) -> str:
             else:
                 skip_curr = False
                 continue
-        return camelCase.translate(table)
-    return col.lower().replace(" ", "_").translate(table)
+        camelCase = camelCase.translate(table)
+    else:
+        camelCase = col.lower().translate(table).replace(" ", "_")
+    if camelCase not in seen:
+        seen.add(camelCase)
+        return camelCase, seen
+    else:
+        while camelCase in seen:
+            camelCase += str(random.randint(0, 9))
+        seen.add(camelCase)
+        return camelCase, seen
+
+
+random_set = set()
+random_set.add("yes")
+random_set.add("yes2")
+random_set.add("yes3")
+print(to_camel_or_underscore("yes", random_set))
 
 
 def prepend_punc(str_with_punc: str) -> str:
     fixed_str = ""
-    punc = ("?", "(", ")")
+    punc = ("?", "(", ")", "\\", "/")
     for l in str_with_punc:
         if l in punc:
             fixed_str += "\\" + l + "*"
@@ -116,21 +129,20 @@ def prepend_punc(str_with_punc: str) -> str:
 
 
 def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True,
-                           capture_only_first_line: bool = True, last_word: str = "",
-                           add_generic_capture: bool = False) -> Tuple[str, Dict[str, List[str]]]:
+                           capture_only_first_line: bool = True,
+                           last_word: str = "", list_multi_line_cols: list = []) -> Tuple[str, Dict[str, List[str]]]:
     col_keys = list(columns.keys())
     length_of_keys = len(col_keys)
     template_regex = r""
     mappings_to_regex_vals = {}
-    cols_to_avoid = ""
+    seen = set()
     for index in range(length_of_keys - 1):
         curr_cols = columns[col_keys[index]]
         next_cols = columns[col_keys[index + 1]]
         curr_col = prepend_punc("|".join(curr_cols))
         next_col = prepend_punc("|".join(next_cols))
         end_cap = ".+)"
-        variablefied = to_camel_or_underscore(curr_col)
-        cols_to_avoid += curr_col + "|"
+        variablefied, seen = to_camel_or_underscore(curr_col, seen)
         if not capture_only_first_line:
             end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col + "")
         front_cap = r"{curr_col}(?P<{curr_col_no_space}>".format(
@@ -141,7 +153,7 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
 
     # do last one
     last_one = prepend_punc(":|".join(columns[col_keys[-1]]))
-    last_one_variable = to_camel_or_underscore(last_one)
+    last_one_variable, seen = to_camel_or_underscore(last_one, seen)
     if last_word == "":
         template_regex += r"{last_one}(?P<{last_no_space}>.+)".format(last_one=last_one,
                                                                       last_no_space=last_one_variable)
@@ -152,11 +164,25 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
         template_regex += front_cap + end_cap
     mappings_to_regex_vals[last_one_variable] = columns[col_keys[-1]]
 
-    if add_generic_capture:
-        template_regex += "|" + r"(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!{cols_to_avoid})[\s\S])*)".format(
-            cols_to_avoid=cols_to_avoid)
+    if len(list_multi_line_cols) > 0:
+        for col in list_multi_line_cols:
+            col_var, seen = to_camel_or_underscore(col, seen)
+            multi_line_regex = r"{column}\s*-(?P<{col_var}>.+)".format(column=col.lower(), col_var=col_var)
+            template_regex += "|" + multi_line_regex
+            mappings_to_regex_vals[col_var] = [col]
 
     return "(?i)" + template_regex if ignore_caps else template_regex, mappings_to_regex_vals
+
+
+# https://regex101.com/r/8lSqTn/1
+print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
+                                                           skip=["Study #", "Pathologic Stage"]),
+                             list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
+                                                   "comment(s)"])[0] + "\n")
+print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
+                                                           skip=["Study #", "Pathologic Stage"]),
+                             list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
+                                                   "comment(s)"])[1])
 
 
 def generic_capture_regex(negative_lookahead: str) -> str:
@@ -248,12 +274,15 @@ export_operative_synoptic_regex, export_mappings_to_regex_vals = synoptic_captur
 
 # https://regex101.com/r/RBWwBE/1
 export_pathology_synoptic_regex, export_pathology_mappings_to_regex_vals = synoptic_capture_regex(
-    import_pdf_human_cols_as_dict(get_full_path("data/utils/pathology_column_mappings.csv"), skip=["Study #"]))
+    import_pdf_human_cols_as_dict(get_full_path("data/utils/pathology_column_mappings.csv"),
+                                  skip=["Study #", "PATHOLOGIC STAGE"]),
+    list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE", "comment(s)"])
 
 # https://regex101.com/r/XWffCF/1
-# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/operative_column_mappings.csv",
-#                                                            skip=["Immediate Reconstruction Mentioned", "Laterality"]),
-#                              capture_only_first_line=False))
+print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
+                                                           skip=["Study #", "PATHOLOGIC STAGE"]),
+                             list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
+                                                   "comment(s)"]))
 
 # https://regex101.com/r/ppQb7E/1
 # remove the ^ to remove the left anchor
