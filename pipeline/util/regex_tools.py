@@ -273,6 +273,7 @@ export_operative_synoptic_regex, export_mappings_to_regex_vals = synoptic_captur
     capture_only_first_line=False)
 
 # https://regex101.com/r/RBWwBE/1
+# https://regex101.com/r/Gk4xv9/1
 export_pathology_synoptic_regex, export_pathology_mappings_to_regex_vals = synoptic_capture_regex(
     import_pdf_human_cols_as_dict(get_full_path("data/utils/pathology_column_mappings.csv"),
                                   skip=["Study #", "PATHOLOGIC STAGE"]),
