@@ -119,8 +119,8 @@ def clean_pairs(filtered_pairs: Dict[str, str]) -> Dict[str, str]:
     return changed_keys_pairs
 
 
-def get_extraction_specific_regex(unfiltered_str: str) -> dict:
-    synoptic_report_regex = re.compile(export_operative_synoptic_regex)
+def get_extraction_specific_regex(unfiltered_str: str,
+                                  synoptic_report_regex=re.compile(export_operative_synoptic_regex)) -> dict:
     pairs = [(m.groupdict()) for m in synoptic_report_regex.finditer(unfiltered_str)]
     filtered_pairs = {}
     for unfiltered_dict in pairs:
@@ -132,8 +132,8 @@ def get_extraction_specific_regex(unfiltered_str: str) -> dict:
     return cleaned_pairs
 
 
-def generic_extraction_regex(unfiltered_str: str) -> dict:
-    regex = r"(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!^.+)[\s\S])*)"
+def get_generic_extraction_regex(unfiltered_str: str,
+                                 regex: str = r"(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!^.+)[\s\S])*)") -> dict:
     matches = re.finditer(regex, unfiltered_str, re.MULTILINE)
     generic_pairs = {}
     for m in matches:
@@ -154,7 +154,7 @@ def get_general_extractions(list_reports: List[Report]) -> List[Report]:
 
     for study in list_reports:
         raw_extractions = study.text
-        generic_extraction_regex(raw_extractions)
+        get_generic_extraction_regex(raw_extractions)
         study.extractions = get_extraction_specific_regex(raw_extractions)
         print("old\n" + str(general_extraction_per_report(raw_extractions)))
     return list_reports

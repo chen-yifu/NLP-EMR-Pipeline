@@ -31,7 +31,7 @@ def add_report_id(report: Report) -> dict:
     return new_dict
 
 
-def change_unfiltered_to_dict(report):
+def change_unfiltered_to_dict(report) -> dict:
     """
     Changing the report into one dictionary to be converted into a dataframe
 

@@ -3,6 +3,7 @@ from nltk.corpus import stopwords
 import pandas as pd
 from nltk import edit_distance
 from pipeline.util import utils
+from pipeline.util.utils import get_full_path
 
 
 def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True,
@@ -136,13 +137,13 @@ def find_category(index: int, category_dict: list, stage: str) -> (str, int):
     return stage[index], 0
 
 
-def find_pathologic_stage(stage: str, path_to_stages) -> str:
+def find_pathologic_stage(stage: str) -> str:
     """
     :param stage: str
     :return edited_stage: str
     """
     stage = stage.replace("\n", " ").strip()
-    categories_dict = categories(path_to_stages)
+    categories_dict = categories(get_full_path("data/utils/stages.csv"))
     # categories("stages.csv")
     edited_stage = ""
     to_skip = 0
