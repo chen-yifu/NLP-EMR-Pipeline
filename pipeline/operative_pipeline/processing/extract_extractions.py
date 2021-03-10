@@ -1,6 +1,6 @@
 import re
 import string
-from typing import List, Dict
+from typing import List, Dict, Pattern
 from pipeline.util.regex_tools import export_operative_synoptic_regex, \
     export_generic_negative_lookahead, export_mappings_to_regex_vals
 from pipeline.util.report import Report
@@ -108,28 +108,29 @@ def general_extraction_per_report(unfiltered_str: str) -> dict:
     return unfiltered_extractions
 
 
-def clean_pairs(filtered_pairs: Dict[str, str]) -> Dict[str, str]:
+def clean_pairs(filtered_pairs: Dict[str, str], mappings: Dict[str, List[str]]) -> Dict[str, str]:
     changed_keys_pairs = {}
     for key, val in filtered_pairs.items():
         splited = val.splitlines()
         split_by_newline = " ".join([splited[0]] + [l for l in splited[1:] if len(l) > 1 and ":" not in l])
         strip_stuff = [w.strip().translate(table).lower() for w in split_by_newline.split()]
         strip_not_alpha = " ".join([w for w in strip_stuff if w.isalpha() and len(w) > 1])
-        changed_keys_pairs[export_mappings_to_regex_vals[key][-1].translate(table)] = strip_not_alpha
+        changed_keys_pairs[mappings[key][-1].translate(table)] = strip_not_alpha
     return changed_keys_pairs
 
 
 def get_extraction_specific_regex(unfiltered_str: str,
-                                  synoptic_report_regex=re.compile(export_operative_synoptic_regex)) -> dict:
+                                  mappings: Dict[str, List[str]],
+                                  synoptic_report_regex: Pattern[str]) -> dict:
     pairs = [(m.groupdict()) for m in synoptic_report_regex.finditer(unfiltered_str)]
     filtered_pairs = {}
     for unfiltered_dict in pairs:
         unfiltered_dict = {k: v for k, v in unfiltered_dict.items() if v is not None}
         filtered_pairs.update(unfiltered_dict)
-    cleaned_pairs = clean_pairs(filtered_pairs)
+    # cleaned_pairs = clean_pairs(filtered_pairs, mappings)
     print("specific")
-    print(cleaned_pairs)
-    return cleaned_pairs
+    print(filtered_pairs)
+    return filtered_pairs
 
 
 def get_generic_extraction_regex(unfiltered_str: str,
@@ -140,8 +141,8 @@ def get_generic_extraction_regex(unfiltered_str: str,
         cleaned_column = clean_up_str(m["column"], remove_nums=True)
         cleaned_value = clean_up_str(m["value"])
         generic_pairs[cleaned_column] = cleaned_value
-    print("generic")
-    print(generic_pairs)
+    # print("generic")
+    # print(generic_pairs)
 
 
 def get_general_extractions(list_reports: List[Report]) -> List[Report]:

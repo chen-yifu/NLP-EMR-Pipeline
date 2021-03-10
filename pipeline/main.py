@@ -23,9 +23,9 @@ from pipeline.pathology_pipeline.pathology_pipeline import run_pathology_pipelin
 #
 # run_working_pipeline()
 
-run_pipeline(start=101, end=156, skip=[140], report_type=ReportType.PATHOLOGY)
+run_pipeline(start=101, end=156, skip=[140], report_type=ReportType.NUMERICAL)
 
-run_pipeline(start=1, end=48, skip=[22, 43], report_type=ReportType.OPERATIVE)
+# run_pipeline(start=1, end=48, skip=[22, 43], report_type=ReportType.TEXT)
 
 
 

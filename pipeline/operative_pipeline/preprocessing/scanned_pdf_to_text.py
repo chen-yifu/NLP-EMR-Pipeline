@@ -75,7 +75,7 @@ def load_in_txts(start: int, end: int, skip: List[int], paths_to_texts: List[str
         if text_path[-3:] == "txt":
             emr_file_text = open(text_path, "r")
             emr_text = emr_file_text.read()
-            emr_study_id.append(Report(text=emr_text, report_id=str(num), report_type=ReportType.OPERATIVE))
+            emr_study_id.append(Report(text=emr_text, report_id=str(num), report_type=ReportType.TEXT))
             emr_file_text.close()
         elif text_path[-3:] == "pdf":
             # extract text
@@ -89,8 +89,7 @@ def load_in_txts(start: int, end: int, skip: List[int], paths_to_texts: List[str
             if do_preprocessing:
                 pdf_text_str = preprocess_remove_extra_text(pdf_text_str)
             # append result for this iteration
-            print(pdf_text_str)
-            emr_study_id.append(Report(text=pdf_text_str, report_id=str(num), report_type=ReportType.PATHOLOGY))
+            emr_study_id.append(Report(text=pdf_text_str, report_id=str(num), report_type=ReportType.NUMERICAL))
         else:
             print("File must be in either pdf format or text format for extraction!")
     return emr_study_id

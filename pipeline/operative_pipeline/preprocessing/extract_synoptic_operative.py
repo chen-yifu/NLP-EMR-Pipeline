@@ -92,18 +92,18 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
 
     elif all(len(single_section) == 1 for single_section in extracted_sections):
         merged_extractions = list(itertools.chain(*extracted_sections))
-        if report_type is ReportType.OPERATIVE:
+        if report_type is ReportType.TEXT:
             laterality = lat if lat != "" else find_left_right_label(uncleaned_txt, report_type=report_type)
             return [Report(text="".join(merged_extractions),
                            report_id=report_id + laterality if is_bilateral else report_id,
                            laterality="left" if laterality == "L" else "right")]
-        elif report_type is ReportType.PATHOLOGY:
+        elif report_type is ReportType.NUMERICAL:
             return [Report(text=merged_extractions[0], report_id=report_id)]
 
     elif any(len(single_section) > 1 for single_section in extracted_sections):
-        if report_type is ReportType.OPERATIVE:
+        if report_type is ReportType.TEXT:
             return split_report_find_left_right_operative()
-        elif report_type is ReportType.PATHOLOGY:
+        elif report_type is ReportType.NUMERICAL:
             return split_report_find_left_right_pathlogy(extracted_sections[0])
 
 
@@ -118,7 +118,7 @@ def clean_up_reports(emr_text: List[Report]) -> Tuple[List[Report], List[str]]:
     report_and_id = []
     for report in emr_text:
         text = report.text
-        list_of_regex = export_operative_regex if report.report_type is ReportType.OPERATIVE else export_pathology_regex
+        list_of_regex = export_operative_regex if report.report_type is ReportType.TEXT else export_pathology_regex
         extracted_reports = extract_synoptic_report(uncleaned_txt=text, report_id=report.report_id,
                                                     list_of_regex=list_of_regex, report_type=report.report_type)
         if isinstance(extracted_reports, str):

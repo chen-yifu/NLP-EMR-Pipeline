@@ -21,7 +21,7 @@ def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip=None) -> Dict
     pdf_cols_human_cols = pd.read_csv(pdf_human_excel_sheet)
     for index, row in pdf_cols_human_cols.iterrows():
         human_col = row[1]
-        if human_col in skip:
+        if human_col.lower() in skip:
             continue
         else:
             pdf_cols = row[0]

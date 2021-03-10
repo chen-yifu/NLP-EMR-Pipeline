@@ -11,11 +11,13 @@ from pipeline.operative_pipeline.processing.extract_extractions import get_gener
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
-from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
+from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces, \
+    find_pathologic_stage
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols, import_code_book, get_input_paths
 from pipeline.util.paths import export_operative_paths, export_pathology_paths
+from pipeline.util.regex_tools import export_pathology_synoptic_regex
 from pipeline.util.report_type import ReportType
 from pipeline.util.utils import find_all_vocabulary
 
@@ -69,7 +71,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
     # the pdfs are converted into text files which is read into the pipeline with this function.
     # returns list[Report] with only report and id and report type
-    correct_paths_to_reports = operative_text_paths if report_type is ReportType.OPERATIVE else pathology_pdf_paths
+    correct_paths_to_reports = operative_text_paths if report_type is ReportType.TEXT else pathology_pdf_paths
     reports_string_form = load_in_txts(start=start, end=end, skip=skip, paths_to_texts=correct_paths_to_reports)
 
     medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
@@ -84,7 +86,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_string_form)
 
     # split starts here
-    if report_type is ReportType.PATHOLOGY:
+    if report_type is ReportType.NUMERICAL:
         column_mappings = import_pdf_human_cols(pathology_paths["path_to_path_mappings"])
 
         # this is the str of PDFs that do not contain any Synoptic Report section
@@ -101,6 +103,17 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                 s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
                 print(s)
 
+        print(export_pathology_synoptic_regex)
+        # filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
+        #                                                              column_mappings,
+        #                                                              print_debug=print_debug,
+        #                                                              max_edit_distance_missing=max_edit_distance_missing,
+        #                                                              max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
+        #                                                              substitution_cost=substitution_cost_path,
+        #                                                              specific_regex=export_pathology_synoptic_regex,
+        #                                                              general_regex=r"(?P<column>.*):(?P<value>.*)",
+        #                                                              tools={"pathologic stage": find_pathologic_stage})
+
         filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
                                                                      column_mappings,
                                                                      path_to_stages=pathology_paths["path_to_stages"],
@@ -109,8 +122,6 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                                                                      max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
                                                                      substitution_cost=substitution_cost_path,
                                                                      pickle_path=pathology_paths["pickle_path"])
-
-        filtered_reports = [report for report in filtered_reports if report.extractions]  # remove None from list
 
         final_diagnosis_reports = []
 
@@ -134,7 +145,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
         return stats, autocorrect_df
 
-    elif report_type is ReportType.OPERATIVE:
+    elif report_type is ReportType.TEXT:
         op_mappings = import_pdf_human_cols(operative_paths["path_op_mappings"])
         # and all the subsections are lists
         studies_with_general_extractions = get_general_extractions(list_reports=cleaned_emr)

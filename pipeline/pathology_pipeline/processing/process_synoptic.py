@@ -49,7 +49,7 @@ def process_synoptics_and_ids(unfiltered_reports, column_mappings, path_to_stage
         s = "Auto-correct Information:\n" + df.to_string()
         print(s)
 
-    return result, df
+    return [report for report in result if report.extractions], df
 
 
 def process_synoptic_section(synoptic_report, study_id, column_mappings, df, path_to_stages, pickle_path,
@@ -125,7 +125,7 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
         elif pair["treatment_effect"]:
             result["treatment effect"] = cleanse_value(pair["treatment_effect"])
         elif pair["pathologic_stage"]:
-            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"], path_to_stages=path_to_stages)
+            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"])
         elif pair["comments"]:
             result["comments"] = cleanse_value(pair["comments"])
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
