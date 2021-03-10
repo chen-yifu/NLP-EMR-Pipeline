@@ -175,14 +175,14 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
 
 
 # https://regex101.com/r/8lSqTn/1
-print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
-                                                           skip=["Study #", "Pathologic Stage"]),
-                             list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
-                                                   "comment(s)"])[0] + "\n")
-print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
-                                                           skip=["Study #", "Pathologic Stage"]),
-                             list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
-                                                   "comment(s)"])[1])
+# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
+#                                                            skip=["Study #", "Pathologic Stage"]),
+#                              list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
+#                                                    "comment(s)"])[0] + "\n")
+# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
+#                                                            skip=["Study #", "Pathologic Stage"]),
+#                              list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
+#                                                    "comment(s)"])[1])
 
 
 def generic_capture_regex(negative_lookahead: str) -> str:
@@ -280,10 +280,10 @@ export_pathology_synoptic_regex, export_pathology_mappings_to_regex_vals = synop
     list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE", "comment(s)"])
 
 # https://regex101.com/r/XWffCF/1
-print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
-                                                           skip=["Study #", "PATHOLOGIC STAGE"]),
-                             list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
-                                                   "comment(s)"]))
+# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
+#                                                            skip=["Study #", "PATHOLOGIC STAGE"]),
+#                              list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
+#                                                    "comment(s)"]))
 
 # https://regex101.com/r/ppQb7E/1
 # remove the ^ to remove the left anchor

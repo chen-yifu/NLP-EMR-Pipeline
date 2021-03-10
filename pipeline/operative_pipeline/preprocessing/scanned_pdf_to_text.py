@@ -89,7 +89,6 @@ def load_in_txts(start: int, end: int, skip: List[int], paths_to_texts: List[str
             if do_preprocessing:
                 pdf_text_str = preprocess_remove_extra_text(pdf_text_str)
             # append result for this iteration
-            print(pdf_text_str)
             emr_study_id.append(Report(text=pdf_text_str, report_id=str(num), report_type=ReportType.PATHOLOGY))
         else:
             print("File must be in either pdf format or text format for extraction!")

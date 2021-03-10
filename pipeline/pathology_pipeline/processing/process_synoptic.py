@@ -125,7 +125,7 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
         elif pair["treatment_effect"]:
             result["treatment effect"] = cleanse_value(pair["treatment_effect"])
         elif pair["pathologic_stage"]:
-            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"], path_to_stages=path_to_stages)
+            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"])
         elif pair["comments"]:
             result["comments"] = cleanse_value(pair["comments"])
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
