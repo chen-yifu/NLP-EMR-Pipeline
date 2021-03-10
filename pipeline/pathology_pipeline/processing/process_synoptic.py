@@ -129,9 +129,7 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
         elif pair["comments"]:
             result["comments"] = cleanse_value(pair["comments"])
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
-    correct_col_names = []
-    for (pdf_col, excel_col) in column_mappings:
-        correct_col_names.append(pdf_col)
+    correct_col_names = [pdf_col for (pdf_col, excel_col) in column_mappings]
     # if too many columns are missing, we probably isolated a section with unexpected template, so return nothing and exclude from result
     columns_found = [k.lower() for k in result.keys() if k and result[k] != ""]
     columns_missing = list(set(correct_col_names) - set(columns_found))
