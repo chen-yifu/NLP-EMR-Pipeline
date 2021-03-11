@@ -44,7 +44,7 @@ def get_generic_extraction_regex(unfiltered_str: str, regex: str) -> dict:
     return generic_pairs
 
 
-def cleanse_column(col: str) -> str:
+def cleanse_column(col: str, remove_num: bool = False) -> str:
     """
     cleanse the column by removing "-" and ":"
     :param col:      raw column
@@ -52,7 +52,9 @@ def cleanse_column(col: str) -> str:
     """
     col = re.sub(r"^\s*-\s*", "", col)  # remove "-"
     col = re.sub(r":\s*$", "", col)  # remove ":"
-    return col.strip().lower()
+    if remove_num:
+        return " ".join([w for w in col.split() if w.isalpha()]).lower().strip().translate(table)
+    return col.strip().lower().translate(table)
 
 
 def cleanse_value(val: str, remove_nums: bool = False, function=None) -> str:
@@ -147,7 +149,7 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     changed_keys_pairs = {}
 
     for key, val in specific_pairs.items():
-        val = cleanse_value(val, function=tools['key']) if key in tools else cleanse_value(val)
+        val = cleanse_value(val, function=tools[key]) if key in tools else cleanse_value(val)
         changed_keys_pairs[regex_mappings[key][-1].translate(table)] = val
 
     # output placeholder
@@ -181,7 +183,7 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     generic_pairs = get_generic_extraction_regex(synoptic_report_str, general_regex)
 
     # resolve redundant spaces caused by OCR
-    for col,val in generic_pairs.items():
+    for col, val in generic_pairs.items():
         nearest_column = find_nearest_alternative(col,
                                                   columns_missing,
                                                   study_id,
@@ -260,7 +262,7 @@ def find_nearest_alternative(original_col, possible_candidates: List[str], study
     """
     # get a list of excluded source-target column name pairs that we saved earlier
     possible_candidates = list(set(possible_candidates) - set(excluded_columns))
-
+    original_col = cleanse_column(original_col, remove_num=True)
     min_dist = float("inf")
     res = None
     for c in possible_candidates:
