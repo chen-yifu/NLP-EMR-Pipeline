@@ -75,7 +75,11 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
     # TODO use list of columns and for-loop to generate regex
     synoptic_report_regex = r"(Part\(s\) Involved:\s*(?P<parts_involved>((?!Synoptic Report)[\s\S])*)|SPECIMEN\s*-(?P<specimen>.+)|LYMPH ((?!Extent)[\s\S])*Extent:(?P<lymph_node_extent>.*)|TREATMENT EFFECT\s*-(?P<treatment_effect>.+)|MARGINS *\n *-(?P<margins>.*)|P *A *T *H *O *L *O *G *I *C *S *T *A *G *E *\s*-(?P<pathologic_stage>.*)|COMMENT\(S\)\s*-(?P<comments>((?!-|\nBased on AJCC)[\s\S])*))|(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!-|Part\(s\) Involved|SPECIMEN|MARGINS|TREATMENT EFFECT|LYMPH NODES|DCIS Estimated|P *A *T *H *|.* prepared by PLEXIA .*)[\s\S])*)"
     synoptic_report_regex = re.compile(synoptic_report_regex)
+    filtered_pairs = []
     pairs = [(m.groupdict()) for m in synoptic_report_regex.finditer(synoptic_report)]
+    for unfiltered_dict in pairs:
+        unfiltered_dict = {k: v for k, v in unfiltered_dict.items() if v is not None}
+        filtered_pairs.append(unfiltered_dict)
 
     def cleanse_column(col: str) -> str:
         """
@@ -102,32 +106,49 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
     result["study_id"] = study_id
 
     # iterate through generic matches of the pattern "- col_name: value"
-    for pair in pairs:
-        if pair["column"] and len(pair["value"].strip()) > 0:
-            clean_column = cleanse_column(pair["column"])
-            clean_value = cleanse_value(pair["value"])
-            keys = list(result.keys())
-            if clean_column in keys:  # check for duplicated column name
-                result[utils.get_next_col_name(clean_column, keys)] = clean_value
-            else:
-                result[clean_column] = clean_value
+    for pair in filtered_pairs:
+        try:
+            if pair["column"] and len(pair["value"].strip()) > 0:
+                clean_column = cleanse_column(pair["column"])
+                clean_value = cleanse_value(pair["value"])
+                keys = list(result.keys())
+                if clean_column in keys:  # check for duplicated column name
+                    result[utils.get_next_col_name(clean_column, keys)] = clean_value
+                else:
+                    result[clean_column] = clean_value
+        except KeyError:
+            print("oopsie!")
     # iterate through pre-programmed targeted matches that were skipped in the for-loop above
-    for pair in pairs:
-        if pair["specimen"]:
+    for pair in filtered_pairs:
+        if "specimen" in pair:
             result["specimen"] = cleanse_value(pair["specimen"])
-        elif pair["margins"]:
+            print(pair)
+            print("specimen")
+        elif "margins" in pair:
             # intentional no-space in "dcismargins", this ensures exact match with be given priority
             result["dcismargins"] = cleanse_value(pair["margins"])
-        elif pair["parts_involved"]:
+            print(pair)
+            print("dcismargins")
+        elif "parts_involved" in pair:
             result["part(s) involved"] = cleanse_value(pair["parts_involved"])
-        elif pair["lymph_node_extent"]:
+            print(pair)
+            print("parts_involved")
+        elif "lymph_node_extent" in pair:
             result["lymph_node_extent"] = cleanse_value(pair["lymph_node_extent"])
-        elif pair["treatment_effect"]:
+            print(pair)
+            print("lymph_node_extent")
+        elif "treatment_effect" in pair:
             result["treatment effect"] = cleanse_value(pair["treatment_effect"])
-        elif pair["pathologic_stage"]:
+            print(pair)
+            print("treatment_effect")
+        elif "pathologic_stage" in pair:
             result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"])
-        elif pair["comments"]:
+            print(pair)
+            print("pathologic_stage")
+        elif "comments" in pair:
             result["comments"] = cleanse_value(pair["comments"])
+            print(pair)
+            print("comments")
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
     correct_col_names = [pdf_col for (pdf_col, excel_col) in column_mappings]
     # if too many columns are missing, we probably isolated a section with unexpected template, so return nothing and exclude from result
@@ -242,7 +263,8 @@ def autocorrect_columns(correct_col_names, dictionary, study_id, df, pickle_path
     return dictionary
 
 
-def find_nearest_alternative(source, possible_candidates, study_id, value, df, pickle_path, max_edit_distance=2,
+def find_nearest_alternative(source, possible_candidates, study_id, value, df,
+                             pickle_path, max_edit_distance=2,
                              substitution_cost=1):
     """
     find the nearest alternative by choosing the element in possible_candidates with nearest edit distance to source
@@ -258,6 +280,7 @@ def find_nearest_alternative(source, possible_candidates, study_id, value, df, p
 
     # get a list of excluded source-target column name pairs that we saved earlier
     all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path)
+    print("the pickle data lmao: " + str(all_excluded_columns))
     excluded_columns = [tupl[1] for tupl in all_excluded_columns if tupl[0] == source]
     possible_candidates = list(set(possible_candidates) - set(excluded_columns))
 

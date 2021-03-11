@@ -14,10 +14,11 @@ from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_f
 from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces, \
     find_pathologic_stage
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
-from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
+from pipeline.pathology_pipeline.processing.process_synoptic_general import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols, import_code_book, get_input_paths
 from pipeline.util.paths import export_operative_paths, export_pathology_paths
-from pipeline.util.regex_tools import export_pathology_synoptic_regex
+from pipeline.util.regex_tools import export_pathology_synoptic_regex, export_operative_synoptic_regex, \
+    export_mappings_to_regex_vals
 from pipeline.util.report_type import ReportType
 from pipeline.util.utils import find_all_vocabulary
 
@@ -114,18 +115,18 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
         #                                                              general_regex=r"(?P<column>.*):(?P<value>.*)",
         #                                                              tools={"pathologic stage": find_pathologic_stage})
 
-        filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
-                                                                     column_mappings,
-                                                                     path_to_stages=pathology_paths["path_to_stages"],
-                                                                     print_debug=print_debug,
-                                                                     max_edit_distance_missing=max_edit_distance_missing,
-                                                                     max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
-                                                                     substitution_cost=substitution_cost_path,
-                                                                     pickle_path=pathology_paths["pickle_path"])
+        # filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
+        #                                                              column_mappings,
+        #                                                              path_to_stages=pathology_paths["path_to_stages"],
+        #                                                              print_debug=print_debug,
+        #                                                              max_edit_distance_missing=max_edit_distance_missing,
+        #                                                              max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
+        #                                                              substitution_cost=substitution_cost_path,
+        #                                                              pickle_path=pathology_paths["pickle_path"])
 
         final_diagnosis_reports = []
 
-        all_reports = filtered_reports + final_diagnosis_reports
+        all_reports = [] + final_diagnosis_reports
         df_raw = save_dictionaries_into_csv_raw(all_reports,
                                                 column_mappings,
                                                 csv_path=pathology_paths["csv_path_raw"],
@@ -143,23 +144,23 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
         if print_debug:
             print("\nPipeline process finished.\nStats:{}".format(stats))
 
-        return stats, autocorrect_df
+        return stats, []
 
     elif report_type is ReportType.TEXT:
         op_mappings = import_pdf_human_cols(operative_paths["path_op_mappings"])
         # and all the subsections are lists
-        studies_with_general_extractions = get_general_extractions(list_reports=cleaned_emr)
+        extractions, df_with_stats = process_synoptics_and_ids(unfiltered_reports=cleaned_emr,
+                                                               column_mappings=op_mappings,
+                                                               specific_regex=export_operative_synoptic_regex,
+                                                               general_regex=r"(?P<column>.*):(?P<value>.*)",
+                                                               regex_mappings=export_mappings_to_regex_vals)
 
         # raw to spreadsheet, no altering has been done
-        reports_to_spreadsheet(studies_with_general_extractions, type_of_report="unfiltered_reports",
+        reports_to_spreadsheet(extractions, type_of_report="unfiltered_reports",
                                path_to_output=operative_paths["path_to_output"],
                                function=change_unfiltered_to_dict)
 
-        for report in studies_with_general_extractions:
-            print(report.report_id)
-            print(report.extractions)
-
-        studies_with_cleaned_extractions = extract_cols(reports=studies_with_general_extractions,
+        studies_with_cleaned_extractions = extract_cols(reports=extractions,
                                                         pdf_human_cols=op_mappings)
         # turning raw text values into spreadsheet
         raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols=op_mappings,

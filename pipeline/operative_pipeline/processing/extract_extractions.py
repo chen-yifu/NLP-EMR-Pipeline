@@ -108,7 +108,7 @@ def general_extraction_per_report(unfiltered_str: str) -> dict:
     return unfiltered_extractions
 
 
-def clean_pairs(filtered_pairs: Dict[str, str], mappings: Dict[str, List[str]]) -> Dict[str, str]:
+def match_pairs(filtered_pairs: Dict[str, str], mappings: Dict[str, List[str]]) -> Dict[str, str]:
     changed_keys_pairs = {}
     for key, val in filtered_pairs.items():
         splited = val.splitlines()
@@ -127,10 +127,7 @@ def get_extraction_specific_regex(unfiltered_str: str,
     for unfiltered_dict in pairs:
         unfiltered_dict = {k: v for k, v in unfiltered_dict.items() if v is not None}
         filtered_pairs.update(unfiltered_dict)
-    # cleaned_pairs = clean_pairs(filtered_pairs, mappings)
-    print("specific")
-    print(filtered_pairs)
-    return filtered_pairs
+    return match_pairs(filtered_pairs, mappings)
 
 
 def get_generic_extraction_regex(unfiltered_str: str,
@@ -141,8 +138,7 @@ def get_generic_extraction_regex(unfiltered_str: str,
         cleaned_column = clean_up_str(m["column"], remove_nums=True)
         cleaned_value = clean_up_str(m["value"])
         generic_pairs[cleaned_column] = cleaned_value
-    # print("generic")
-    # print(generic_pairs)
+    return generic_pairs
 
 
 def get_general_extractions(list_reports: List[Report]) -> List[Report]:
