@@ -152,7 +152,7 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
 
     # output placeholder
     result = defaultdict(str)
-    result.update(specific_pairs)
+    result.update(changed_keys_pairs)
 
     # save study_id
     result["study_id"] = study_id
