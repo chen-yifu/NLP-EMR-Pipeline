@@ -110,13 +110,6 @@ def to_camel_or_underscore(col: str, seen: set) -> Tuple[str, set]:
         return camelCase, seen
 
 
-random_set = set()
-random_set.add("yes")
-random_set.add("yes2")
-random_set.add("yes3")
-print(to_camel_or_underscore("yes", random_set))
-
-
 def prepend_punc(str_with_punc: str) -> str:
     fixed_str = ""
     punc = ("?", "(", ")", "\\", "/")
@@ -266,27 +259,9 @@ pathology_synoptic_regex = [(capture_double_regex(["Synoptic Report: "], ["- End
 
 export_operative_regex = [preoperative_rational_regex, operative_breast_regex, operative_axilla_regex]
 export_pathology_regex = [pathology_synoptic_regex]
-# https://regex101.com/r/XWffCF/1
-export_operative_synoptic_regex, export_mappings_to_regex_vals = synoptic_capture_regex(
-    import_pdf_human_cols_as_dict(get_full_path("data/utils/operative_column_mappings.csv"),
-                                  skip=["Immediate Reconstruction Mentioned",
-                                        "Laterality"]),
-    capture_only_first_line=False)
-
-# https://regex101.com/r/RBWwBE/1
-# https://regex101.com/r/Gk4xv9/1
-export_pathology_synoptic_regex, export_pathology_mappings_to_regex_vals = synoptic_capture_regex(
-    import_pdf_human_cols_as_dict(get_full_path("data/utils/pathology_column_mappings.csv"),
-                                  skip=["study #", "specimen", "treatment effect", "margins", "pathologic stage", "comment(s)",
-                                        "part(s) Involved"]),
-    list_multi_line_cols=["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage", "comment(s)",
-                          "Part(s) Involved:"])
 
 # https://regex101.com/r/XWffCF/1
-# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
-#                                                            skip=["Study #", "PATHOLOGIC STAGE"]),
-#                              list_multi_line_cols=["specimen", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
-#                                                    "comment(s)"]))
+
 
 # https://regex101.com/r/ppQb7E/1
 # remove the ^ to remove the left anchor

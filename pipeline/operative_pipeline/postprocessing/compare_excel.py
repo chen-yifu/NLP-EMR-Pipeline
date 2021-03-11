@@ -37,7 +37,7 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
     :param baseline_path:
     :return:
     """
-    baseline_dataframe = pd.read_csv(baseline_path + baseline_version)
+    baseline_dataframe = pd.read_csv(baseline_path)
     list_cols = list(baseline_dataframe.columns)
     baseline_dict = baseline_dataframe.to_dict()
     pipeline_dict = pipeline_dataframe.to_dict()

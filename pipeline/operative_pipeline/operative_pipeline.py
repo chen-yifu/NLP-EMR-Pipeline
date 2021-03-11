@@ -2,7 +2,7 @@ from pipeline.operative_pipeline.postprocessing.compare_excel import nice_compar
 from pipeline.operative_pipeline.postprocessing.to_spreadsheet import *
 from pipeline.operative_pipeline.preprocessing.extract_cols import extract_cols
 from pipeline.operative_pipeline.preprocessing.extract_synoptic_operative import clean_up_reports
-from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_in_pdfs, load_in_txts
+from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import convert_pdf_to_text, load_in_reports
 from pipeline.operative_pipeline.processing.encode_extractions import code_extractions
 from pipeline.operative_pipeline.processing.extract_extractions import get_general_extractions
 from pipeline.util.import_tools import import_pdf_human_cols, import_code_book, get_input_paths
@@ -51,12 +51,12 @@ def run_operative_pipeline(start: int, end: int, skip: List[int],
     # this is only needed to run once. converts pdfs to images that can be changed to text with ocr. all the images and
     # text are saved in path_to_ocr
     if not os.path.exists(path_to_text):
-        load_in_pdfs(path_to_text=path_to_text, path_to_input=path_to_input, paths_to_pdfs=paths_to_pdfs,
-                     paths_to_texts=paths_to_texts)
+        convert_pdf_to_text(path_to_text=path_to_text, path_to_input=path_to_input, paths_to_pdfs=paths_to_pdfs,
+                            paths_to_texts=paths_to_texts)
 
     # the pdfs are converted into text files which is read into the pipeline with this function.
     # returns list[Report] with only report and id and report type
-    uncleaned_text = load_in_txts(start=start, end=end, skip=skip, paths_to_texts=paths_to_texts)
+    uncleaned_text = load_in_reports(start=start, end=end, skip=skip, paths_to_texts=paths_to_texts)
 
     # returns list[Report] with everything BUT encoded and not_found initialized
     cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=uncleaned_text)

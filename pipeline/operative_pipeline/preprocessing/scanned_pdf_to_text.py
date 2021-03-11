@@ -27,7 +27,7 @@ def preprocess_remove_extra_text(input_report):
     return res
 
 
-def load_in_pdfs(path_to_text: str, path_to_input: str, paths_to_pdfs: List[str], paths_to_texts: List[str]):
+def convert_pdf_to_text(path_to_input: str, paths_to_pdfs: List[str], paths_to_texts: List[str]):
     """
      Converts pdf reports into images that is finally converted to text by optical character recognition
 
@@ -37,8 +37,8 @@ def load_in_pdfs(path_to_text: str, path_to_input: str, paths_to_pdfs: List[str]
      """
     pdf_path_and_text_path = zip(paths_to_pdfs, paths_to_texts)
     for pdf_path, output_filename in pdf_path_and_text_path:
-        if not os.path.exists(path_to_text):
-            os.makedirs(path_to_text)
+        if not os.path.exists(path_to_input):
+            os.makedirs(path_to_input)
         pages = convert_from_path(pdf_path)
         pg_cntr = 1
 
@@ -55,8 +55,8 @@ def load_in_pdfs(path_to_text: str, path_to_input: str, paths_to_pdfs: List[str]
                 pg_cntr += 1
 
 
-def load_in_txts(start: int, end: int, skip: List[int], paths_to_texts: List[str],
-                 do_preprocessing: bool = True) -> List[Report]:
+def load_in_reports(start: int, end: int, skip: List[int], paths_to_r: List[str],
+                    do_preprocessing: bool = True) -> List[Report]:
     """
     The pdf reports that were converted into text files are read into the pipeline by this function
 
@@ -69,7 +69,7 @@ def load_in_txts(start: int, end: int, skip: List[int], paths_to_texts: List[str
     """
     emr_study_id = []
     nums = [n for n in range(start, end + 1) if n not in skip]
-    text_paths_and_id = zip(paths_to_texts, nums)
+    text_paths_and_id = zip(paths_to_r, nums)
 
     for text_path, num in text_paths_and_id:
         if text_path[-3:] == "txt":

@@ -1,13 +1,14 @@
-import os
+"""
+The pipeline for EMR
+"""
 from typing import List
 from pipeline.operative_pipeline.postprocessing.compare_excel import nice_compare
 from pipeline.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, \
     raw_reports_to_spreadsheet, change_unfiltered_to_dict, add_report_id
 from pipeline.operative_pipeline.preprocessing.extract_cols import extract_cols
 from pipeline.operative_pipeline.preprocessing.extract_synoptic_operative import clean_up_reports
-from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_in_pdfs, load_in_txts
+from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import convert_pdf_to_text, load_in_reports
 from pipeline.operative_pipeline.processing.encode_extractions import code_extractions
-from pipeline.operative_pipeline.processing.extract_extractions import get_general_extractions
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
@@ -15,22 +16,18 @@ from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preproc
     find_pathologic_stage
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic_general import process_synoptics_and_ids
-from pipeline.util.import_tools import import_pdf_human_cols, import_code_book, get_input_paths
-from pipeline.util.paths import export_operative_paths, export_pathology_paths
-from pipeline.util.regex_tools import export_pathology_synoptic_regex, export_operative_synoptic_regex, \
-    export_mappings_to_regex_vals
+from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths, import_code_book
+from pipeline.util.paths import get_paths
+from pipeline.util.regex_tools import synoptic_capture_regex
 from pipeline.util.report_type import ReportType
-from pipeline.util.utils import find_all_vocabulary
+from pipeline.util.utils import find_all_vocabulary, import_pdf_human_cols_as_dict, get_current_time
 
 
-def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
-                 print_debug: bool = True,
-                 max_edit_distance_missing: int = 5,
-                 max_edit_distance_autocorrect_path: int = 5,
-                 substitution_cost_oper: int = 1,
-                 max_edit_distance_autocorrect_oper: int = 4,
-                 substitution_cost_path: int = 2,
-                 resolve_ocr=True):
+def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType, report_name: str, report_ending: str,
+                 baseline_version: str, other_paths: dict = {}, multi_line_cols: list = [], cols_to_skip: list = [],
+                 print_debug: bool = True, max_edit_distance_missing: int = 5,
+                 max_edit_distance_autocorrect_path: int = 5, substitution_cost_oper: int = 1,
+                 max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2, resolve_ocr=True):
     """
     :param start:                                   the first report id
     :param end:                                     the last report id
@@ -45,35 +42,30 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     :param resolve_ocr:                             resolve ocr white space if true
     :return:
     """
-    # import paths for operative report
-    operative_paths = export_operative_paths
-    code_book = import_code_book(operative_paths["path_to_code_book"])
-    paths_to_pdfs = get_input_paths(start, end, skip, operative_paths["path_to_op_reports"], "{} OR_Redacted.pdf")
-    operative_text_paths = get_input_paths(start, end, skip, operative_paths["path_to_text"],
-                                           "{} OR_Redacted.txt")
+    timestamp = get_current_time()
+    paths = get_paths(report_name, baseline_version, other_paths)
+    paths_to_pdfs = get_input_paths(start, end, skip=skip, path_to_reports=paths["path to reports"],
+                                    report_str="{} " + report_ending)
+    if report_type is ReportType.TEXT:
+        report_ending = report_ending[:-3] + "txt"
 
-    # important paths for pathology report
-    pathology_paths = export_pathology_paths
-    pathology_pdf_paths = get_input_paths(start, end, skip=skip,
-                                          path_to_reports=pathology_paths["path_to_path_reports"],
-                                          report_str="{} Path_Redacted.pdf")
-    excel_path_highlight_differences = pathology_paths["path_to_output_excel"] + \
-                                       "compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(pathology_paths["timestamp"],
-                                                                                          max_edit_distance_autocorrect_path,
-                                                                                          max_edit_distance_missing,
-                                                                                          substitution_cost_path)
+    paths_to_reports_to_read_in = get_input_paths(start, end, skip=skip, path_to_reports=paths["path to reports"],
+                                                  report_str="{} " + report_ending)
 
-    # this is only needed to run once. converts pdfs to images that can be changed to text with ocr. all the images and
-    # text are saved in path_to_ocr
-    if not os.path.exists(operative_paths["path_to_text"]):
-        load_in_pdfs(path_to_text=operative_paths["path_to_text"], path_to_input=operative_paths["path_to_input"],
-                     paths_to_pdfs=paths_to_pdfs,
-                     paths_to_texts=operative_text_paths)
+    compare_file_path = "compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(timestamp,
+                                                                           max_edit_distance_autocorrect_path,
+                                                                           max_edit_distance_missing,
+                                                                           substitution_cost_path)
+    excel_path_highlight_differences = paths["path to output excel"] + compare_file_path
 
-    # the pdfs are converted into text files which is read into the pipeline with this function.
-    # returns list[Report] with only report and id and report type
-    correct_paths_to_reports = operative_text_paths if report_type is ReportType.TEXT else pathology_pdf_paths
-    reports_string_form = load_in_txts(start=start, end=end, skip=skip, paths_to_texts=correct_paths_to_reports)
+    # try to read in the reports. if there is exception this is because the pdfs have to be turned into text files first
+    # then try to read in again.
+    try:
+        reports_string_form = load_in_reports(start=start, end=end, skip=skip, paths_to_r=paths_to_reports_to_read_in)
+    except FileNotFoundError or Exception:
+        convert_pdf_to_text(path_to_input=paths["path to input"], paths_to_pdfs=paths_to_pdfs,
+                            paths_to_texts=paths_to_reports_to_read_in)
+        reports_string_form = load_in_reports(start=start, end=end, skip=skip, paths_to_r=paths_to_reports_to_read_in)
 
     medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
                                              print_debug=print_debug,
@@ -86,9 +78,20 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     # returns list[Report] with everything BUT encoded and not_found initialized
     cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_string_form)
 
+    column_mappings = import_pdf_human_cols(paths["path to mappings"])
+
+    capture_only_first_line = False if report_type is ReportType.TEXT else True
+
+    synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
+        import_pdf_human_cols_as_dict(paths["path to mappings"], skip=cols_to_skip),
+        list_multi_line_cols=multi_line_cols, capture_only_first_line=capture_only_first_line)
+
+    pickle_path = paths["pickle path"] if "pickle path" in paths else None
+
     # split starts here
     if report_type is ReportType.NUMERICAL:
-        column_mappings = import_pdf_human_cols(pathology_paths["path_to_path_mappings"])
+        # https://regex101.com/r/RBWwBE/1
+        # https://regex101.com/r/Gk4xv9/1
 
         # this is the str of PDFs that do not contain any Synoptic Report section
         without_synoptics_strs_and_ids = [report for report in reports_string_form if
@@ -104,83 +107,73 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                 s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
                 print(s)
 
-        print(export_pathology_synoptic_regex)
-        # filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
-        #                                                              column_mappings,
-        #                                                              print_debug=print_debug,
-        #                                                              max_edit_distance_missing=max_edit_distance_missing,
-        #                                                              max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
-        #                                                              substitution_cost=substitution_cost_path,
-        #                                                              specific_regex=export_pathology_synoptic_regex,
-        #                                                              general_regex=r"(?P<column>.*):(?P<value>.*)",
-        #                                                              tools={"pathologic stage": find_pathologic_stage})
-
-        # filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
-        #                                                              column_mappings,
-        #                                                              path_to_stages=pathology_paths["path_to_stages"],
-        #                                                              print_debug=print_debug,
-        #                                                              max_edit_distance_missing=max_edit_distance_missing,
-        #                                                              max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
-        #                                                              substitution_cost=substitution_cost_path,
-        #                                                              pickle_path=pathology_paths["pickle_path"])
+        filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
+                                                                     column_mappings,
+                                                                     print_debug=print_debug,
+                                                                     max_edit_distance_missing=max_edit_distance_missing,
+                                                                     max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
+                                                                     substitution_cost=substitution_cost_path,
+                                                                     specific_regex=synoptic_regex,
+                                                                     general_regex=r"(?P<column>.*):(?P<value>.*)",
+                                                                     tools={"pathologic stage": find_pathologic_stage},
+                                                                     regex_mappings=regex_variable_mappings,
+                                                                     pickle_path=pickle_path)
 
         final_diagnosis_reports = []
 
-        all_reports = [] + final_diagnosis_reports
+        all_reports = filtered_reports + final_diagnosis_reports
         df_raw = save_dictionaries_into_csv_raw(all_reports,
                                                 column_mappings,
-                                                csv_path=pathology_paths["csv_path_raw"],
+                                                csv_path=paths["csv path raw"],
                                                 print_debug=print_debug)
 
         df_coded = encode_extractions_to_dataframe(df_raw, print_debug=print_debug)
 
-        df_coded.to_csv(pathology_paths["csv_path_coded"], index=False)
+        df_coded.to_csv(paths["csv path coded"], index=False)
 
-        stats = highlight_csv_differences(pathology_paths["csv_path_coded"],
-                                          pathology_paths["csv_path_baseline_SY"],
-                                          excel_path_highlight_differences,
-                                          print_debug=print_debug)
+        stats = highlight_csv_differences(paths["csv path coded"], paths["path to baseline"],
+                                          excel_path_highlight_differences, print_debug=print_debug)
 
         if print_debug:
             print("\nPipeline process finished.\nStats:{}".format(stats))
 
-        return stats, []
+        return stats, autocorrect_df
 
     elif report_type is ReportType.TEXT:
-        op_mappings = import_pdf_human_cols(operative_paths["path_op_mappings"])
+        # https://regex101.com/r/XWffCF/1
+
         # and all the subsections are lists
-        extractions, df_with_stats = process_synoptics_and_ids(unfiltered_reports=cleaned_emr,
-                                                               column_mappings=op_mappings,
-                                                               specific_regex=export_operative_synoptic_regex,
-                                                               general_regex=r"(?P<column>.*):(?P<value>.*)",
-                                                               regex_mappings=export_mappings_to_regex_vals)
+        filtered_reports, autocorrect_df = process_synoptics_and_ids(unfiltered_reports=cleaned_emr,
+                                                                     column_mappings=column_mappings,
+                                                                     specific_regex=synoptic_regex,
+                                                                     general_regex=r"(?P<column>.*):(?P<value>.*)",
+                                                                     regex_mappings=regex_variable_mappings,
+                                                                     pickle_path=pickle_path)
 
         # raw to spreadsheet, no altering has been done
-        reports_to_spreadsheet(extractions, type_of_report="unfiltered_reports",
-                               path_to_output=operative_paths["path_to_output"],
+        reports_to_spreadsheet(filtered_reports, type_of_report="unfiltered_reports",
+                               path_to_output=paths["path to output"],
                                function=change_unfiltered_to_dict)
 
-        studies_with_cleaned_extractions = extract_cols(reports=extractions,
-                                                        pdf_human_cols=op_mappings)
+        studies_with_cleaned_extractions = extract_cols(reports=filtered_reports,
+                                                        pdf_human_cols=column_mappings)
         # turning raw text values into spreadsheet
-        raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols=op_mappings,
-                                   path_to_output=operative_paths["path_to_output"])
+        raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols=column_mappings,
+                                   path_to_output=paths["path to output"])
 
         # changing the raw text into codes
         encoded_reports = code_extractions(reports=studies_with_cleaned_extractions,
                                            substitution_cost=substitution_cost_oper,
-                                           largest_cost=max_edit_distance_autocorrect_oper, code_book=code_book,
-                                           path_to_weights=operative_paths["path_to_weights"])
+                                           largest_cost=max_edit_distance_autocorrect_oper,
+                                           code_book=import_code_book(paths["path to code book"]),
+                                           path_to_weights=paths["path to weights"])
 
         # turning coded to spreadsheets
-        dataframe_coded = reports_to_spreadsheet(reports=encoded_reports,
-                                                 path_to_output=operative_paths["path_to_output"],
+        dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],
                                                  type_of_report="coded", function=add_report_id)
 
         # doing nice comparison
-        training_dict = nice_compare(baseline_version=operative_paths["baseline_version"],
-                                     pipeline_dataframe=dataframe_coded,
-                                     baseline_path=operative_paths["baseline_path"],
-                                     path_to_outputs=operative_paths["path_to_output"])
+        training_dict = nice_compare(baseline_version=baseline_version, pipeline_dataframe=dataframe_coded,
+                                     baseline_path=paths["path to baseline"], path_to_outputs=paths["path to output"])
 
         return training_dict

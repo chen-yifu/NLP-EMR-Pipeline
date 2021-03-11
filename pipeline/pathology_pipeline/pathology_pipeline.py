@@ -1,5 +1,5 @@
 from pipeline.operative_pipeline.preprocessing.extract_synoptic_operative import clean_up_reports
-from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_in_txts
+from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import load_in_reports
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
@@ -71,7 +71,7 @@ def run_pathology_pipeline(start,
     column_mappings = import_pdf_human_cols(path_to_mappings)
 
     # convert pdf reports to a list of reports with report.text and report.report_id
-    reports_string_form = load_in_txts(start=start, end=end, skip=skip, paths_to_texts=input_pdf_paths)
+    reports_string_form = load_in_reports(start=start, end=end, skip=skip, paths_to_texts=input_pdf_paths)
 
     medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
                                              print_debug=print_debug,
