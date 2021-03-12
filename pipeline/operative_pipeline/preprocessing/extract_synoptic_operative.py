@@ -68,7 +68,7 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
         reports_to_return = []
         for m in matches:
             label = report_id + find_left_right_label(m, report_type=report_type)
-            reports_to_return.append(Report(text=m, report_id=label))
+            reports_to_return.append(Report(text=m, report_id=label, report_type=report_type))
         return reports_to_return
 
     def split_report_find_left_right_operative() -> List[Report]:
@@ -94,11 +94,11 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
         merged_extractions = list(itertools.chain(*extracted_sections))
         if report_type is ReportType.TEXT:
             laterality = lat if lat != "" else find_left_right_label(uncleaned_txt, report_type=report_type)
-            return [Report(text="".join(merged_extractions),
+            return [Report(text="".join(merged_extractions), report_type=report_type,
                            report_id=report_id + laterality if is_bilateral else report_id,
                            laterality="left" if laterality == "L" else "right")]
         elif report_type is ReportType.NUMERICAL:
-            return [Report(text=merged_extractions[0], report_id=report_id)]
+            return [Report(text=merged_extractions[0], report_type=report_type, report_id=report_id)]
 
     elif any(len(single_section) > 1 for single_section in extracted_sections):
         if report_type is ReportType.TEXT:

@@ -29,6 +29,13 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                  max_edit_distance_autocorrect_path: int = 5, substitution_cost_oper: int = 1,
                  max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2, resolve_ocr=True):
     """
+    :param tools:                                   functions that other columns need for cleansing
+    :param other_paths:                             other more specific paths
+    :param baseline_version:                        the baseline version to compare to
+    :param cols_to_skip:                            which columns to not put in the regex
+    :param multi_line_cols:                         the columns in the report that span two lines
+    :param report_ending:                           the file endings of the reports, all must be same
+    :param report_name:                             what is the type of the report? pathology, surgical, operative
     :param start:                                   the first report id
     :param end:                                     the last report id
     :param skip:                                    reports to skip based on id
