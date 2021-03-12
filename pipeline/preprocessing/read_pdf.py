@@ -18,7 +18,7 @@ def get_input_paths(pdf_id_beginning, pdf_id_end):
     for i in range(pdf_id_beginning, pdf_id_end + 1):
         if i == 140:
             continue  # note: PDF for id 140 is missing
-        temp_path = utils.get_full_path("data/input/{} Path_Redacted.pdf".format(i))
+        temp_path = utils.get_full_path("data/input/pathology_reports/{} Path_Redacted.pdf".format(i))
         input_pdf_paths.append(temp_path)
 
     return input_pdf_paths

@@ -1,4 +1,5 @@
 import pickle
+import time
 
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.preprocessing import read_pdf
@@ -31,14 +32,15 @@ def run_pipeline(input_pdf_paths=read_pdf.get_input_paths(101, 156),
 
     # the path to save raw data
     timestamp = utils.get_current_time()
-    csv_path_raw = utils.get_full_path("data/output/csv_files/raw_{}.csv".format(timestamp))
+    csv_path_raw = utils.get_full_path("data/output/pathology_results/csv_files/raw_{}.csv".format(timestamp))
 
     # the path to save raw & coded data
-    csv_path_coded = utils.get_full_path("data/output/csv_files/coded_{}.csv".format(timestamp))
+    csv_path_coded = utils.get_full_path("data/output/pathology_results/csv_files/coded_{}.csv".format(timestamp))
 
     # the path to save excel sheet that highlights the errors/differences
-    excel_path_highlight_differences = utils.get_full_path("data/output/csv_files/compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(
-        timestamp, max_edit_distance_autocorrect, max_edit_distance_missing, substitution_cost))
+    excel_path_highlight_differences = utils.get_full_path(
+        "data/output/pathology_results/csv_files/compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(
+            timestamp, max_edit_distance_autocorrect, max_edit_distance_missing, substitution_cost))
 
     # the path to the csv sheet for the human-annotated baseline csv file
     # Vito's extracted encodings
@@ -64,11 +66,13 @@ def run_pipeline(input_pdf_paths=read_pdf.get_input_paths(101, 156),
                                                                          print_debug=print_debug)
 
     # this is the str of PDFs that do not contain any Synoptic Report section
-    without_synoptics_strs_and_ids = [(string, study_id) for string, study_id in strings_and_ids if study_id in ids_without_synoptics]
+    without_synoptics_strs_and_ids = [(string, study_id) for string, study_id in strings_and_ids if
+                                      study_id in ids_without_synoptics]
 
     # If the PDF doesn't contain a synoptic section, use the Final Diagnosis section instead
-    final_diagnosis_and_ids, ids_without_final_diagnosis = isolate_final_diagnosis_sections(without_synoptics_strs_and_ids,
-                                                                                            print_debug=print_debug)
+    final_diagnosis_and_ids, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
+        without_synoptics_strs_and_ids,
+        print_debug=print_debug)
 
     if print_debug:
         if len(ids_without_final_diagnosis) > 0:
@@ -108,4 +112,3 @@ def run_pipeline(input_pdf_paths=read_pdf.get_input_paths(101, 156),
 
 
 # run_pipeline()
-
