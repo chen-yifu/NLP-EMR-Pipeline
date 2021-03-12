@@ -25,7 +25,7 @@ from pipeline.util.utils import find_all_vocabulary, import_pdf_human_cols_as_di
 
 def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType, report_name: str, report_ending: str,
                  baseline_version: str, other_paths: dict = {}, multi_line_cols: list = [], cols_to_skip: list = [],
-                 print_debug: bool = True, max_edit_distance_missing: int = 5,
+                 print_debug: bool = True, max_edit_distance_missing: int = 5, tools: dict = {},
                  max_edit_distance_autocorrect_path: int = 5, substitution_cost_oper: int = 1,
                  max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2, resolve_ocr=True):
     """
@@ -88,36 +88,35 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
     pickle_path = paths["pickle path"] if "pickle path" in paths else None
 
+    # this is the str of PDFs that do not contain any Synoptic Report section
+    without_synoptics_strs_and_ids = [report for report in cleaned_emr if
+                                      report.report_id in ids_without_synoptic]
+
+    # If the PDF doesn't contain a synoptic section, use the Final Diagnosis section instead
+    final_diagnosis_reports, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
+        without_synoptics_strs_and_ids,
+        print_debug=print_debug)
+
+    if print_debug:
+        if len(ids_without_final_diagnosis) > 0:
+            s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
+            print(s)
+
+    filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
+                                                                 column_mappings,
+                                                                 print_debug=print_debug,
+                                                                 max_edit_distance_missing=max_edit_distance_missing,
+                                                                 max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
+                                                                 substitution_cost=substitution_cost_path,
+                                                                 specific_regex=synoptic_regex,
+                                                                 general_regex=r"(?P<column>.*):(?P<value>.*)",
+                                                                 tools=tools,
+                                                                 regex_mappings=regex_variable_mappings,
+                                                                 pickle_path=pickle_path)
     # split starts here
     if report_type is ReportType.NUMERICAL:
         # https://regex101.com/r/RBWwBE/1
         # https://regex101.com/r/Gk4xv9/1
-
-        # this is the str of PDFs that do not contain any Synoptic Report section
-        without_synoptics_strs_and_ids = [report for report in reports_string_form if
-                                          report.report_id in ids_without_synoptic]
-
-        # If the PDF doesn't contain a synoptic section, use the Final Diagnosis section instead
-        final_diagnosis_reports, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
-            without_synoptics_strs_and_ids,
-            print_debug=print_debug)
-
-        if print_debug:
-            if len(ids_without_final_diagnosis) > 0:
-                s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
-                print(s)
-
-        filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
-                                                                     column_mappings,
-                                                                     print_debug=print_debug,
-                                                                     max_edit_distance_missing=max_edit_distance_missing,
-                                                                     max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
-                                                                     substitution_cost=substitution_cost_path,
-                                                                     specific_regex=synoptic_regex,
-                                                                     general_regex=r"(?P<column>.*):(?P<value>.*)",
-                                                                     tools={"pathologic stage": find_pathologic_stage},
-                                                                     regex_mappings=regex_variable_mappings,
-                                                                     pickle_path=pickle_path)
 
         final_diagnosis_reports = []
 
@@ -141,14 +140,6 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
     elif report_type is ReportType.TEXT:
         # https://regex101.com/r/XWffCF/1
-
-        # and all the subsections are lists
-        filtered_reports, autocorrect_df = process_synoptics_and_ids(unfiltered_reports=cleaned_emr,
-                                                                     column_mappings=column_mappings,
-                                                                     specific_regex=synoptic_regex,
-                                                                     general_regex=r"(?P<column>.*):(?P<value>.*)",
-                                                                     regex_mappings=regex_variable_mappings,
-                                                                     pickle_path=pickle_path)
 
         # raw to spreadsheet, no altering has been done
         reports_to_spreadsheet(filtered_reports, type_of_report="unfiltered_reports",

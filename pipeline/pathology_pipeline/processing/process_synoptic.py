@@ -280,7 +280,6 @@ def find_nearest_alternative(source, possible_candidates, study_id, value, df,
 
     # get a list of excluded source-target column name pairs that we saved earlier
     all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path)
-    print("the pickle data lmao: " + str(all_excluded_columns))
     excluded_columns = [tupl[1] for tupl in all_excluded_columns if tupl[0] == source]
     possible_candidates = list(set(possible_candidates) - set(excluded_columns))
 
