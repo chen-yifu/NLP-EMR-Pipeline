@@ -121,6 +121,9 @@ def prepend_punc(str_with_punc: str) -> str:
     return fixed_str
 
 
+synoptic_report_regex = r"(Part\(s\) Involved:\s*(?P<parts_involved>((?!Synoptic Report)[\s\S])*)|SPECIMEN\s*-(?P<specimen>.+)|LYMPH ((?!Extent)[\s\S])*Extent:(?P<lymph_node_extent>.*)|TREATMENT EFFECT\s*-(?P<treatment_effect>.+)|MARGINS *\n *-(?P<margins>.*)|P *A *T *H *O *L *O *G *I *C *S *T *A *G *E *\s*-(?P<pathologic_stage>.*)|COMMENT\(S\)\s*-(?P<comments>((?!-|\nBased on AJCC)[\s\S])*))|(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!-|Part\(s\) Involved|SPECIMEN|MARGINS|TREATMENT EFFECT|LYMPH NODES|DCIS Estimated|P *A *T *H *|.* prepared by PLEXIA .*)[\s\S])*)"
+
+
 def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True,
                            capture_only_first_line: bool = True,
                            last_word: str = "", list_multi_line_cols: list = []) -> Tuple[str, Dict[str, List[str]]]:

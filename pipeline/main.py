@@ -13,7 +13,7 @@ multi_line_cols = ["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage"
 
 run_pipeline(start=101, end=156, skip=[140], report_type=ReportType.NUMERICAL, cols_to_skip=cols_to_skip,
              multi_line_cols=multi_line_cols, report_name="pathology", report_ending="Path_Redacted.pdf",
-             baseline_version="data_collection_baseline_SY.csv",
+             baseline_version="data_collection_baseline_VZ.csv",
              other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data")},
              tools={"pathologic stage": find_pathologic_stage})
 
