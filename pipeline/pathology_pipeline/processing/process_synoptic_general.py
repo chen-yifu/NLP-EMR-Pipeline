@@ -68,6 +68,7 @@ def cleanse_value(val: str, remove_nums: bool = False, function=None) -> str:
     :param val:      raw value
     :return:         cleansed value
     """
+    val = re.sub(r":\s*$", "", val)  # remove ":"
     if remove_nums:
         return " ".join([w for w in val.split() if w.isalpha()]).replace("\n", " ").strip().lower().translate(table)
     return function(val) if function else val.replace("\n", " ").strip().lower()
@@ -111,6 +112,9 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost)
         result.append(report)
+
+    for report in result:
+        report.extractions['study'] = report.report_id
 
     # sort DataFrame by study ID
     df_with_stats = pd.DataFrame(list_of_dict_with_stats)
@@ -161,9 +165,10 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     result = defaultdict(str)
     result.update(changed_keys_pairs)
 
+    # make sure letter in study_id is uppercase
+
     # save study_id
     result["study_id"] = study_id
-
 
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
     correct_col_names = [pdf_col for (pdf_col, excel_col) in column_mappings]
