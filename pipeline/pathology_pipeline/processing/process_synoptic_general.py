@@ -7,9 +7,7 @@ from collections import defaultdict
 from typing import Dict, List, Pattern, Tuple
 from nltk import edit_distance
 from nltk.corpus import stopwords
-
 from pipeline.pathology_pipeline.processing.columns import load_excluded_columns_as_list
-from pipeline.util import utils
 from pipeline.util.report import Report
 import pandas as pd
 from pipeline.util.report_type import ReportType
@@ -32,7 +30,7 @@ def get_extraction_specific_regex(unfiltered_str: str, synoptic_report_regex: Pa
     return filtered_pairs
 
 
-def get_generic_extraction_regex(unfiltered_str: str, regex: str) -> dict:
+def get_generic_extraction_regex(unfiltered_str: str, regex: str, is_text: bool = False, tools: dict = {}) -> dict:
     """
     :param unfiltered_str:
     :param regex:
@@ -41,8 +39,9 @@ def get_generic_extraction_regex(unfiltered_str: str, regex: str) -> dict:
     matches = re.finditer(regex, unfiltered_str, re.MULTILINE)
     generic_pairs = {}
     for m in matches:
-        cleaned_column = cleanse_column(m["column"])
-        cleaned_value = cleanse_value(m["value"])
+        cleaned_column = cleanse_column(m["column"], is_text)
+        func = tools[cleaned_column] if cleaned_column in tools.keys() else None
+        cleaned_value = cleanse_value(m["value"], is_text, func)
         generic_pairs[cleaned_column] = cleaned_value
     return generic_pairs
 
@@ -55,9 +54,9 @@ def cleanse_column(col: str, is_text: bool = False) -> str:
     """
     col = re.sub(r"^\s*-\s*", "", col)  # remove "-"
     col = re.sub(r":\s*$", "", col)  # remove ":"
-    if is_text:
-        return " ".join([w for w in col.split() if w.isalpha()]).lower().strip().translate(table)
-    return col.strip().lower().translate(table)
+    # if is_text:
+    #     return " ".join([w for w in col.split() if w.isalpha()]).lower().strip().translate(table)
+    return col.strip().lower()
 
 
 def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
@@ -69,9 +68,9 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     :return:         cleansed value
     """
     val = re.sub(r":\s*$", "", val)  # remove ":"
-    if is_text:
-        return " ".join([w for w in val.split() if w.isalpha()]).replace("\n", " ").strip().lower().translate(table)
-    return function(val) if function else val.replace("\n", " ").strip().lower()
+    # if is_text:
+    #     return " ".join([w for w in val.split() if w.isalpha()]).replace("\n", " ").strip().lower().translate(table)
+    return function(val) if function else val.replace("\n", " ").strip()
 
 
 def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings: List[Tuple[str, str]],
@@ -149,6 +148,105 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     # checking if is text or numerical
     is_text = True if report_type is ReportType.TEXT else False
 
+    def find_nearest_alternative(original_col, possible_candidates: List[str], study_id, value,
+                                 list_of_dict_with_stats: List[dict], pickle_path: str = None, max_edit_distance=2,
+                                 substitution_cost=1):
+        """
+        find the nearest alternative by choosing the element in possible_candidates with nearest edit distance to source
+        if multiple candidates have the nearest distance, return the first candidate by position
+
+        :param list_of_dict_with_stats:
+        :param original_col:            str;                the original source
+        :param possible_candidates:     list of str;        possible strings that the source string could be
+        :param study_id:                str;                study id
+        :param value:                   str;                the original value inside the cell
+        :param max_edit_distance:       int;                maximum distance allowed between source and candidate
+        :param substitution_cost:       int;                cost to substitute a character instead of inserting/removing
+        :return:                        str;    candidate that is most similar to source, None if exceeds max_edit_distance
+        """
+        # get a list of excluded source-target column name pairs that we saved earlier
+        all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path) if pickle_path else []
+        excluded_columns = [tupl[1] for tupl in all_excluded_columns if tupl[0] == original_col]
+        possible_candidates = list(set(possible_candidates) - set(excluded_columns))
+        original_col = cleanse_column(original_col, is_text)
+        min_dist = float("inf")
+        res = None
+        for c in possible_candidates:
+            clean_source = original_col.replace(" ", "")
+            clean_c = c.replace(" ", "")
+            dist = edit_distance(clean_source, clean_c, substitution_cost=substitution_cost)
+            if dist < min_dist:
+                res = c
+                min_dist = dist
+        if min_dist > max_edit_distance:
+            return None
+
+        # add the auto-correct information to DataFrame
+        if res != original_col:
+            headers = ["Study ID", "Original Column", "Corrected Column", "Edit Distance", "Extracted Data"]
+            extracted_stats = [study_id, original_col, res, edit_distance(original_col, res),
+                               str(value).replace("\n", " ")]
+            list_of_dict_with_stats.append(dict(zip(headers, extracted_stats)))
+
+        return res
+
+    def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of_dict_with_stats, pickle_path,
+                            tools: dict, max_edit_distance=5, substitution_cost=2):
+        """
+        using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
+
+        :param correct_col_names:            a list of correct column names
+        :param extractions_so_far:           extracted generic key-value pairs from synoptic reports
+        :param study_id:                     the study id of the dictionary
+        :param list_of_dict_with_stats:      save the auto-correct activities to be shown on GUI
+        :param max_edit_distance:            maximum distance allowed between source and candidate
+        :param substitution_cost:            cost to substitute a character instead of inserting/removing
+        :return:                             dict with auto-corrected column names
+        """
+        columns = list(extractions_so_far.keys())
+        for col in columns:
+            if col in correct_col_names:  # do nothing if key is correct
+                continue
+            else:
+                nearest_column = find_nearest_alternative(col, correct_col_names, study_id, extractions_so_far[col],
+                                                          list_of_dict_with_stats, max_edit_distance=max_edit_distance,
+                                                          substitution_cost=substitution_cost, pickle_path=pickle_path)
+                # if the nearest column is already extracted, find the next alternative
+                while nearest_column is not None and nearest_column in extractions_so_far.keys():
+                    correct_col_names.remove(nearest_column)
+                    nearest_column = find_nearest_alternative(col, correct_col_names, study_id, extractions_so_far[col],
+                                                              list_of_dict_with_stats,
+                                                              max_edit_distance=max_edit_distance,
+                                                              substitution_cost=substitution_cost,
+                                                              pickle_path=pickle_path)
+                # copy the value from incorrect column name to correct column name
+                if nearest_column:
+                    in_tools = nearest_column.lower() in tools.keys()
+                    cleansed_val = cleanse_value(extractions_so_far[col], is_text,
+                                                 tools[nearest_column]) if in_tools else cleanse_value(
+                        extractions_so_far[col], is_text)
+                    extractions_so_far[nearest_column] = cleansed_val
+
+        try:
+            # resolve column that have multiple aliases
+            # the column "Total LN Examined" could be either, but keep only one
+            if (extractions_so_far["number of lymph nodes examined"] != ""):
+                extractions_so_far["number of lymph nodes examined (sentinel and nonsentinel)"] = extractions_so_far[
+                    "number of lymph nodes examined"]
+                del extractions_so_far["number of lymph nodes examined"]
+            # if number of foci isn't found, use tumour focality
+            if extractions_so_far["number of foci"] == "":
+                extractions_so_far["number of foci"] = extractions_so_far["tumour focality"]
+            # if in situ type is not found, use histologic type
+            if extractions_so_far["in situ component type"] == "":
+                extractions_so_far["in situ component type"] = extractions_so_far["histologic type"]
+            # if in situ component is not found, use histologic type
+            if extractions_so_far["in situ component"] == "":
+                extractions_so_far["in situ component"] = extractions_so_far["histologic type"]
+        except KeyError or Exception:
+            pass
+        return extractions_so_far
+
     # adding a "-" to match header
     synoptic_report_str = "- " + synoptic_report_str
 
@@ -159,7 +257,7 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
 
     for key, val in specific_pairs.items():
         in_tools = key.lower() in tools.keys()
-        val = cleanse_value(val, function=tools[key]) if in_tools else cleanse_value(val)
+        val = cleanse_value(val, is_text, function=tools[key]) if in_tools else cleanse_value(val, is_text)
         result[regex_mappings[key][-1].translate(table)] = val
 
     # save study_id
@@ -186,7 +284,7 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
                                  max_edit_distance=max_edit_distance_autocorrect,
                                  substitution_cost=substitution_cost, pickle_path=pickle_path, tools=tools)
 
-    generic_pairs = get_generic_extraction_regex(synoptic_report_str, general_regex)
+    generic_pairs = get_generic_extraction_regex(synoptic_report_str, general_regex, is_text)
 
     # resolve redundant spaces caused by OCR
     for col, val in generic_pairs.items():
@@ -197,7 +295,9 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
                                                   substitution_cost=substitution_cost,
                                                   pickle_path=pickle_path)
         if nearest_column in columns_missing:
-            cleansed_val = cleanse_value(val, tools[nearest_column]) if nearest_column in tools else cleanse_value(val)
+            in_tools = nearest_column in tools
+            cleansed_val = cleanse_value(val, is_text, tools[nearest_column]) if in_tools else cleanse_value(val,
+                                                                                                             is_text)
             result[nearest_column] = cleansed_val
         elif nearest_column:
             raise ValueError("Should never reached this branch. Nearest column is among possible candidates")
@@ -212,101 +312,3 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
         result["size of largest metastatic deposit"] = None
 
     return result
-
-
-def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of_dict_with_stats, pickle_path,
-                        tools: dict, max_edit_distance=5, substitution_cost=2):
-    """
-    using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
-
-    :param correct_col_names:            a list of correct column names
-    :param extractions_so_far:           extracted generic key-value pairs from synoptic reports
-    :param study_id:                     the study id of the dictionary
-    :param list_of_dict_with_stats:      save the auto-correct activities to be shown on GUI
-    :param max_edit_distance:            maximum distance allowed between source and candidate
-    :param substitution_cost:            cost to substitute a character instead of inserting/removing
-    :return:                             dict with auto-corrected column names
-    """
-    columns = list(extractions_so_far.keys())
-    for col in columns:
-        if col in correct_col_names:  # do nothing if key is correct
-            continue
-        else:
-            nearest_column = find_nearest_alternative(col, correct_col_names, study_id, extractions_so_far[col],
-                                                      list_of_dict_with_stats, max_edit_distance=max_edit_distance,
-                                                      substitution_cost=substitution_cost, pickle_path=pickle_path)
-            # if the nearest column is already extracted, find the next alternative
-            while nearest_column is not None and nearest_column in extractions_so_far.keys():
-                correct_col_names.remove(nearest_column)
-                nearest_column = find_nearest_alternative(col, correct_col_names, study_id, extractions_so_far[col],
-                                                          list_of_dict_with_stats, max_edit_distance=max_edit_distance,
-                                                          substitution_cost=substitution_cost, pickle_path=pickle_path)
-            # copy the value from incorrect column name to correct column name
-            if nearest_column:
-                in_tools = nearest_column.lower() in tools.keys()
-                cleansed_val = cleanse_value(extractions_so_far[col],
-                                             tools[nearest_column]) if in_tools else cleanse_value(
-                    extractions_so_far[col])
-                extractions_so_far[nearest_column] = cleansed_val
-
-    try:
-        # resolve column that have multiple aliases
-        # the column "Total LN Examined" could be either, but keep only one
-        if (extractions_so_far["number of lymph nodes examined"] != ""):
-            extractions_so_far["number of lymph nodes examined (sentinel and nonsentinel)"] = extractions_so_far[
-                "number of lymph nodes examined"]
-            del extractions_so_far["number of lymph nodes examined"]
-        # if number of foci isn't found, use tumour focality
-        if extractions_so_far["number of foci"] == "":
-            extractions_so_far["number of foci"] = extractions_so_far["tumour focality"]
-        # if in situ type is not found, use histologic type
-        if extractions_so_far["in situ component type"] == "":
-            extractions_so_far["in situ component type"] = extractions_so_far["histologic type"]
-        # if in situ component is not found, use histologic type
-        if extractions_so_far["in situ component"] == "":
-            extractions_so_far["in situ component"] = extractions_so_far["histologic type"]
-    except KeyError or Exception:
-        pass
-    return extractions_so_far
-
-
-def find_nearest_alternative(original_col, possible_candidates: List[str], study_id, value,
-                             list_of_dict_with_stats: List[dict], pickle_path: str = None, max_edit_distance=2,
-                             substitution_cost=1):
-    """
-    find the nearest alternative by choosing the element in possible_candidates with nearest edit distance to source
-    if multiple candidates have the nearest distance, return the first candidate by position
-
-    :param list_of_dict_with_stats:
-    :param original_col:            str;                the original source
-    :param possible_candidates:     list of str;        possible strings that the source string could be
-    :param study_id:                str;                study id
-    :param value:                   str;                the original value inside the cell
-    :param max_edit_distance:       int;                maximum distance allowed between source and candidate
-    :param substitution_cost:       int;                cost to substitute a character instead of inserting/removing
-    :return:                        str;    candidate that is most similar to source, None if exceeds max_edit_distance
-    """
-    # get a list of excluded source-target column name pairs that we saved earlier
-    all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path) if pickle_path else []
-    excluded_columns = [tupl[1] for tupl in all_excluded_columns if tupl[0] == original_col]
-    possible_candidates = list(set(possible_candidates) - set(excluded_columns))
-    original_col = cleanse_column(original_col)
-    min_dist = float("inf")
-    res = None
-    for c in possible_candidates:
-        clean_source = original_col.replace(" ", "")
-        clean_c = c.replace(" ", "")
-        dist = edit_distance(clean_source, clean_c, substitution_cost=substitution_cost)
-        if dist < min_dist:
-            res = c
-            min_dist = dist
-    if min_dist > max_edit_distance:
-        return None
-
-    # add the auto-correct information to DataFrame
-    if res != original_col:
-        headers = ["Study ID", "Original Column", "Corrected Column", "Edit Distance", "Extracted Data"]
-        extracted_stats = [study_id, original_col, res, edit_distance(original_col, res), str(value).replace("\n", " ")]
-        list_of_dict_with_stats.append(dict(zip(headers, extracted_stats)))
-
-    return res
