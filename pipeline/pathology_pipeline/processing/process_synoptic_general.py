@@ -54,8 +54,8 @@ def cleanse_column(col: str, is_text: bool = False) -> str:
     """
     col = re.sub(r"^\s*-\s*", "", col)  # remove "-"
     col = re.sub(r":\s*$", "", col)  # remove ":"
-    # if is_text:
-    #     return " ".join([w for w in col.split() if w.isalpha()]).lower().strip().translate(table)
+    if is_text:
+        return " ".join([w for w in col.split() if w.isalpha()]).lower().strip()
     return col.strip().lower()
 
 
@@ -68,8 +68,9 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     :return:         cleansed value
     """
     val = re.sub(r":\s*$", "", val)  # remove ":"
-    # if is_text:
-    #     return " ".join([w for w in val.split() if w.isalpha()]).replace("\n", " ").strip().lower().translate(table)
+    if is_text:
+        cleaned_val = val.strip().lower().translate(table)
+        return " ".join([w for w in cleaned_val.split() if len(w) > 1])
     return function(val) if function else val.replace("\n", " ").strip()
 
 
