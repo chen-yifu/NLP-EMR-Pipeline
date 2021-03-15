@@ -16,18 +16,20 @@ from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preproc
     find_pathologic_stage
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic_general import process_synoptics_and_ids
-from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths, import_code_book
+from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths, import_code_book, \
+    import_pdf_human_cols_as_dict
 from pipeline.util.paths import get_paths
 from pipeline.util.regex_tools import synoptic_capture_regex
 from pipeline.util.report_type import ReportType
-from pipeline.util.utils import find_all_vocabulary, import_pdf_human_cols_as_dict, get_current_time
+from pipeline.util.utils import find_all_vocabulary, get_current_time
 
 
 def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType, report_name: str, report_ending: str,
                  baseline_version: str, other_paths: dict = {}, multi_line_cols: list = [], cols_to_skip: list = [],
-                 print_debug: bool = True, max_edit_distance_missing: int = 5, tools: dict = {},
-                 max_edit_distance_autocorrect_path: int = 5, substitution_cost_oper: int = 1,
-                 max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2, resolve_ocr=True):
+                 contained_capture_list: list = [], no_anchor_list: list = [], print_debug: bool = True,
+                 max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect_path: int = 5,
+                 substitution_cost_oper: int = 1, max_edit_distance_autocorrect_oper: int = 4,
+                 substitution_cost_path: int = 2, resolve_ocr=True):
     """
     :param tools:                                   functions that other columns need for cleansing
     :param other_paths:                             other more specific paths
@@ -87,11 +89,14 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
     column_mappings = import_pdf_human_cols(paths["path to mappings"])
 
-    capture_only_first_line = False if report_type is ReportType.TEXT else True
+    capture_only_first_line = True
+
+    anchor = r"^\d*\.* *" if report_type is ReportType.TEXT else ""
 
     synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
         import_pdf_human_cols_as_dict(paths["path to mappings"], skip=cols_to_skip),
-        list_multi_line_cols=multi_line_cols, capture_only_first_line=capture_only_first_line)
+        contained_capture_list=contained_capture_list, list_multi_line_cols=multi_line_cols,
+        capture_only_first_line=capture_only_first_line, no_anchor_list=no_anchor_list, anchor=anchor)
 
     pickle_path = paths["pickle path"] if "pickle path" in paths else None
 
@@ -109,6 +114,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
             s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
             print(s)
 
+    print(synoptic_regex)
     filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
                                                                  column_mappings,
                                                                  print_debug=print_debug,

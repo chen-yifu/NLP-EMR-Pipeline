@@ -2,8 +2,8 @@ import random
 import re
 from typing import List, Tuple, Union, Dict, Set
 
-from pipeline.util.import_tools import import_pdf_human_cols, table
-from pipeline.util.utils import import_pdf_human_cols_as_dict, get_full_path
+from pipeline.util.import_tools import import_pdf_human_cols, table, import_pdf_human_cols_as_dict
+from pipeline.util.utils import get_full_path
 
 
 def regex_extract(regex: str, uncleaned_txt: str) -> list:
@@ -121,29 +121,35 @@ def prepend_punc(str_with_punc: str) -> str:
     return fixed_str
 
 
-synoptic_report_regex = r"(Part\(s\) Involved:\s*(?P<parts_involved>((?!Synoptic Report)[\s\S])*)|SPECIMEN\s*-(?P<specimen>.+)|LYMPH ((?!Extent)[\s\S])*Extent:(?P<lymph_node_extent>.*)|TREATMENT EFFECT\s*-(?P<treatment_effect>.+)|MARGINS *\n *-(?P<margins>.*)|P *A *T *H *O *L *O *G *I *C *S *T *A *G *E *\s*-(?P<pathologic_stage>.*)|COMMENT\(S\)\s*-(?P<comments>((?!-|\nBased on AJCC)[\s\S])*))|(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!-|Part\(s\) Involved|SPECIMEN|MARGINS|TREATMENT EFFECT|LYMPH NODES|DCIS Estimated|P *A *T *H *|.* prepared by PLEXIA .*)[\s\S])*)"
-
-
 def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True,
-                           capture_only_first_line: bool = True,
-                           last_word: str = "", list_multi_line_cols: list = []) -> Tuple[str, Dict[str, List[str]]]:
+                           capture_only_first_line: bool = True, anchor: str = "",
+                           last_word: str = "", list_multi_line_cols: list = [], no_anchor_list: list = [],
+                           contained_capture_list: list = []) -> Tuple[str, Dict[str, List[str]]]:
     col_keys = list(columns.keys())
     length_of_keys = len(col_keys)
     template_regex = r""
     mappings_to_regex_vals = {}
     seen = set()
     for index in range(length_of_keys - 1):
+        col_key = col_keys[index].lower()
+        is_contained_capture = col_key in contained_capture_list
+        is_no_anchor = col_key in no_anchor_list
         curr_cols = columns[col_keys[index]]
         next_cols = columns[col_keys[index + 1]]
         curr_col = prepend_punc("|".join(curr_cols))
         next_col = prepend_punc("|".join(next_cols))
         end_cap = ".+)"
         variablefied, seen = to_camel_or_underscore(curr_col, seen)
-        if not capture_only_first_line:
+        if not capture_only_first_line or is_contained_capture:
             end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col + "")
-        front_cap = r"{curr_col}(?P<{curr_col_no_space}>".format(
-            curr_col=curr_col if len(curr_cols) == 1 else "(" + curr_col + ")",
-            curr_col_no_space=variablefied)
+        if len(anchor) > 0 and not is_no_anchor:
+            capture_anchor = r"^\d*\.* *({})".format(curr_col)
+            front_cap = r"{capture_anchor}(?P<{curr_col_no_space}>".format(
+                capture_anchor=capture_anchor, curr_col_no_space=variablefied)
+        else:
+            front_cap = r"{curr_col}(?P<{curr_col_no_space}>".format(
+                curr_col=curr_col if len(curr_cols) == 1 else "(" + curr_col + ")",
+                curr_col_no_space=variablefied)
         template_regex += front_cap + end_cap + "|"
         mappings_to_regex_vals[variablefied] = curr_cols
 
@@ -172,10 +178,13 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
 
 
 # https://regex101.com/r/8lSqTn/1
-# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
-#                                                            skip=["Study #", "Pathologic Stage"]),
-#                              list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
-#                                                    "comment(s)"])[0] + "\n")
+# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/operative_column_mappings.csv",
+#                                                            skip=["immediate reconstruction mentioned", "laterality",
+#                                                                  "reconstruction mentioned"]),
+#                              no_anchor_list=["neoadjuvant treatment", "reconstruction mentioned", "localization"])[
+#           0] + "\n")
+
+
 # print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
 #                                                            skip=["Study #", "Pathologic Stage"]),
 #                              list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",

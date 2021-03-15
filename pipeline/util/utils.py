@@ -2,33 +2,9 @@ import collections
 import os
 import re
 from datetime import datetime
-from typing import List, Tuple, Dict, OrderedDict
-import pandas as pd
 from nltk.corpus import words
 from pathlib import Path
 from string import punctuation
-
-
-def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip=None) -> Dict[str, List[str]]:
-    """
-    :param pdf_human_excel_sheet:
-    :param skip:
-    :return:
-    """
-    if skip is None:
-        skip = []
-    pdf_cols_human_cols_dict = {}
-    pdf_cols_human_cols = pd.read_csv(pdf_human_excel_sheet)
-    for index, row in pdf_cols_human_cols.iterrows():
-        human_col = row[1]
-        if human_col.lower() in skip:
-            continue
-        else:
-            pdf_cols = row[0]
-            pdf_cols_list = pdf_cols.split(",")
-            cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
-            pdf_cols_human_cols_dict[human_col] = cleaned_pdf_col_list
-    return pdf_cols_human_cols_dict
 
 
 def get_current_time():
