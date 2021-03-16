@@ -88,15 +88,17 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_string_form)
 
     column_mappings = import_pdf_human_cols(paths["path to mappings"])
+    column_mappings_dict = import_pdf_human_cols_as_dict(paths["path to mappings"], skip=cols_to_skip)
 
     capture_only_first_line = True
 
     anchor = r"^\d*\.* *" if report_type is ReportType.TEXT else ""
 
-    synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
-        import_pdf_human_cols_as_dict(paths["path to mappings"], skip=cols_to_skip),
-        contained_capture_list=contained_capture_list, list_multi_line_cols=multi_line_cols,
-        capture_only_first_line=capture_only_first_line, no_anchor_list=no_anchor_list, anchor=anchor)
+    synoptic_regex, regex_variable_mappings = synoptic_capture_regex(column_mappings_dict,
+                                                                     contained_capture_list=contained_capture_list,
+                                                                     list_multi_line_cols=multi_line_cols,
+                                                                     capture_only_first_line=capture_only_first_line,
+                                                                     no_anchor_list=no_anchor_list, anchor=anchor)
 
     pickle_path = paths["pickle path"] if "pickle path" in paths else None
 
@@ -117,12 +119,13 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     print(synoptic_regex)
     filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
                                                                  column_mappings,
+                                                                 column_mappings_dict,
+                                                                 synoptic_regex,
+                                                                 r"(?P<column>.*):(?P<value>.*)",
                                                                  print_debug=print_debug,
                                                                  max_edit_distance_missing=max_edit_distance_missing,
                                                                  max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
                                                                  substitution_cost=substitution_cost_path,
-                                                                 specific_regex=synoptic_regex,
-                                                                 general_regex=r"(?P<column>.*):(?P<value>.*)",
                                                                  tools=tools,
                                                                  regex_mappings=regex_variable_mappings,
                                                                  pickle_path=pickle_path)

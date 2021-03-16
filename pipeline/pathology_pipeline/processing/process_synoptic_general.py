@@ -11,6 +11,7 @@ from pipeline.pathology_pipeline.processing.columns import load_excluded_columns
 from pipeline.util.report import Report
 import pandas as pd
 from pipeline.util.report_type import ReportType
+import numpy as np
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
 stop_words = set(stopwords.words('english'))
@@ -60,6 +61,18 @@ def cleanse_column(col: str, is_text: bool = False) -> str:
     return col.strip().lower()
 
 
+def remove_other_cols_vals(s: str):
+    split_by_newline = s.split("\n")
+    val = split_by_newline[0] + " "
+    for line in split_by_newline[1:]:
+        if ":" not in line:
+            val += line + " "
+        else:
+            return val
+    return val
+
+
+# todo: be able to clean colons
 def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     """
     cleanse the value by removing linebreaks
@@ -68,17 +81,18 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     :param val:      raw value
     :return:         cleansed value
     """
-    val = re.sub(r":\s*$", "", val)  # remove ":"
     if is_text:
-        cleaned_val = val.strip().lower().translate(table)
+        cleaned_val = remove_other_cols_vals(val)
+        cleaned_val = cleaned_val.strip().lower().translate(table)
         return " ".join([w for w in cleaned_val.split() if len(w) > 1])
+    val = re.sub(r":\s*$", "", val)  # remove ":"
     return function(val) if function else val.replace("\n", " ").strip()
 
 
 def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings: List[Tuple[str, str]],
-                              specific_regex: str, general_regex: str, regex_mappings: Dict[str, List[str]],
-                              pickle_path, tools: dict = {}, print_debug=True, max_edit_distance_missing=5,
-                              max_edit_distance_autocorrect=5,
+                              column_mappings_dict: Dict[str, List[str]], specific_regex: str, general_regex: str,
+                              regex_mappings: Dict[str, List[str]], pickle_path, tools: dict = {}, print_debug=True,
+                              max_edit_distance_missing=5, max_edit_distance_autocorrect=5,
                               substitution_cost=2) -> Tuple[List[Report], pd.DataFrame]:
     """
     process and extract data from a list of synoptic reports by using regular expression
@@ -107,8 +121,8 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     # split the synoptic report into multiple sub-sections using ALL-CAPITALIZED headings as delimiter
     for report in unfiltered_reports:
         report.extractions = process_synoptic_section(report.text, report.report_id, report.report_type, pickle_path,
-                                                      column_mappings, list_of_dict_with_stats, regex_mappings,
-                                                      specific_regex, general_regex, tools,
+                                                      column_mappings_dict, column_mappings, list_of_dict_with_stats,
+                                                      regex_mappings, specific_regex, general_regex, tools,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost)
@@ -125,11 +139,12 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     return [report for report in result if report.extractions], df_with_stats
 
 
-def process_synoptic_section(synoptic_report_str: str, study_id: str, report_type: ReportType, pickle_path,
-                             column_mappings: List[Tuple[str, str]], list_of_dict_with_stats: List[dict],
-                             regex_mappings: Dict[str, List[str]], specific_regex: str, general_regex: str,
-                             tools: dict = {}, print_debug: bool = True, max_edit_distance_missing=5,
-                             max_edit_distance_autocorrect=5, substitution_cost=2, skip_threshold=0.95) -> dict:
+def process_synoptic_section(synoptic_report_str: str, study_id: str, report_type: ReportType, pickle_path: str,
+                             column_mappings_dict: Dict[str, List[str]], column_mappings: List[Tuple[str, str]],
+                             list_of_dict_with_stats: List[dict], regex_mappings: Dict[str, List[str]],
+                             specific_regex: str, general_regex: str, tools: dict = {}, print_debug: bool = True,
+                             max_edit_distance_missing=5, max_edit_distance_autocorrect=5, substitution_cost=2,
+                             skip_threshold=0.95) -> dict:
     """
     :param report_type:
     :param substitution_cost:
@@ -149,6 +164,12 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     """
     # checking if is text or numerical
     is_text = True if report_type is ReportType.TEXT else False
+
+    def missing_colunms(cols_so_far):
+        cols_so_far = list(set(cols_so_far))
+        list_of_list_of_cols = [v for k, v in column_mappings_dict.items() if
+                                len([c for c in cols_so_far if c in v or c + ":" in v]) == 0]
+        return [c for sublist in list_of_list_of_cols for c in sublist]
 
     def find_nearest_alternative(original_col, possible_candidates: List[str], study_id, value,
                                  list_of_dict_with_stats: List[dict], pickle_path: str = None, max_edit_distance=2,
@@ -265,15 +286,15 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     # save study_id
     result["study"] = study_id
 
-    print(study_id)
-    print(result)
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
     correct_col_names = [pdf_col for (pdf_col, excel_col) in column_mappings]
 
     # if too many columns are missing, we probably isolated a section with unexpected template,
     # so return nothing and exclude from result
     columns_found = [k.lower() for k in result.keys() if k and result[k] != ""]
-    columns_missing = list(set(correct_col_names) - set(columns_found))
+    # todo: correct columns missing
+    columns_missing = missing_colunms(columns_found) if report_type is ReportType.TEXT else list(
+        set(correct_col_names) - set(columns_found))
     try:
         percentage_missing = len(columns_missing) / len(list(set(correct_col_names)))
         if percentage_missing > skip_threshold:
