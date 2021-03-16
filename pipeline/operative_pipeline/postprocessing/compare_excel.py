@@ -29,7 +29,7 @@ def compare_dataframes_dev(baseline_version: str, pipeline_dataframe: pd.DataFra
 
 
 def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseline_path: str,
-                 path_to_outputs: str) -> dict:
+                 path_to_outputs: str) -> pd.DataFrame:
     """
     :param path_to_outputs:
     :param baseline_version:
@@ -123,4 +123,4 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
     wrong_missing_correct_df.to_excel(
         path_to_outputs + "compare/accuracy_results_" + baseline_version[:-4] + current_time + ".xlsx")
 
-    return wrong_missing_correct_dict
+    return wrong_missing_correct_df

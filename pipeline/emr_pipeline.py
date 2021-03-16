@@ -1,7 +1,9 @@
 """
 The pipeline for EMR
 """
-from typing import List
+
+from typing import List, Union, Optional, Tuple
+from pandas import DataFrame
 from pipeline.operative_pipeline.postprocessing.compare_excel import nice_compare
 from pipeline.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, \
     raw_reports_to_spreadsheet, change_unfiltered_to_dict, add_report_id
@@ -12,8 +14,7 @@ from pipeline.operative_pipeline.processing.encode_extractions import code_extra
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
-from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces, \
-    find_pathologic_stage
+from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic_general import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths, import_code_book, \
@@ -25,11 +26,13 @@ from pipeline.util.utils import find_all_vocabulary, get_current_time
 
 
 def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType, report_name: str, report_ending: str,
-                 baseline_version: str, other_paths: dict = {}, multi_line_cols: list = [], cols_to_skip: list = [],
-                 contained_capture_list: list = [], no_anchor_list: list = [], print_debug: bool = True,
-                 max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect_path: int = 5,
-                 substitution_cost_oper: int = 1, max_edit_distance_autocorrect_oper: int = 4,
-                 substitution_cost_path: int = 2, resolve_ocr=True):
+                 baseline_version: str, anchor: str, seperator: str = ":", other_paths: dict = {},
+                 is_anchor: bool = False, multi_line_cols: list = [], cols_to_skip: list = [],
+                 contained_capture_list: list = [], no_anchor_list: list = [], anchor_list: list = [],
+                 print_debug: bool = True, max_edit_distance_missing: int = 5, tools: dict = {},
+                 max_edit_distance_autocorrect_path: int = 5, substitution_cost_oper: int = 1, sep_list: list = [],
+                 max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2,
+                 resolve_ocr=True) -> Union[Tuple[Optional[Tuple[int, int, int, int]], DataFrame], dict]:
     """
     :param tools:                                   functions that other columns need for cleansing
     :param other_paths:                             other more specific paths
@@ -92,13 +95,15 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
     capture_only_first_line = True
 
-    anchor = r"^\d*\.* *" if report_type is ReportType.TEXT else ""
-
     synoptic_regex, regex_variable_mappings = synoptic_capture_regex(column_mappings_dict,
                                                                      contained_capture_list=contained_capture_list,
                                                                      list_multi_line_cols=multi_line_cols,
                                                                      capture_only_first_line=capture_only_first_line,
-                                                                     no_anchor_list=no_anchor_list, anchor=anchor)
+                                                                     no_anchor_list=no_anchor_list,
+                                                                     anchor=anchor,
+                                                                     sep_list=sep_list,
+                                                                     anchor_list=anchor_list,
+                                                                     is_anchor=is_anchor)
 
     pickle_path = paths["pickle path"] if "pickle path" in paths else None
 
@@ -121,7 +126,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                                                                  column_mappings,
                                                                  column_mappings_dict,
                                                                  synoptic_regex,
-                                                                 r"(?P<column>.*):(?P<value>.*)",
+                                                                 r"(?P<column>.*){}(?P<value>.*)".format(seperator),
                                                                  print_debug=print_debug,
                                                                  max_edit_distance_missing=max_edit_distance_missing,
                                                                  max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,

@@ -1,9 +1,10 @@
+"""
+helper regex functions
+"""
 import random
 import re
-from typing import List, Tuple, Union, Dict, Set
-
-from pipeline.util.import_tools import import_pdf_human_cols, table, import_pdf_human_cols_as_dict
-from pipeline.util.utils import get_full_path
+from typing import List, Tuple, Union, Dict
+from pipeline.util.import_tools import table
 
 
 def regex_extract(regex: str, uncleaned_txt: str) -> list:
@@ -14,8 +15,8 @@ def extract_section(regexs: List[Tuple[str, str]], uncleaned_txt: str) -> list:
     """
     General function that takes in a list of regex and returns the first one that returns a result
 
-    :param uncleaned_txt:
-    :param regexs:            list of tuple(regex,to_append) and the list should ne entered in priority
+    :param uncleaned_txt:     string to use regex on
+    :param regexs:            list of tuple(regex,to_append) and the list should be entered in priority
     :return:
     """
     for regex, to_append in regexs:
@@ -28,7 +29,7 @@ def extract_section(regexs: List[Tuple[str, str]], uncleaned_txt: str) -> list:
     return []
 
 
-def convert_to_regex(list_of_words: List[Union[str, List[str]]]) -> str:
+def add_asterisk_and_ors(list_of_words: List[Union[str, List[str]]]) -> str:
     """
     Helper function to convert a string into regex
 
@@ -110,7 +111,7 @@ def to_camel_or_underscore(col: str, seen: set) -> Tuple[str, set]:
         return camelCase, seen
 
 
-def prepend_punc(str_with_punc: str) -> str:
+def make_punc_regex_literal(str_with_punc: str) -> str:
     fixed_str = ""
     punc = ("?", "(", ")", "\\", "/")
     for l in str_with_punc:
@@ -121,29 +122,48 @@ def prepend_punc(str_with_punc: str) -> str:
     return fixed_str
 
 
-def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True,
-                           capture_only_first_line: bool = True, anchor: str = "",
+def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True, anchor_list: list = [],
+                           capture_only_first_line: bool = True, anchor: str = "", is_anchor: bool = False,
                            last_word: str = "", list_multi_line_cols: list = [], no_anchor_list: list = [],
-                           contained_capture_list: list = []) -> Tuple[str, Dict[str, List[str]]]:
+                           contained_capture_list: list = [], seperator: str = ":", no_sep_list: list = [],
+                           add_sep: bool = False, sep_list: list = []) -> Tuple[str, Dict[str, List[str]]]:
     col_keys = list(columns.keys())
-    length_of_keys = len(col_keys)
     template_regex = r""
     mappings_to_regex_vals = {}
     seen = set()
-    for index in range(length_of_keys - 1):
+    for index in range(len(col_keys) - 1):
         col_key = col_keys[index].lower()
+
+        # checking if we should contain, add anchor and add seperator
         is_contained_capture = col_key in contained_capture_list
-        is_no_anchor = col_key in no_anchor_list
+        dont_add_anchor, add_anchor = col_key in no_anchor_list, col_key in anchor_list
+        dont_add_seperator, add_seperater = col_key not in no_sep_list, col_key in sep_list
+
         curr_cols = columns[col_keys[index]]
+
+        # adding seperator into regex
+        if add_sep and not dont_add_seperator or add_seperater:
+            curr_cols = [c + seperator for c in curr_cols if c not in no_sep_list]
+
         next_cols = columns[col_keys[index + 1]]
-        curr_col = prepend_punc("|".join(curr_cols))
-        next_col = prepend_punc("|".join(next_cols))
+
+        # adding symbolic or between words and making punctuation regexible
+        curr_col = make_punc_regex_literal("|".join(curr_cols))
+        next_col = make_punc_regex_literal("|".join(next_cols))
+
+        # this is for only capturing a single line
         end_cap = ".+)"
+
+        # column has been converted to variable and seen is list of already used variable names
+        # regex variable names must be unique
         variablefied, seen = to_camel_or_underscore(curr_col, seen)
+
+        # if we want to capture up to a keyword
         if not capture_only_first_line or is_contained_capture:
             end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col + "")
-        if len(anchor) > 0 and not is_no_anchor:
-            capture_anchor = r"^\d*\.* *({})".format(curr_col)
+        # if we want to "anchor" the word to the start of the document
+        if is_anchor and not dont_add_anchor or add_anchor:
+            capture_anchor = r"{anchor}({curr_col})".format(curr_col=curr_col, anchor=anchor)
             front_cap = r"{capture_anchor}(?P<{curr_col_no_space}>".format(
                 capture_anchor=capture_anchor, curr_col_no_space=variablefied)
         else:
@@ -151,10 +171,17 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
                 curr_col=curr_col if len(curr_cols) == 1 else "(" + curr_col + ")",
                 curr_col_no_space=variablefied)
         template_regex += front_cap + end_cap + "|"
+
+        # adding variable name so we can use for later
         mappings_to_regex_vals[variablefied] = curr_cols
 
-    # do last one
-    last_one = prepend_punc(":|".join(columns[col_keys[-1]]))
+    # do last column
+    last_col = col_keys[-1].lower()
+    if add_sep and last_col not in no_sep_list or last_col in sep_list:
+        last_col = [c + seperator for c in columns[col_keys[-1]] if c not in no_sep_list]
+    else:
+        last_col = columns[col_keys[-1]]
+    last_one = make_punc_regex_literal("|".join(last_col))
     last_one_variable, seen = to_camel_or_underscore(last_one, seen)
     if last_word == "":
         template_regex += r"{last_one}(?P<{last_no_space}>.+)".format(last_one=last_one,
@@ -166,29 +193,16 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
         template_regex += front_cap + end_cap
     mappings_to_regex_vals[last_one_variable] = columns[col_keys[-1]]
 
+    # this is for any columns that have the column on the first line and value on the second line
     if len(list_multi_line_cols) > 0:
         for col in list_multi_line_cols:
             col_var, seen = to_camel_or_underscore(col, seen)
-            multi_line_regex = r"{column}\s*-*(?P<{col_var}>.+)".format(column=prepend_punc(col.lower()),
+            multi_line_regex = r"{column}\s*-*(?P<{col_var}>.+)".format(column=make_punc_regex_literal(col.lower()),
                                                                         col_var=col_var)
             template_regex += "|" + multi_line_regex
             mappings_to_regex_vals[col_var] = [col.lower()]
 
     return "(?i)" + template_regex if ignore_caps else template_regex, mappings_to_regex_vals
-
-
-# https://regex101.com/r/8lSqTn/1
-# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/operative_column_mappings.csv",
-#                                                            skip=["immediate reconstruction mentioned", "laterality",
-#                                                                  "reconstruction mentioned"]),
-#                              no_anchor_list=["neoadjuvant treatment", "reconstruction mentioned", "localization"])[
-#           0] + "\n")
-
-
-# print(synoptic_capture_regex(import_pdf_human_cols_as_dict("../../data/utils/pathology_column_mappings.csv",
-#                                                            skip=["Study #", "Pathologic Stage"]),
-#                              list_multi_line_cols=["SPECIMEN", "TREATMENT EFFECT", "margins", "PATHOLOGIC STAGE",
-#                                                    "comment(s)"])[1])
 
 
 def generic_capture_regex(negative_lookahead: str) -> str:
@@ -217,10 +231,10 @@ def capture_double_regex(starting_word: List[Union[str, List[str]]],
     :param ending_word:             the word to stop at
     :return:
     """
-    modified_starting_word = convert_to_regex(starting_word)
+    modified_starting_word = add_asterisk_and_ors(starting_word)
     if capture_first_line:
         modified_starting_word += ".+"
-    modified_ending_word = convert_to_regex(ending_word)
+    modified_ending_word = add_asterisk_and_ors(ending_word)
     if capture_last_line:
         modified_ending_word += ".*"
     modified_regex = r"{capitalize}{starting_word}(?P<capture>(?:(?!{ending_word})[\s\S])+)".format(
