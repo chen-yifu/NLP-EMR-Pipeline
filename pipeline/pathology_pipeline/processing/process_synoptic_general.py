@@ -84,6 +84,9 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
         cleaned_val = remove_new_line_if_colon_present(val)
         cleaned_val = cleaned_val.strip().lower().translate(table)
         return " ".join([w for w in cleaned_val.split() if len(w) > 1])
+    colon_index = val.find(":")
+    if colon_index != -1:
+        val = val[colon_index+1:]
     val = re.sub(r":\s*$", "", val)  # remove ":"
     return function(val) if function else val.replace("\n", " ").strip()
 
@@ -119,6 +122,8 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
 
     # split the synoptic report into multiple sub-sections using ALL-CAPITALIZED headings as delimiter
     for report in unfiltered_reports:
+        print(report.report_id)
+        print(report.text)
         report.extractions = process_synoptic_section(report.text, report.report_id, report.report_type, pickle_path,
                                                       column_mappings_dict, column_mappings, list_of_dict_with_stats,
                                                       regex_mappings, specific_regex, general_regex, tools,
@@ -281,8 +286,9 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     result = defaultdict(str)
 
     for key, val in specific_pairs.items():
-        in_tools = key.lower() in tools.keys()
-        val = cleanse_value(val, is_text, function=tools[key]) if in_tools else cleanse_value(val, is_text)
+        pdf_key = regex_mappings[key][-1].lower()
+        in_tools = pdf_key in tools.keys()
+        val = cleanse_value(val, is_text, function=tools[pdf_key]) if in_tools else cleanse_value(val, is_text)
         result[regex_mappings[key][-1].translate(table)] = val
 
     # save study_id

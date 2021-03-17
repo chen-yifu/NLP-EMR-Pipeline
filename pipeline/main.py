@@ -17,7 +17,7 @@ run_pipeline(start=101, end=156, skip=[140],
              cols_to_skip=cols_to_skip,
              multi_line_cols=multi_line_cols,
              report_name="pathology",
-             anchor_list=["invasive carcinoma"],
+             is_anchor=True,
              sep_list=["invasive carcinoma"],
              report_ending="Path_Redacted.pdf",
              baseline_version="data_collection_baseline_SY.csv",
@@ -26,18 +26,21 @@ run_pipeline(start=101, end=156, skip=[140],
              tools={"pathologic stage": find_pathologic_stage})
 
 stats_operative = run_pipeline(start=1, end=48, skip=[22, 43],
-             report_type=ReportType.TEXT,
-             anchor=r"^\d*\.* *",
-             is_anchor=True,
-             cols_to_skip=["immediate reconstruction mentioned", "laterality", "reconstruction mentioned"],
-             sep_list=["surgical indication"],
-             report_name="operative",
-             report_ending="OR_Redacted.pdf",
-             contained_capture_list=["breast incision type", "immediate reconstruction type"],
-             no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned", "localization"],
-             other_paths={"path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv"),
-                          "path to code book": get_full_path("data/utils/operative_code_book.ods")},
-             baseline_version="data_collection_baseline_VZ_48.csv")
+                               report_type=ReportType.TEXT,
+                               anchor=r"^\d*\.* *",
+                               is_anchor=True,
+                               cols_to_skip=["immediate reconstruction mentioned", "laterality",
+                                             "reconstruction mentioned"],
+                               sep_list=["surgical indication"],
+                               report_name="operative",
+                               report_ending="OR_Redacted.pdf",
+                               contained_capture_list=["breast incision type", "immediate reconstruction type"],
+                               no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
+                                               "localization"],
+                               other_paths={
+                                   "path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv"),
+                                   "path to code book": get_full_path("data/utils/operative_code_book.ods")},
+                               baseline_version="data_collection_baseline_VZ_48.csv")
 print(stats_operative)
 
 # ^\d*\.* *
