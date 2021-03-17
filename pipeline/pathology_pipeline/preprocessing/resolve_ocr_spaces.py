@@ -2,8 +2,8 @@ import re
 from nltk.corpus import stopwords
 import pandas as pd
 from nltk import edit_distance
-
 from pipeline.util import utils
+from pipeline.util.utils import get_full_path
 
 
 def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True,
@@ -11,8 +11,9 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
     """
     given a list of strings and ids, using a english vocabulary, resolve redundant white spaces from OCR.
     Example: "Inv asive Carcinoma" should be corrected as "Invasive Carcinoma" because "Inv" and "Asive" are not in the
-    vocabulary, but the joint words_list of "Invasive" is in the vocabulary, so we should join the fargments together.
+    vocabulary, but the joint words_list of "Invasive" is in the vocabulary, so we should join the fragments together.
     This function cannot resolve missing white spaces, for example "InvasiveCarninoma".
+
     :param strings_and_ids:         a list of (str, str) tuples;        represents the strings and study_ids of PDFs
     :param medical_vocabulary:      a list of str;                      a list of valid english words_list common to PDFs
     :param print_debug:             boolean;                            print debug statements in Terminal if true
@@ -26,7 +27,7 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
         :return:                    str;        resolved string
         """
 
-        # words_list = [w.lower() for w in re.findall(r'\S+|\n', raw_string)]  # make everything lowecase
+        # words_list = [w.lower() for w in re.findall(r'\S+|\n', raw_string)]  # make everything lowercase
         # demo: (?<=[ \n\W])|(?=[ \n\W])
         # equivalent to string.split(), but retains linebreaks
         words_list = re.split("(?<=[ \n\W])|(?=[ \n\W])", raw_string)
@@ -79,10 +80,11 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
         return resolved_words
 
     result = []
-    for index, (string, study_id) in enumerate(strings_and_ids):
-        resolved_string = resolve_ocr(string, medical_vocabulary=medical_vocabulary)
+    for index, report in enumerate(strings_and_ids):
+        resolved_string = resolve_ocr(report.text, medical_vocabulary=medical_vocabulary)
         resolved_string = re.sub(" +", " ", resolved_string)
-        result.append((resolved_string, study_id))
+        report.text = resolved_string
+        result.append(report)
 
     return result
 
@@ -135,13 +137,13 @@ def find_category(index: int, category_dict: list, stage: str) -> (str, int):
     return stage[index], 0
 
 
-def find_pathologic_stage(stage: str, path_to_stages) -> str:
+def find_pathologic_stage(stage: str) -> str:
     """
     :param stage: str
     :return edited_stage: str
     """
     stage = stage.replace("\n", " ").strip()
-    categories_dict = categories(path_to_stages)
+    categories_dict = categories(get_full_path("data/utils/stages.csv"))
     # categories("stages.csv")
     edited_stage = ""
     to_skip = 0

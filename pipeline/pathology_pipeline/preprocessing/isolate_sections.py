@@ -1,18 +1,22 @@
 import re
 
+from pipeline.util.report import Report
+from pipeline.util.regex_tools import capture_double_regex
 
-def isolate_synoptic_sections(strings_and_ids, print_debug=True):
+
+def isolate_synoptic_sections(reports_string_form, print_debug=True):
     """
     for each pdf string, isolate the synoptic report section and return it as a (string, study_id) tuple
     when the same report has two synoptic report sections, for example one for Left breast and another for Right breast,
     then treat the two synoptic reports separately and modify the corresponding study_id into for example 101L and 101R
-    :param strings_and_ids:     a list of (str, str) tuples;         extracted text and study ID
+    :param reports_string_form: a list of Report;                    extracted text and study ID
     :param print_debug:         boolean;                             print debug statements in Terminal if true
-    :return                     a list of (str, str) tuples;         a list of detected synoptic sections and study ID
+    :return                     a list of Report                     a list of detected synoptic sections and study ID
     :return                     a list of strs;                      study IDs that did not contain any synoptic report
     """
-    # regex demo: https://regex101.com/r/FX8VfI/7
-    regex = r"S *y *n *o *p *t *i *c R *e *p *o *r *t *: .+(?P<capture>(?:(?!-+ *E *n *d *of *S *y *n *o *p *t *i *c *)[\s\S])+)"
+    # regex demo: # https://regex101.com/r/2dxpIX/1
+    regex = capture_double_regex(["Synoptic Report: "], ["- End of Synoptic"], capture_first_line=True,
+                                 ignore_capials=False)
     regex = re.compile(regex)
 
     if print_debug:
@@ -24,21 +28,21 @@ def isolate_synoptic_sections(strings_and_ids, print_debug=True):
     ids_without_synoptic = []
 
     # iterate through each pdf string
-    for index, (string, study_id) in enumerate(strings_and_ids):
+    for index, report in enumerate(reports_string_form):
         # find all synoptic reports in string (in most cases will only find 1, sometimes will find 2)
-        matches = re.findall(regex, string)
+        matches = re.findall(regex, report.text)
         if len(matches) == 0:
-            ids_without_synoptic.append(study_id)
+            ids_without_synoptic.append(report.report_id)
         elif len(matches) > 1:
             # if pdf contains more than 1 synoptic reports, it contains both breasts, label study_id with L or R
             for m in matches:
-                label = study_id + find_left_right_label_synoptic(m, study_id, print_debug=print_debug)
-                synoptics_and_ids.append((m, label))
+                label = report.report_id + find_left_right_label_synoptic(m, report.report_id, print_debug=print_debug)
+                synoptics_and_ids.append(Report(text=m, report_id=label))
         else:
-            synoptics_and_ids.append((matches[0], study_id))
+            synoptics_and_ids.append(Report(text=matches[0], report_id=report.report_id))
 
     if print_debug:
-        s = "Detected {} synoptic reports from {} pdfs.".format(len(synoptics_and_ids), len(strings_and_ids))
+        s = "Detected {} synoptic reports from {} pdfs.".format(len(synoptics_and_ids), len(reports_string_form))
         print(s)
 
     return synoptics_and_ids, ids_without_synoptic
@@ -70,21 +74,24 @@ def find_left_right_label_synoptic(string, study_id, print_debug=True):
         return "unknown"
 
 
-def isolate_final_diagnosis_sections(strings_and_ids, print_debug=True, log_box=None, app=None):
+def isolate_final_diagnosis_sections(no_synoptic_reports, print_debug=True, log_box=None, app=None):
     """
     given a list of (string, study_id) tuples which represents the PDFs that do not have a synoptic report section,
     isolate the Final Diagnosis section
-    :param strings_and_ids:     a list of (str, str) tuples;         extracted text and study ID
+    :param no_synoptic_reports: a list of Report;                    extracted text and study ID
     :param print_debug:         boolean;                             print debug statements in Terminal if true
-    :return                     a list of (str, str) tuples;         a list of detected synoptic sections and study ID
+    :return                     a list of Report;                    a list of detected synoptic sections and study ID
     :return                     a list of str;                       study IDs that did not contain a Final Diagnosis
     """
-    regex = r" *F *i *n *a *l *D *i *a *g *n *o *s *i *s(?P<capture>(?:(?!C *o *m *m *e *n *t *:|C *O *M *M *E *N *T *|C *l *i *n *i *c *a *l *H *i *s *t *o *r *y *a *s *|C *a *s *e *P *a *t *h *o *l *o *g *i *s *t *: *|E *l *e *c *t *r *o *n *i *c *a *l *l *y *s *i *g *n *e *d *b *y *)[\s\S])+)"
+    regex = capture_double_regex([" FinalDiagnosis"],
+                                 [["Comment:", "COMMENT", "ClinicalHistoryas", "CasePathologist:",
+                                   "Electronicallysignedby"]],
+                                 ignore_capials=False)
     regex = re.compile(regex)
 
-    if print_debug and len(strings_and_ids):
+    if print_debug and len(no_synoptic_reports):
         s = "Isolating Final Diagnosis for those that don't have a Synoptic Report section: {}".format(
-            [study_id for string, study_id in strings_and_ids])
+            [report.report_id for report in no_synoptic_reports])
         print(s)
 
     # placeholders
@@ -92,17 +99,17 @@ def isolate_final_diagnosis_sections(strings_and_ids, print_debug=True, log_box=
     ids_without_final_diagnosis = []
 
     # iterate through each pdf string
-    for index, (string, study_id) in enumerate(strings_and_ids):
+    for index, report in enumerate(no_synoptic_reports):
         # find all synoptic reports in string (in most cases will only find 1, sometimes will find 2)
-        matches = re.findall(regex, string)
+        matches = re.findall(regex, report.text)
         if len(matches) == 0:
-            ids_without_final_diagnosis.append(study_id)
+            ids_without_final_diagnosis.append(report.report_id)
         else:
 
-            final_diagnosis_and_ids.append((matches[0], study_id))
+            final_diagnosis_and_ids.append(Report(matches[0], report.report_id))
 
     if print_debug:
-        s = "Detected {} final diagnosis from {} pdfs.".format(len(final_diagnosis_and_ids), len(strings_and_ids))
+        s = "Detected {} final diagnosis from {} pdfs.".format(len(final_diagnosis_and_ids), len(no_synoptic_reports))
         print(s)
 
     return final_diagnosis_and_ids, ids_without_final_diagnosis

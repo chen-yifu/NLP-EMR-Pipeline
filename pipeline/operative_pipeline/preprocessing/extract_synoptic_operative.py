@@ -1,166 +1,129 @@
+import itertools
 import re
 from typing import Tuple, List
+from pipeline.util.regex_tools import right_operative_report, left_operative_report, export_operative_regex, \
+    export_pathology_regex, regex_extract, extract_section
 from pipeline.util.report import Report
-from pipeline.util.utils import capture_double_regex
+from pipeline.util.report_type import ReportType
 
 
-def find_laterality(laterality: List[List[str]]) -> str:
+def find_left_right_label(string, report_type, print_debug=True):
     """
-    Determines laterality of a report
+    given the synoptic report, detect it's about the left or right breast
 
-    :param laterality:      list of regex results. regex results is a list of string
-    :return:                the laterality the pipeine found
+    :param report_type:
+    :param study_id:    string;           study id of report
+    :param string:      string;           input synoptic report
+    :param print_debug: boolean;          print debug statements if True
+    :return:            string;           suffix, one of "L", "R", or "_laterality_undetected"
     """
-    for list_result in laterality:
-        for possible_lat in list_result:
-            cleaned_possible_lat = possible_lat.lower()
-            right = cleaned_possible_lat.find("right")
-            left = cleaned_possible_lat.find("left")
-            if left == -1 and right == -1:
-                continue
-            elif right > -1 and left == -1:
-                return "right"
-            elif left > -1 and right == -1:
-                return "left"
-            elif right > -1 and left > -1:
-                return "bilateral"
-    return ""
+    match = ""
+    # https://regex101.com/r/ITYrAN/1
+    preop_diag = r"PREOPERATIVE DIAGNOSIS[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*"
+    # https://regex101.com/r/P2KVkz/1
+    clinical_pream = r"(?i)CLINICAL PREAMBLE[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*"
+    op_perforemd = r"OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*"
+    # regex demo: https://regex101.com/r/FX8VfI/8
+    parts_involved = r"(?i)p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*"
+    list_of_laterality_regex = [parts_involved, preop_diag, clinical_pream, op_perforemd]
+
+    for laterality_regex in list_of_laterality_regex:
+        laterality_regex = re.compile(laterality_regex)
+        match = re.search(laterality_regex, string)
+        try:
+            laterality = match.group("laterality").replace(" ", "").strip().lower()
+            if laterality == "left":
+                return "L"
+            elif laterality == "right":
+                return "R"
+            else:
+                raise AttributeError
+        except AttributeError:
+            continue
+
+    try:
+        laterality = match.group("laterality").replace(" ", "").strip()
+        return "L" if laterality.lower() == "left" else "R"
+    except AttributeError:
+        return "unknown"
 
 
-def extract_synoptic_operative_report(uncleaned_txt: str, lat: str = "") -> List[Tuple[dict, str]]:
+def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: ReportType,
+                            list_of_regex: List[List[Tuple[str, str]]],
+                            lat: str = "",
+                            is_bilateral=False) -> List[Report]:
     """
     Takes in a single report and extracts useful sections as well as laterality of report.
 
+    :param report_type:
+    :param list_of_regex:
+    :param is_bilateral:
+    :param report_id:
     :param lat:                the laterality associated with a report
     :param uncleaned_txt:      just a string of the pdf text
     :return:                   list of tuple of a dictionary of extracted sections and report laterality, if found
     """
 
-    def regex_extract(regex: str) -> list:
-        """
-        General function to extract text with regex
+    def split_report_find_left_right_pathlogy(matches: List[str]) -> List[Report]:
+        reports_to_return = []
+        for m in matches:
+            label = report_id + find_left_right_label(m, report_type=report_type)
+            reports_to_return.append(Report(text=m, report_id=label, report_type=report_type))
+        return reports_to_return
 
-        :param regex:      a general regex string
-        :return:           list of text or empty list if the regex did not find any
-        """
-        return re.findall(re.compile(regex), uncleaned_txt)
+    def split_report_find_left_right_operative() -> List[Report]:
+        left_breast = extract_section(left_operative_report, uncleaned_txt)
+        right_breast = extract_section(right_operative_report, uncleaned_txt)
 
-    # if the regex is able to find two preoperative, two operative breast/axilla it means that the report is bilateral
-    def extract_laterality() -> str:
-        # TODO: need to fix -> cannot just use operation performed to determine
-        """
-        The function that searches for laterality
-        Your list of possible locations of laterality should be in highest priority to lowest priority
+        return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
+                                       report_id=report_id, lat="L",
+                                       is_bilateral=True, list_of_regex=list_of_regex,
+                                       report_type=report_type) + extract_synoptic_report(
+            right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="R", is_bilateral=True,
+            list_of_regex=list_of_regex,
+            report_type=report_type)
 
-        :return:      laterality, which can be left, right or bilateral
-        """
-        # https://rubular.com/r/TAsSFuPoU8X13N
-        regex_for_procedure = r"[\n\r](?i) *PROCEDURE*\s*([^\n\r]*)"
-        laterality_procedure_upper = regex_extract(regex_for_procedure)
+    extracted_sections = []
+    for regex in list_of_regex:
+        extracted_sections.append(extract_section(regex, uncleaned_txt))
 
-        regex_for_postoperative_diagnosis = r"[\n\r](?i) *POSTOPERATIVE DIAGNOSIS*\s*([^\n\r]*)"
-        laterality_postop = regex_extract(regex_for_postoperative_diagnosis)
+    if all(len(single_section) == 0 for single_section in extracted_sections):
+        return report_id
 
-        # regex is here: https://rubular.com/r/J5CfqTgNj0xo9Q for operation performed
-        regex_for_laterality_operation_performed = r"[\n\r](?i) *O *P *E *R *A *T *I *O *N P *E *R *F *O *R *M *E *D *\s*([^\n\r]*)"
-        laterality_operation_performed = regex_extract(regex_for_laterality_operation_performed)
+    elif all(len(single_section) == 1 for single_section in extracted_sections):
+        merged_extractions = list(itertools.chain(*extracted_sections))
+        if report_type is ReportType.TEXT:
+            laterality = lat if lat != "" else find_left_right_label(uncleaned_txt, report_type=report_type)
+            return [Report(text="".join(merged_extractions), report_type=report_type,
+                           report_id=report_id + laterality if is_bilateral else report_id,
+                           laterality="left" if laterality == "L" else "right")]
+        elif report_type is ReportType.NUMERICAL:
+            return [Report(text=merged_extractions[0], report_type=report_type, report_id=report_id)]
 
-        # regex is here: https://rubular.com/r/rj6JsbwydrCW99 for procedure performed
-        regex_for_laterality_procedure = r"[\n\r].*(?i)P *r *o *c *e *d *u *r *e *:\s*([^\n\r]*)"
-        laterality_procedure = regex_extract(regex_for_laterality_procedure)
-        return find_laterality(
-            [laterality_operation_performed, laterality_procedure, laterality_postop, laterality_procedure_upper])
-
-    def extract_section(regexs: List[Tuple[str, str]]) -> list:
-        """
-        General function that takes in a list of regex and returns the first one that returns a result
-
-        :param regexs:      list of tuple(regex,to_append) and the list should ne entered in priority
-        :return:
-        """
-        for regex, to_append in regexs:
-            extraction_result = regex_extract(regex)
-            if len(extraction_result) != 0:
-                if to_append == "":
-                    return extraction_result
-                result = to_append + extraction_result[0]
-                return [result]
-        return []
-
-    def split_report_find_left_right() -> List[Tuple[dict, str]]:
-        """
-        Splits a report into right and left breast if it is found that there are two synoptic reports
-
-        :return:
-        """
-        # https://regex101.com/r/kT4aT7/1
-        # https://regex101.com/r/l760jr/1
-        left_regexs = [(capture_double_regex(["Left breast:"], ["Right breast:"]), ""),
-                       (capture_double_regex(["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"],
-                                             ["PREOPERATIVE EVALUATION"], capture_last_line=True),
-                        "PREOPERATIVE RATIONALE FOR SURGERY")]
-        left_breast = extract_section(left_regexs)
-
-        # https://regex101.com/r/AE3qZs/1
-        # https://regex101.com/r/rdPUIj/1
-        right_regexs = [(capture_double_regex(["Right breast:"], ["Right breast:"]), ""),
-                        (capture_double_regex(["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY RIGHT BREAST"],
-                                              ["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"]),
-                         "PREOPERATIVE RATIONALE FOR SURGERY")]
-        right_breast = extract_section(right_regexs)
-
-        return extract_synoptic_operative_report(left_breast[0] if len(left_breast) > 0 else "",
-                                                 "left") + extract_synoptic_operative_report(
-            right_breast[0] if len(right_breast) > 0 else "", "right")
-
-    # https://regex101.com/r/kEj3Fs/1
-    # https://regex101.com/r/HIXlrr/1
-    preoperative_rational_regex = [(capture_double_regex(["PREOPERATIVE ", " RATIONAL", " ", "FOR SURGERY"],
-                                                         ["OPERATIVE DETAILS", " ", "BREAST"]), ""),
-                                   (capture_double_regex(["Indication"], ["Breast procedure"]), "indication")]
-
-    # https://regex101.com/r/YHZjIP/1
-    # https://regex101.com/r/dTJdh4/1
-    operative_breast_regex = [
-        (capture_double_regex(["OPERATIVE DETAILS", " ", "BREAST"], ["OPERATIVE details", " ", "AXILLA"]), ""),
-        (capture_double_regex(["Breast procedure"], ["Axillary procedure"]), "breast procedure")]
-
-    # https://regex101.com/r/0cVC20/1
-    # https://regex101.com/r/Ew5DMN/1
-    operative_axilla_regex = [
-        (capture_double_regex(["OPERATIVE DETAILS", " ", "AXILLA"], ["PROCEDURE COMPLETION"]), ""),
-        (capture_double_regex(["Axillary procedure"], ["Unplanned events"]), "axillary procedure")]
-
-    preoperative_rational = extract_section(preoperative_rational_regex)
-    operative_breast = extract_section(operative_breast_regex)
-    operative_axilla = extract_section(operative_axilla_regex)
-
-    if len(preoperative_rational) > 1:
-        return split_report_find_left_right()
-
-    return [({"preoperative rational": preoperative_rational,
-              "operative breast details": operative_breast,
-              "operative axilla details": operative_axilla,
-              "laterality": lat if lat != "" else extract_laterality()}, lat)]
+    elif any(len(single_section) > 1 for single_section in extracted_sections):
+        if report_type is ReportType.TEXT:
+            return split_report_find_left_right_operative()
+        elif report_type is ReportType.NUMERICAL:
+            return split_report_find_left_right_pathlogy(extracted_sections[0])
 
 
-def clean_up_reports(emr_text: List[Report]) -> List[Report]:
+def clean_up_reports(emr_text: List[Report]) -> Tuple[List[Report], List[str]]:
     """
     Wrapper function to clean up list of reports
 
     :param emr_text:              list of reports that is currently not sorted or filtered
     :return cleaned_reports:      returns list of reports that have been separated into preoperative breast, operative breast and operative axilla
     """
-    cleaned_reports = []
-    for study in emr_text:
-        text = study.report
-        cleaned_pdf = extract_synoptic_operative_report(text)
-        for cleaned_report in cleaned_pdf:
-            report_info = cleaned_report[0]
-            cleaned_reports.append(Report(report=text,
-                                          report_id=str(study.report_id) + cleaned_report[1][0].upper() if len(
-                                              cleaned_report[1]) > 0 else str(study.report_id) + cleaned_report[1],
-                                          laterality=report_info['laterality'],
-                                          extractions=report_info["preoperative rational"] + report_info[
-                                              "operative breast details"] + report_info["operative axilla details"]))
-    return cleaned_reports
+    ids_without_synoptic = []
+    report_and_id = []
+    for report in emr_text:
+        text = report.text
+        list_of_regex = export_operative_regex if report.report_type is ReportType.TEXT else export_pathology_regex
+        extracted_reports = extract_synoptic_report(uncleaned_txt=text, report_id=report.report_id,
+                                                    list_of_regex=list_of_regex, report_type=report.report_type)
+        if isinstance(extracted_reports, str):
+            ids_without_synoptic.append(extracted_reports)
+        else:
+            for cleaned_report in extracted_reports:
+                report_and_id.append(cleaned_report)
+    return report_and_id, ids_without_synoptic

@@ -1,0 +1,31 @@
+# import paths for operative report
+from pipeline.util.utils import get_full_path, get_current_time
+
+
+def get_paths(report_type: str, baseline_version: str, other_paths=None) -> dict:
+    """
+    :param report_type:
+    :param baseline_version:
+    :param other_paths:
+    :return:
+    """
+    timestamp = get_current_time()
+    if other_paths is None:
+        other_paths = {}
+    paths = {}
+    path_to_output = get_full_path("data/output/{}_results/".format(report_type))
+    path_to_reports = get_full_path("data/input/{}_reports/".format(report_type))
+    path_to_baselines = get_full_path("data/baselines/")
+    path_to_output_csv = get_full_path("data/output/{}_results/csv_files/".format(report_type))
+    csv_path_raw = path_to_output_csv + "raw_{}.csv".format(timestamp)
+    csv_path_coded = path_to_output_csv + "coded_{}.csv".format(timestamp)
+    path_to_output_excel = get_full_path("data/output/{}_results/excel_files/".format(report_type))
+    path_to_mappings = get_full_path("data/utils/{}_column_mappings.csv".format(report_type))
+    path_to_baseline = path_to_baselines + baseline_version
+    paths.update(other_paths)
+    paths.update(
+        {"path to output": path_to_output, "path to reports": path_to_reports, "path to baselines": path_to_baselines,
+         "path to output csv": path_to_output_csv, "path to output excel": path_to_output_excel,
+         "path to mappings": path_to_mappings, "path to baseline": path_to_baseline, "csv path raw": csv_path_raw,
+         "csv path coded": csv_path_coded})
+    return paths

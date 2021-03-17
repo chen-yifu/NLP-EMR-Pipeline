@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Tuple
 import pandas as pd
 from pipeline.util import import_tools
 from pipeline.util.report import Report
@@ -31,7 +31,7 @@ def add_report_id(report: Report) -> dict:
     return new_dict
 
 
-def change_unfiltered_to_dict(report):
+def change_unfiltered_to_dict(report) -> dict:
     """
     Changing the report into one dictionary to be converted into a dataframe
 
@@ -65,23 +65,22 @@ def reports_to_spreadsheet(reports: List[Report], path_to_output: str, type_of_r
     return dataframe_coded
 
 
-def raw_reports_to_spreadsheet(reports: List[Report], pdf_human_cols_path: str, path_to_output: str):
+def raw_reports_to_spreadsheet(reports: List[Report], pdf_human_cols: List[Tuple[str, str]], path_to_output: str):
     """
     Filters the unfiltered extractions and turns into a spreadsheet.
 
+    :param pdf_human_cols:
     :param path_to_output:
     :param reports:
-    :param pdf_human_cols_path:
     :return:
     """
-    cols_to_find = import_tools.import_pdf_human_cols(pdf_human_cols_path)  # this is a dict
 
     def to_dataframe() -> (pd.DataFrame, list):
         """
         :return:
         """
         not_found = []
-        cols = list(cols_to_find.values())
+        cols = [human_col for pdf_col, human_col in pdf_human_cols]
         rows_list = []
         for report in reports:
             report_id = report.report_id

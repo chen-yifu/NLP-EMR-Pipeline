@@ -1,4 +1,4 @@
-# EMR_pipeline
+# electronic medical records pipeine for synoptic sections
 to install dependencies, run 
 ```
 pip install -r requirements.txt

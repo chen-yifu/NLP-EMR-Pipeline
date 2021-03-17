@@ -2,22 +2,21 @@ import re
 import pandas as pd
 from collections import defaultdict
 from nltk.metrics.distance import edit_distance
-
 from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.pathology_pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.util import utils
 
 
-def process_synoptics_and_ids(synoptics_and_ids, column_mappings, path_to_stages, pickle_path, print_debug=True,
+def process_synoptics_and_ids(unfiltered_reports, column_mappings, path_to_stages, pickle_path, print_debug=True,
                               max_edit_distance_missing=5,
                               max_edit_distance_autocorrect=5, substitution_cost=2):
     """
     process and extract data from a list of synoptic reports by using regular expression
-    :param synoptics_and_ids:       a list of (str, str) tuples;            synoptic sections and study IDs
-    :param column_mappings:         a list of (str, str);   first str is col name from PDF, second str is col from Excel
+    :param unfiltered_reports:      a list of Report;                       synoptic sections and study IDs
+    :param column_mappings:         a dict                                  first str is col name from PDF, second str is col from Excel
     :param print_debug:             boolean;                                print debug statements in Terminal if True
-    :param max_edit_distance:       int;                                max allowed edit distance to find missing cells
-    :return:                        a list of dict;                         extracted data of the form (col_name: value)
+    :param max_edit_distance:       int;                                    max allowed edit distance to find missing cells
+    :return:                        a list of Report;                       extracted data of the form (col_name: value)
     :return:                        pandas DataFrame                        the auto-correct information to be shown
     """
 
@@ -32,14 +31,16 @@ def process_synoptics_and_ids(synoptics_and_ids, column_mappings, path_to_stages
     df = df.fillna("")  # with ""s rather than NaNs
 
     # split the synoptic report into multiple sub-sections using ALL-CAPITALIZED headings as delimiter
-    for (synoptic, study_id) in synoptics_and_ids:
-        columns_and_values = process_synoptic_section(synoptic, study_id, column_mappings, df, print_debug=print_debug,
+    for report in unfiltered_reports:
+        columns_and_values = process_synoptic_section(report.text, report.report_id, column_mappings, df,
+                                                      print_debug=print_debug,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost,
                                                       path_to_stages=path_to_stages,
                                                       pickle_path=pickle_path)
-        result.append(columns_and_values)
+        report.extractions = columns_and_values
+        result.append(report)
 
     # sort DataFrame by study ID
     df.sort_values("Study ID")
@@ -48,7 +49,7 @@ def process_synoptics_and_ids(synoptics_and_ids, column_mappings, path_to_stages
         s = "Auto-correct Information:\n" + df.to_string()
         print(s)
 
-    return result, df
+    return [report for report in result if report.extractions], df
 
 
 def process_synoptic_section(synoptic_report, study_id, column_mappings, df, path_to_stages, pickle_path,
@@ -74,23 +75,27 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
     # TODO use list of columns and for-loop to generate regex
     synoptic_report_regex = r"(Part\(s\) Involved:\s*(?P<parts_involved>((?!Synoptic Report)[\s\S])*)|SPECIMEN\s*-(?P<specimen>.+)|LYMPH ((?!Extent)[\s\S])*Extent:(?P<lymph_node_extent>.*)|TREATMENT EFFECT\s*-(?P<treatment_effect>.+)|MARGINS *\n *-(?P<margins>.*)|P *A *T *H *O *L *O *G *I *C *S *T *A *G *E *\s*-(?P<pathologic_stage>.*)|COMMENT\(S\)\s*-(?P<comments>((?!-|\nBased on AJCC)[\s\S])*))|(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!-|Part\(s\) Involved|SPECIMEN|MARGINS|TREATMENT EFFECT|LYMPH NODES|DCIS Estimated|P *A *T *H *|.* prepared by PLEXIA .*)[\s\S])*)"
     synoptic_report_regex = re.compile(synoptic_report_regex)
+    filtered_pairs = []
     pairs = [(m.groupdict()) for m in synoptic_report_regex.finditer(synoptic_report)]
+    for unfiltered_dict in pairs:
+        unfiltered_dict = {k: v for k, v in unfiltered_dict.items() if v is not None}
+        filtered_pairs.append(unfiltered_dict)
 
-    def cleanse_column(col):
+    def cleanse_column(col: str) -> str:
         """
         cleanse the column by removing "-" and ":"
-        :param col:     str;            raw column
-        :return:        str;            cleansed column
+        :param col:      raw column
+        :return:         cleansed column
         """
         col = re.sub(r"^\s*-\s*", "", col)  # remove "-"
         col = re.sub(r":\s*$", "", col)  # remove ":"
         return col.strip().lower()
 
-    def cleanse_value(val):
+    def cleanse_value(val: str) -> str:
         """
         cleanse the value by removing linebreaks
-        :param val:     str;            raw value
-        :return:        str;            cleansed value
+        :param val:      raw value
+        :return:         cleansed value
         """
         return val.replace("\n", " ").strip()
 
@@ -101,36 +106,51 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
     result["study_id"] = study_id
 
     # iterate through generic matches of the pattern "- col_name: value"
-    for pair in pairs:
-        if pair["column"] and len(pair["value"].strip()) > 0:
-            clean_column = cleanse_column(pair["column"])
-            clean_value = cleanse_value(pair["value"])
-            keys = list(result.keys())
-            if clean_column in keys:  # check for duplicated column name
-                result[utils.get_next_col_name(clean_column, keys)] = clean_value
-            else:
-                result[clean_column] = clean_value
+    for pair in filtered_pairs:
+        try:
+            if pair["column"] and len(pair["value"].strip()) > 0:
+                clean_column = cleanse_column(pair["column"])
+                clean_value = cleanse_value(pair["value"])
+                keys = list(result.keys())
+                if clean_column in keys:  # check for duplicated column name
+                    result[utils.get_next_col_name(clean_column, keys)] = clean_value
+                else:
+                    result[clean_column] = clean_value
+        except KeyError:
+            print("oopsie!")
     # iterate through pre-programmed targeted matches that were skipped in the for-loop above
-    for pair in pairs:
-        if pair["specimen"]:
+    for pair in filtered_pairs:
+        if "specimen" in pair:
             result["specimen"] = cleanse_value(pair["specimen"])
-        elif pair["margins"]:
+            print(pair)
+            print("specimen")
+        elif "margins" in pair:
             # intentional no-space in "dcismargins", this ensures exact match with be given priority
             result["dcismargins"] = cleanse_value(pair["margins"])
-        elif pair["parts_involved"]:
+            print(pair)
+            print("dcismargins")
+        elif "parts_involved" in pair:
             result["part(s) involved"] = cleanse_value(pair["parts_involved"])
-        elif pair["lymph_node_extent"]:
+            print(pair)
+            print("parts_involved")
+        elif "lymph_node_extent" in pair:
             result["lymph_node_extent"] = cleanse_value(pair["lymph_node_extent"])
-        elif pair["treatment_effect"]:
+            print(pair)
+            print("lymph_node_extent")
+        elif "treatment_effect" in pair:
             result["treatment effect"] = cleanse_value(pair["treatment_effect"])
-        elif pair["pathologic_stage"]:
-            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"], path_to_stages=path_to_stages)
-        elif pair["comments"]:
+            print(pair)
+            print("treatment_effect")
+        elif "pathologic_stage" in pair:
+            result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"])
+            print(pair)
+            print("pathologic_stage")
+        elif "comments" in pair:
             result["comments"] = cleanse_value(pair["comments"])
+            print(pair)
+            print("comments")
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
-    correct_col_names = []
-    for (pdf_col, excel_col) in column_mappings:
-        correct_col_names.append(pdf_col)
+    correct_col_names = [pdf_col for (pdf_col, excel_col) in column_mappings]
     # if too many columns are missing, we probably isolated a section with unexpected template, so return nothing and exclude from result
     columns_found = [k.lower() for k in result.keys() if k and result[k] != ""]
     columns_missing = list(set(correct_col_names) - set(columns_found))
@@ -243,7 +263,8 @@ def autocorrect_columns(correct_col_names, dictionary, study_id, df, pickle_path
     return dictionary
 
 
-def find_nearest_alternative(source, possible_candidates, study_id, value, df, pickle_path, max_edit_distance=2,
+def find_nearest_alternative(source, possible_candidates, study_id, value, df,
+                             pickle_path, max_edit_distance=2,
                              substitution_cost=1):
     """
     find the nearest alternative by choosing the element in possible_candidates with nearest edit distance to source

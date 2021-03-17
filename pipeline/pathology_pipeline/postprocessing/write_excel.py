@@ -3,11 +3,11 @@ from collections import defaultdict
 import pandas as pd
 
 
-def save_dictionaries_into_csv_raw(dictionaries, column_mapping, csv_path, print_debug=True):
+def save_dictionaries_into_csv_raw(reports, column_mapping, csv_path, print_debug=True):
     """
     given a list of dictionaries, keeping only the targeted columns in column_mapping, save them to a csv file
     i.e., even if we extracted other columns, if it's not a target column, we don't keep it
-    :param dictionaries:                a list of dict;             each element is a dictionary that is a row in dataframe
+    :param reports:                a list of dict;             each element is a dictionary that is a row in dataframe
     :param column_mapping:      a list of (str, str);   first str is col name from PDF, second str is col from Excel
     :param csv_path:            str;                        path to output csv
     :param print_debug:         boolean;                    print debug statements and resulting dataframe if True
@@ -19,19 +19,20 @@ def save_dictionaries_into_csv_raw(dictionaries, column_mapping, csv_path, print
     pd.options.display.width = 0
 
     # remove unneeded column-value pairs
-    for dictionary in dictionaries:
-        keys = list(dictionary.keys())
+    for report in reports:
+        keys = list(report.extractions.keys())
         for k in keys:
-            if k not in pdf_columns:       # if a col-val pair in dictionary is not useful
-                del dictionary[k]          # don't include it in final csv
+            if k not in pdf_columns:  # if a col-val pair in dictionary is not useful
+                del report.extractions[k]  # don't include it in final csv
 
     # rename the column names
     renamed_dictionaries = []
-    for dictionary in dictionaries:
+    for report in reports:
         renamed_dictionary = defaultdict(str)
+        renamed_dictionary["Study #"] = report.report_id
         for index, col in enumerate(pdf_columns):
             if renamed_dictionary[col] == "":
-                val = dictionary[col]
+                val = report.extractions[col]
                 renamed_dictionary[csv_columns[index]] = val
         renamed_dictionaries.append(renamed_dictionary)
 

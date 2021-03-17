@@ -7,18 +7,16 @@ from pipeline.util import import_tools
 from pipeline.util.report import Report
 
 
-def code_extractions(reports: List[Report], substitution_cost: int, largest_cost: int,
-                     code_book_path: str = "../../data/inputs/operative_code_book.ods",
+def code_extractions(reports: List[Report], substitution_cost: int, largest_cost: int, code_book: dict,
                      path_to_weights: str = "data/outputs/training_metrics/params/tuning.csv"):
     """
+    :param code_book:
     :param path_to_weights:
     :param largest_cost:
     :param substitution_cost:
     :param reports:
-    :param code_book_path:
     :return:
     """
-    code_book = import_tools.import_code_book(code_book_path)
     tuning_weights = import_tools.import_weights(path_to_weights=path_to_weights)
 
     def code_report(single_report: Report) -> dict:
