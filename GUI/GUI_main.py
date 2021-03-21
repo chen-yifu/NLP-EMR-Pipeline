@@ -5,8 +5,8 @@ from tkinter import ttk
 from pandastable import Table
 
 # fonts
-import pipeline.processing.columns
-from pipeline.main import *
+import pipeline.pathology_pipeline.pathology_pipeline.processing.columns
+from pipeline.pathology_pipeline.pathology_pipeline import *
 
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
@@ -110,17 +110,17 @@ class StartPage(tk.Frame):
         self.log_box.config(font=EXTRA_SMALL_FONT)
         self.log_box.pack(side="top", fill='x')
 
-        # remove widgets when pipeline, we will add them back later
+        # remove widgets when pathology_pipeline, we will add them back later
         for widget in (self.stats_label, self.button_auto, self.log_scroll_bar):
             if widget:
                 widget.destroy()
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
-        controller.stats, controller.auto_correct_df = run_pipeline(print_debug=print_debug,
-                                                                    max_edit_distance_missing=max_edit_distance_missing,
-                                                                        max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                                        substitution_cost=substitution_cost,
-                                                                        resolve_ocr=resolve_ocr)
+        controller.stats, controller.auto_correct_df = run_pathology_pipeline(print_debug=print_debug,
+                                                                              max_edit_distance_missing=max_edit_distance_missing,
+                                                                              max_edit_distance_autocorrect=max_edit_distance_autocorrect,
+                                                                              substitution_cost=substitution_cost,
+                                                                              resolve_ocr=resolve_ocr)
         controller.auto_correct_df = controller.auto_correct_df.sort_values(
             ["Edit Distance", "Original Column", "Corrected Column"], ascending=[False, True, True])
 
@@ -215,7 +215,7 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = pipeline.processing.columns.load_excluded_columns_as_list()
+            cols = pipeline.pathology_pipeline.pathology_pipeline.processing.columns.load_excluded_columns_as_list()
             cols.append((original, corrected))
             save_excluded_columns(cols)
             df = load_excluded_columns_as_df()
@@ -238,7 +238,7 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = pipeline.processing.columns.load_excluded_columns_as_list()
+            cols = pipeline.pathology_pipeline.pathology_pipeline.processing.columns.load_excluded_columns_as_list()
             if (original, corrected) in cols:
                 cols.remove((original, corrected))
                 save_excluded_columns(cols)

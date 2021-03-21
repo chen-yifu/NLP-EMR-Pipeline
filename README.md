@@ -1,17 +1,19 @@
-# EMR_pipeline
+# electronic medical records pipeine for synoptic sections
 to install dependencies, run 
 ```
 pip install -r requirements.txt
 ```
 
-This repository does not contain the medical data, please do the following:
+This repository does not contain the folders for data input and output.
 
-- add a "data" folder to the root directory. 
+- Step 1: Create a data folder with 4 subfolders. These 4 subfolders are baselines, input, output, utils.
 
-- add a "data/input" folder, a "data/baselines" folder,  a "data/output" folder.
+- Step 2: In the input folder, make two subfolders, one named operative_reports and the other one named pathology_reports.
 
-- copy all the PDF reports into the folder "data/input".
+- Step 3: In the output folder, make two subfolders, one named operative_results and the other named pathology_results. 
 
-- copy the baseline files into "data/baselines"
+- Step 4: In the data/output/operative_results folder, make two subfolders, one named compare and the other named raw. 
 
-- create an "csv_files" folder in "data/output". The extracted CSV files will be saved to this folder ("data/output/csv_files").
+It should look something like this! 
+
+![folder structure](imgs/folder_structure.png)
