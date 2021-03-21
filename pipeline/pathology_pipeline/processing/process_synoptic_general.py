@@ -86,7 +86,7 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
         return " ".join([w for w in cleaned_val.split() if len(w) > 1])
     colon_index = val.find(":")
     if colon_index != -1:
-        val = val[colon_index+1:]
+        val = val[colon_index + 1:]
     val = re.sub(r":\s*$", "", val)  # remove ":"
     return function(val) if function else val.replace("\n", " ").strip()
 
@@ -169,7 +169,11 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     # checking if is text or numerical
     is_text = True if report_type is ReportType.TEXT else False
 
+    # todo
     def missing_colunms(cols_so_far):
+        if report_type is ReportType.NUMERICAL:
+            return list(set(correct_col_names) - set(columns_found))
+
         cols_so_far = list(set(cols_so_far))
         list_of_list_of_cols = [v for k, v in column_mappings_dict.items() if
                                 len([c for c in cols_so_far if c in v or c + ":" in v]) == 0]
@@ -300,9 +304,7 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
     # if too many columns are missing, we probably isolated a section with unexpected template,
     # so return nothing and exclude from result
     columns_found = [k.lower() for k in result.keys() if k and result[k] != ""]
-    # todo: correct columns missing
-    columns_missing = missing_colunms(columns_found) if report_type is ReportType.TEXT else list(
-        set(correct_col_names) - set(columns_found))
+    columns_missing = missing_colunms(columns_found)
     try:
         percentage_missing = len(columns_missing) / len(list(set(correct_col_names)))
         if percentage_missing > skip_threshold:
