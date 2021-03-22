@@ -127,6 +127,23 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
                            last_word: str = "", list_multi_line_cols: list = [], no_anchor_list: list = [],
                            contained_capture_list: list = [], seperator: str = ":", no_sep_list: list = [],
                            add_sep: bool = False, sep_list: list = []) -> Tuple[str, Dict[str, List[str]]]:
+    """
+    :param columns:
+    :param ignore_caps:
+    :param anchor_list:
+    :param capture_only_first_line:
+    :param anchor:
+    :param is_anchor:
+    :param last_word:
+    :param list_multi_line_cols:
+    :param no_anchor_list:
+    :param contained_capture_list:
+    :param seperator:
+    :param no_sep_list:
+    :param add_sep:
+    :param sep_list:
+    :return:
+    """
     col_keys = list(columns.keys())
     template_regex = r""
     mappings_to_regex_vals = {}
