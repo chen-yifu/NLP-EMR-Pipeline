@@ -16,7 +16,7 @@ from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictiona
 from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
 from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
-from pipeline.pathology_pipeline.processing.process_synoptic_general import process_synoptics_and_ids
+from pipeline.process_synoptic_general import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths, import_code_book, \
     import_pdf_human_cols_as_dict
 from pipeline.util.paths import get_paths

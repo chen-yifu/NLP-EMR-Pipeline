@@ -2,11 +2,12 @@ import itertools
 import re
 from typing import Tuple, List
 from pipeline.util.regex_tools import right_operative_report, left_operative_report, export_operative_regex, \
-    export_pathology_regex, regex_extract, extract_section
+    export_pathology_regex, extract_section
 from pipeline.util.report import Report
 from pipeline.util.report_type import ReportType
 
 
+# TODO: This is still pretty bad
 def find_left_right_label(string, report_type, print_debug=True):
     """
     given the synoptic report, detect it's about the left or right breast

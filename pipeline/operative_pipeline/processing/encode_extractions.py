@@ -1,8 +1,6 @@
 from typing import List, Tuple
 import string
-
 from nltk import edit_distance
-
 from pipeline.util import import_tools
 from pipeline.util.report import Report
 

@@ -1,7 +1,6 @@
 import os
 from typing import List, Tuple
 import pandas as pd
-from pipeline.util import import_tools
 from pipeline.util.report import Report
 from pipeline.util.utils import get_current_time
 

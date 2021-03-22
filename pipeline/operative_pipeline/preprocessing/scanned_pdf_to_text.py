@@ -1,6 +1,5 @@
 import re
 from typing import List
-
 import pdftotext
 import pytesseract
 from pdf2image import convert_from_path

@@ -1,6 +1,5 @@
 from typing import List, Tuple
 import nltk
-from pipeline.util import import_tools
 from pipeline.util.report import Report
 
 
