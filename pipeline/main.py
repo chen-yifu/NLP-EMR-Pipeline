@@ -3,7 +3,7 @@ pipeline starts here
 """
 
 from pipeline.emr_pipeline import run_pipeline
-from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
+from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.util.report_type import ReportType
 from pipeline.util.utils import get_full_path
 

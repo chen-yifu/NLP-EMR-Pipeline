@@ -8,15 +8,15 @@ from pipeline.operative_pipeline.postprocessing.compare_excel import nice_compar
 from pipeline.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, \
     raw_reports_to_spreadsheet, change_unfiltered_to_dict, add_report_id
 from pipeline.operative_pipeline.preprocessing.extract_cols import extract_cols
-from pipeline.operative_pipeline.preprocessing.extract_synoptic_operative import clean_up_reports
-from pipeline.operative_pipeline.preprocessing.scanned_pdf_to_text import convert_pdf_to_text, load_in_reports
+from pipeline.preprocessing.extract_synoptic import clean_up_reports
+from pipeline.preprocessing.scanned_pdf_to_text import convert_pdf_to_text, load_in_reports
 from pipeline.operative_pipeline.processing.encode_extractions import code_extractions
 from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
-from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
+from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
-from pipeline.process_synoptic_general import process_synoptics_and_ids
+from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths, import_code_book, \
     import_pdf_human_cols_as_dict
 from pipeline.util.paths import get_paths
@@ -34,6 +34,13 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                  max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2,
                  resolve_ocr=True) -> Union[Tuple[Optional[Tuple[int, int, int, int]], DataFrame], dict]:
     """
+    :param sep_list:
+    :param anchor_list:
+    :param no_anchor_list:
+    :param anchor:
+    :param contained_capture_list:
+    :param is_anchor:
+    :param seperator:
     :param tools:                                   functions that other columns need for cleansing
     :param other_paths:                             other more specific paths
     :param baseline_version:                        the baseline version to compare to

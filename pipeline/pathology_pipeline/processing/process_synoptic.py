@@ -2,7 +2,7 @@ import re
 import pandas as pd
 from collections import defaultdict
 from nltk.metrics.distance import edit_distance
-from pipeline.pathology_pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
+from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.pathology_pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.util import utils
 
