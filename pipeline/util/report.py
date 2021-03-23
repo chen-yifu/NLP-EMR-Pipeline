@@ -4,7 +4,9 @@ from pipeline.util.report_type import ReportType
 
 
 class Report:
-
+    """
+    Represents information extracted and manipulated from a scanned pdf report.
+    """
     def __init__(self, text: str, report_id: str, extractions: Union[dict, list] = None, laterality: str = "",
                  not_found: list = None, encoded=None, report_type: ReportType = None):
         """

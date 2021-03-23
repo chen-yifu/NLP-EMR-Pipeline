@@ -5,7 +5,7 @@ from pipeline.pathology_pipeline.processing import columns
 zero_empty_columns = columns.get_zero_empty_columns()
 
 
-def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path, print_debug=True, ):
+def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path, print_debug=True):
     """
     given two csv files to compare, merge the data into a xlsx file, while highlighting the cells that are different
     :param csv_path_coded:      str;            path to csv file that has been codified

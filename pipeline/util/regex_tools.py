@@ -8,12 +8,19 @@ from pipeline.util.import_tools import table
 
 
 def regex_extract(regex: str, uncleaned_txt: str) -> list:
+    """
+    Helper function to execute extraction based on inputted regex pattern.
+
+    :param regex:
+    :param uncleaned_txt:
+    :return:
+    """
     return re.findall(re.compile(regex), uncleaned_txt)
 
 
 def extract_section(regexs: List[Tuple[str, str]], uncleaned_txt: str) -> list:
     """
-    General function that takes in a list of regex and returns the first one that returns a result
+    General function that takes in a list of regex and returns the first one that returns a result.
 
     :param uncleaned_txt:     string to use regex on
     :param regexs:            list of tuple(regex,to_append) and the list should be entered in priority
@@ -31,7 +38,12 @@ def extract_section(regexs: List[Tuple[str, str]], uncleaned_txt: str) -> list:
 
 def add_asterisk_and_ors(list_of_words: List[Union[str, List[str]]]) -> str:
     """
-    Helper function to convert a string into regex
+    Helper function to convert a string to a regex format.
+
+    - [cat] becomes c * a * t
+
+    - [cat,dog] becomes (c *a *t|d *o *g)
+
 
     :param list_of_words:
     :return:
@@ -56,6 +68,7 @@ def add_asterisk_and_ors(list_of_words: List[Union[str, List[str]]]) -> str:
 def add_asterisk(word: str) -> str:
     """
     Adds asterisk where appropriate
+
     :param word:
     :return:
     """
@@ -78,6 +91,18 @@ def add_asterisk(word: str) -> str:
 
 
 def to_camel_or_underscore(col: str, seen: set) -> Tuple[str, set]:
+    """
+    Since regex needs variable names, we change the columns into variables names.
+    Example:
+
+    - indication -> indication (stays as is)
+    - pathologic stage -> pathologic_stage (space is converted into _)
+    - incision and its relation to tumour -> incisionAndItsRelationToTumour (if it is longer than 32 chars with spaces it becomes camelCase instead of underscore.
+
+    :param col:
+    :param seen:
+    :return:
+    """
     col = col.strip()
     camelCase = ""
     if len(col) > 32:
@@ -112,6 +137,14 @@ def to_camel_or_underscore(col: str, seen: set) -> Tuple[str, set]:
 
 
 def make_punc_regex_literal(str_with_punc: str) -> str:
+    """
+    Changes punctuation in a word so regex pattern will interpret it literally.
+    Example:
+    - indication? -> indication\?
+
+    :param str_with_punc:
+    :return:
+    """
     fixed_str = ""
     punc = ("?", "(", ")", "\\", "/")
     for l in str_with_punc:
@@ -128,20 +161,23 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
                            contained_capture_list: list = [], seperator: str = ":", no_sep_list: list = [],
                            add_sep: bool = False, sep_list: list = []) -> Tuple[str, Dict[str, List[str]]]:
     """
-    :param columns:
-    :param ignore_caps:
-    :param anchor_list:
-    :param capture_only_first_line:
-    :param anchor:
-    :param is_anchor:
-    :param last_word:
-    :param list_multi_line_cols:
-    :param no_anchor_list:
-    :param contained_capture_list:
-    :param seperator:
-    :param no_sep_list:
-    :param add_sep:
-    :param sep_list:
+    Based on a regex pattern template, turns a list of columns into a regex that can capture the values associated with
+    those columns.
+
+    :param columns:                       the columns that you want to capture
+    :param ignore_caps:                   False if you want the regex to be case sensitive, True (default) otherwise: https://regex101.com/r/G44Egb/1
+    :param anchor_list:                   list of columns you want to match to the start of the line.
+    :param capture_only_first_line:       If you know the value only spans one line, leave this as True. Otherwise change to False: https://regex101.com/r/xDrHz4/1
+    :param anchor:                        What position is being matched before the column: https://regex101.com/r/JGWIKB/1
+    :param is_anchor:                     Whether or not you want to match at the start of the line. Default is False.
+    :param last_word:                     The last word you want to cap the regex at if it is not the last column
+    :param list_multi_line_cols:          Columns that you know have values that span two lines: https://regex101.com/r/pgzUuH/1
+    :param no_anchor_list:                Columns you do not want to have the anchor
+    :param contained_capture_list:        Columns you want the capture to be between columns: https://regex101.com/r/akxofC/1
+    :param seperator:                     The punctuation or letters that seperates a column and value. Default is :
+    :param no_sep_list:                   Columns which you do not want the separator to be used in the regex
+    :param add_sep:                       Whether or not you want the separator to be included in the regex. Default is False.
+    :param sep_list:                      Columns where you want the separator to be added to the regex.
     :return:
     """
     col_keys = list(columns.keys())
