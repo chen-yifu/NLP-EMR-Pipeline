@@ -8,6 +8,8 @@ table = str.maketrans(dict.fromkeys(string.punctuation))
 
 def import_weights(path_to_weights: str) -> Dict[str, Tuning]:
     """
+    Imports the tuning weights for the operative reports pipeline found in data/utils/training_metrics/params
+
     :param path_to_weights:
     """
     tuning_dict = {}
@@ -22,8 +24,12 @@ def import_weights(path_to_weights: str) -> Dict[str, Tuning]:
 
 def import_pdf_human_cols(pdf_human_csv: str, keep_punc: bool = False) -> List[Tuple[str, str]]:
     """
-    :type pdf_human_csv: str
-    :return List[Tuple[str, Any]]
+    Imports the columns you want to find from a csv file as a list of tuples.
+    [(pdf_col, human_annotated_col),(pdf_col, human_annotated_col),(pdf_col, human_annotated_col), ...]
+
+    :param pdf_human_csv:
+    :param keep_punc:
+    :return:
     """
     pdf_cols_human_cols_list = []
     pdf_cols_human_cols = pd.read_csv(pdf_human_csv)
@@ -42,6 +48,8 @@ def import_pdf_human_cols(pdf_human_csv: str, keep_punc: bool = False) -> List[T
 
 def import_code_book(code_book_path: str) -> dict:
     """
+    Imports a code book in excel sheet used for encoding extractions format into a dictionary.
+
     :param code_book_path: str
     :return code_book: Dict of Dict
     """
@@ -82,6 +90,9 @@ def get_input_paths(start: int, end: int, skip: List[int], path_to_reports: str,
 
 def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip=None) -> Dict[str, List[str]]:
     """
+    Imports the columns you want to find from a csv file as a dictionary.
+    {human_annotated_col:[pdf_col, pdf_col, ...],human_annotated_col:[pdf_col, pdf_col, ...],... }
+
     :param pdf_human_excel_sheet:
     :param skip:
     :return:
@@ -100,4 +111,3 @@ def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip=None) -> Dict
             cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
             pdf_cols_human_cols_dict[human_col] = cleaned_pdf_col_list
     return pdf_cols_human_cols_dict
-

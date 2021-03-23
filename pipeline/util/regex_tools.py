@@ -178,7 +178,7 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
     :param no_sep_list:                   Columns which you do not want the separator to be used in the regex
     :param add_sep:                       Whether or not you want the separator to be included in the regex. Default is False.
     :param sep_list:                      Columns where you want the separator to be added to the regex.
-    :return:
+    :return:                              A regex pattern
     """
     col_keys = list(columns.keys())
     template_regex = r""
@@ -259,17 +259,25 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
 
 
 def generic_capture_regex(negative_lookahead: str) -> str:
+    """
+    Creates a general capturing regex based on an input of what you are looking behind.
+
+    :param negative_lookahead:
+    :return:
+    """
     return r"(?i)(?P<column>[^-:]*(?=:)):(?P<value>(?:(?!{negative_lookahead})[\s\S])*)*".format(
         negative_lookahead=negative_lookahead)
 
 
+# todo: this function is pretty confusing
 def capture_double_regex(starting_word: List[Union[str, List[str]]],
                          ending_word: List[Union[str, List[str]]],
                          capture_first_line: bool = False,
                          capture_last_line: bool = False,
                          ignore_capials: bool = True) -> str:
     """
-    for spaces:
+    Creates a regex pattern that captures between two words or phrases.
+
     ["cat dog"],["fish"], True ->  r"(?i)c *a *t d *o *g(?P<capture>(?:(?!f *i *s *h.*)[\s\S])+)"
     ["cat dog"],["fish"], True ->  r"(?i)c *a *t d *o *g.+(?P<capture>(?:(?!f *i *s *h)[\s\S])+)"
     ["cat dog"],["fish"] ->        r"(?i)c *a *t d *o *g(?P<capture>(?:(?!f *i *s *h)[\s\S])+)"
@@ -282,7 +290,7 @@ def capture_double_regex(starting_word: List[Union[str, List[str]]],
     :param capture_first_line:      whether or not you want your regex to capture everything after the first word
     :param starting_word:           the first word to look for
     :param ending_word:             the word to stop at
-    :return:
+    :return:                        a regex pattern
     """
     modified_starting_word = add_asterisk_and_ors(starting_word)
     if capture_first_line:

@@ -1,12 +1,13 @@
-# import paths for operative report
 from pipeline.util.utils import get_full_path, get_current_time
 
 
 def get_paths(report_type: str, baseline_version: str, other_paths=None) -> dict:
     """
-    :param report_type:
-    :param baseline_version:
-    :param other_paths:
+    Creates a set of paths to be used by the pipeline.
+
+    :param report_type:           the report name. should be same for all reports you want to use the pipeline on
+    :param baseline_version:      which baseline you are comparing to.
+    :param other_paths:           any additional paths which are not covered by the function.
     :return:
     """
     timestamp = get_current_time()
