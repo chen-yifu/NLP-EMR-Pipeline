@@ -18,8 +18,10 @@ stop_words = set(stopwords.words('english'))
 
 def get_extraction_specific_regex(unfiltered_str: str, synoptic_report_regex: str) -> dict:
     """
-    :param unfiltered_str:
-    :param synoptic_report_regex:
+    Extracts information from the report using the generated regex. Removes captures that are None or "". Does not clean the data.
+
+    :param unfiltered_str:                 the report to be looked at
+    :param synoptic_report_regex:          the regex pattern to be used
     :return:
     """
     matches = re.finditer(synoptic_report_regex, unfiltered_str, re.MULTILINE)
@@ -33,9 +35,13 @@ def get_extraction_specific_regex(unfiltered_str: str, synoptic_report_regex: st
 
 def get_generic_extraction_regex(unfiltered_str: str, regex: str, is_text: bool = False, tools: dict = {}) -> dict:
     """
-    :param unfiltered_str:
-    :param regex:
-    :return:
+    Extracts information from the generic capture regex. Cleans out values that are None or "" and performs cleaning on the column and value.
+
+    :param tools:               dictionary of functions that certain columns may need to use
+    :param is_text:             whether or not the report is ReportType.TEXT or NUMERICAL
+    :param unfiltered_str:      the report that the regex is to be used on
+    :param regex:               the generic regex to be used
+    :return:                    dictionary of the cleaned pairs
     """
     matches = re.finditer(regex, unfiltered_str, re.MULTILINE)
     generic_pairs = {}
@@ -50,6 +56,8 @@ def get_generic_extraction_regex(unfiltered_str: str, regex: str, is_text: bool 
 def cleanse_column(col: str, is_text: bool = False) -> str:
     """
     cleanse the column by removing "-" and ":"
+
+    :param is_text:
     :param col:      raw column
     :return:         cleansed column
     """
@@ -61,6 +69,32 @@ def cleanse_column(col: str, is_text: bool = False) -> str:
 
 
 def remove_new_line_if_colon_present(s: str):
+    """
+    - When regex is contained capture, it may include information we do not want. For example ->
+    column : value \n
+    column1 : value \n
+    colunm2: value
+
+    - If we decide to capture everything from column to column2 the resulting phrase is ->
+    value \n
+    column1 : value \n
+    colunm
+
+    - This function will strip the phrase to by checking if the next new line contains a colon or not ->
+    value
+
+    - Another example ->
+    column : value \n
+    value value value \n
+    colunm2: value
+
+    - becomes ->
+    value \n
+    value value value
+
+    :param s:  the string you want to clean
+    :return:   cleaned string
+    """
     split_by_newline = s.split("\n")
     val = split_by_newline[0] + " "
     for line in split_by_newline[1:]:
@@ -74,11 +108,14 @@ def remove_new_line_if_colon_present(s: str):
 # todo: be able to clean colons
 def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     """
-    cleanse the value by removing linebreaks
-    :param remove_nums:
-    :param function:
-    :param val:      raw value
-    :return:         cleansed value
+    Cleanse the captured value according to whether it is text or numerical
+    TEXT: removes all punctuation and lowers everything and removes single letters and strips all spaces
+    NUMERICAL: only removes colons if the colon is in a position like this -> : value and strips all spaces
+
+    :param is_text:
+    :param function:       function to process the value if you do not want it to be cleaned
+    :param val:            raw value
+    :return:               cleansed value
     """
     if is_text:
         cleaned_val = remove_new_line_if_colon_present(val)
@@ -99,13 +136,15 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     """
     process and extract data from a list of synoptic reports by using regular expression
 
-    :param max_edit_distance_autocorrect:
-    :param substitution_cost:
+    :param pickle_path:                    path to columns you want to exclude from autocorrect if applicable
+    :param column_mappings_dict:           human excel columns mapped to
+    :param max_edit_distance_autocorrect:  the maximum edit distance for autocorrecting extracted pairs
+    :param substitution_cost:              the substitution cost for edit distance
     :param max_edit_distance_missing:      max allowed edit distance to find missing cells
-    :param regex_mappings:
-    :param general_regex:
-    :param tools:
-    :param specific_regex:
+    :param regex_mappings:                 the mappings of columns to their regex variables
+    :param general_regex:                  a regular pattern that extracts column and values
+    :param tools:                          a dictionary of column names mapped to functions to act on any values of that column
+    :param specific_regex:                 the regex pattern generated earlier in the pipeline based on the user input columns
     :param unfiltered_reports:             synoptic sections and study IDs
     :param column_mappings:                first str is col name from PDF, second str is col from Excel
     :param print_debug:                    print debug statements in Terminal if True
@@ -150,6 +189,8 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
                              max_edit_distance_missing=5, max_edit_distance_autocorrect=5, substitution_cost=2,
                              skip_threshold=0.95) -> dict:
     """
+    :param pickle_path:
+    :param column_mappings_dict:
     :param report_type:
     :param substitution_cost:
     :param specific_regex:
@@ -171,6 +212,11 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
 
     # todo
     def missing_colunms(cols_so_far):
+        """
+        :param correct_cols:
+        :param cols_so_far:
+        :return:
+        """
         if report_type is ReportType.NUMERICAL:
             return list(set(correct_col_names) - set(columns_found))
 
@@ -186,14 +232,15 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
         find the nearest alternative by choosing the element in possible_candidates with nearest edit distance to source
         if multiple candidates have the nearest distance, return the first candidate by position
 
-        :param list_of_dict_with_stats:
-        :param original_col:            str;                the original source
-        :param possible_candidates:     list of str;        possible strings that the source string could be
-        :param study_id:                str;                study id
-        :param value:                   str;                the original value inside the cell
-        :param max_edit_distance:       int;                maximum distance allowed between source and candidate
-        :param substitution_cost:       int;                cost to substitute a character instead of inserting/removing
-        :return:                        str;    candidate that is most similar to source, None if exceeds max_edit_distance
+        :param pickle_path:              path to data that GUI generates if a user is able to select columns to exclude.
+        :param list_of_dict_with_stats:  dict of stats of column corrections
+        :param original_col:             the original source
+        :param possible_candidates       possible strings that the source string could be
+        :param study_id:                 study id
+        :param value:                    the original value inside the cell
+        :param max_edit_distance:        maximum distance allowed between source and candidate
+        :param substitution_cost:        cost to substitute a character instead of inserting/removing
+        :return:                         candidate that is most similar to source, None if exceeds max_edit_distance
         """
         # get a list of excluded source-target column name pairs that we saved earlier
         all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path) if pickle_path else []
@@ -226,6 +273,8 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
         """
         using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
 
+        :param tools:
+        :param pickle_path:
         :param correct_col_names:            a list of correct column names
         :param extractions_so_far:           extracted generic key-value pairs from synoptic reports
         :param study_id:                     the study id of the dictionary
