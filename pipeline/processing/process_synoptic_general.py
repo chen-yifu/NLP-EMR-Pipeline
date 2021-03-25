@@ -217,13 +217,16 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
         :param cols_so_far:
         :return:
         """
-        if report_type is ReportType.NUMERICAL:
-            return list(set(correct_col_names) - set(columns_found))
-
-        cols_so_far = list(set(cols_so_far))
-        list_of_list_of_cols = [v for k, v in column_mappings_dict.items() if
-                                len([c for c in cols_so_far if c in v or c + ":" in v]) == 0]
-        return [c for sublist in list_of_list_of_cols for c in sublist]
+        missing = list(set(correct_col_names) - set(cols_so_far))
+        for pdf_col in column_mappings_dict.values():
+            for csf in cols_so_far:
+                if csf in pdf_col:
+                    for pcol in pdf_col:
+                        try:
+                            missing.remove(pcol)
+                        except ValueError:
+                            pass
+        return missing
 
     def find_nearest_alternative(original_col, possible_candidates: List[str], study_id, value,
                                  list_of_dict_with_stats: List[dict], pickle_path: str = None, max_edit_distance=2,
@@ -342,17 +345,20 @@ def process_synoptic_section(synoptic_report_str: str, study_id: str, report_typ
         pdf_key = regex_mappings[key][-1].lower()
         in_tools = pdf_key in tools.keys()
         val = cleanse_value(val, is_text, function=tools[pdf_key]) if in_tools else cleanse_value(val, is_text)
-        result[regex_mappings[key][-1].translate(table)] = val
+        result[regex_mappings[key][-1]] = val
 
     # save study_id
     result["study"] = study_id
 
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
     correct_col_names = [pdf_col for (pdf_col, excel_col) in column_mappings]
+    print(correct_col_names)
+    print([v for k, v in column_mappings_dict.items()])
 
     # if too many columns are missing, we probably isolated a section with unexpected template,
     # so return nothing and exclude from result
     columns_found = [k.lower() for k in result.keys() if k and result[k] != ""]
+    print(columns_found)
     columns_missing = missing_colunms(columns_found)
     try:
         percentage_missing = len(columns_missing) / len(list(set(correct_col_names)))
