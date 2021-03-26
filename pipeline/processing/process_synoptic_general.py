@@ -162,7 +162,7 @@ def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of
 
 
 def process_synoptic_section(synoptic_report_str: str, report_id: str, report_type: ReportType, pickle_path: str,
-                             column_mappings_dict: Dict[str, List[str]], column_mappings: List[Tuple[str, str]],
+                             column_mappings_dict: Dict[str, List[str]],
                              list_of_dict_with_stats: List[dict], regex_mappings: Dict[str, List[str]],
                              specific_regex: str, general_regex: str, tools: dict = {}, print_debug: bool = True,
                              max_edit_distance_missing=5, max_edit_distance_autocorrect=5, substitution_cost=2,
@@ -280,7 +280,7 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     return result
 
 
-def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings: List[Tuple[str, str]],
+def process_synoptics_and_ids(unfiltered_reports: List[Report],
                               column_mappings_dict: Dict[str, List[str]], specific_regex: str, general_regex: str,
                               regex_mappings: Dict[str, List[str]], pickle_path, tools: dict = {}, print_debug=True,
                               max_edit_distance_missing: int = 5, max_edit_distance_autocorrect: int = 5,
@@ -315,7 +315,7 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
         print(report.report_id)
         print(report.text)
         report.extractions = process_synoptic_section(report.text, report.report_id, report.report_type, pickle_path,
-                                                      column_mappings_dict, column_mappings, list_of_dict_with_stats,
+                                                      column_mappings_dict, list_of_dict_with_stats,
                                                       regex_mappings, specific_regex, general_regex, tools,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
