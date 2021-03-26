@@ -9,6 +9,7 @@ from nltk import edit_distance
 from nltk.corpus import stopwords
 from pipeline.pathology_pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.processing.clean_text import cleanse_column, cleanse_value
+from pipeline.util.column import Column
 from pipeline.util.report import Report
 import pandas as pd
 from pipeline.util.report_type import ReportType
@@ -162,14 +163,13 @@ def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of
 
 
 def process_synoptic_section(synoptic_report_str: str, report_id: str, report_type: ReportType, pickle_path: str,
-                             column_mappings_dict: Dict[str, List[str]],
-                             list_of_dict_with_stats: List[dict], regex_mappings: Dict[str, List[str]],
-                             specific_regex: str, general_regex: str, tools: dict = {}, print_debug: bool = True,
-                             max_edit_distance_missing=5, max_edit_distance_autocorrect=5, substitution_cost=2,
-                             skip_threshold=0.95) -> dict:
+                             column_mappings: Dict[str, Column], list_of_dict_with_stats: List[dict],
+                             regex_mappings: Dict[str, List[str]], specific_regex: str, general_regex: str,
+                             tools: dict = {}, print_debug: bool = True, max_edit_distance_missing=5,
+                             max_edit_distance_autocorrect=5, substitution_cost=2, skip_threshold=0.95) -> dict:
     """
     :param pickle_path:
-    :param column_mappings_dict:
+    :param column_mappings:
     :param report_type:
     :param substitution_cost:
     :param specific_regex:
@@ -192,14 +192,16 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     # todo
     def missing_columns(correct_cols: List[str], cols_so_far: List[str]):
         """
+        :param correct_cols:
         :param cols_so_far:
         :return:
         """
         missing = list(set(correct_cols) - set(cols_so_far))
-        for pdf_col in column_mappings_dict.values():
+        for pdf_col in column_mappings.values():
             for csf in cols_so_far:
-                if csf in pdf_col:
-                    for pcol in pdf_col:
+                primary_cols = pdf_col.cleaned_primary_report_col
+                if csf in primary_cols:
+                    for pcol in primary_cols:
                         try:
                             missing.remove(pcol)
                         except ValueError:
@@ -228,8 +230,8 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
 
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
     correct_col_names = []
-    for human_col, pdf_cols in column_mappings_dict.items():
-        correct_col_names += [p.translate(table) for p in pdf_cols]
+    for pdf_cols in column_mappings.values():
+        correct_col_names += pdf_cols.cleaned_primary_report_col
 
     # if too many columns are missing, we probably isolated a section with unexpected template,
     # so return nothing and exclude from result
@@ -237,7 +239,7 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     columns_missing = missing_columns(correct_col_names, columns_found)
 
     try:
-        percentage_missing = len(columns_missing) / len(list(set(correct_col_names)))
+        percentage_missing = len(columns_missing) / len(correct_col_names)
         if percentage_missing > skip_threshold:
             if print_debug:
                 print("Ignored study id {} because too many columns are missing."
@@ -280,16 +282,16 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     return result
 
 
-def process_synoptics_and_ids(unfiltered_reports: List[Report],
-                              column_mappings_dict: Dict[str, List[str]], specific_regex: str, general_regex: str,
-                              regex_mappings: Dict[str, List[str]], pickle_path, tools: dict = {}, print_debug=True,
-                              max_edit_distance_missing: int = 5, max_edit_distance_autocorrect: int = 5,
+def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings: Dict[str, Column], specific_regex: str,
+                              general_regex: str, regex_mappings: Dict[str, List[str]], pickle_path, tools: dict = {},
+                              print_debug=True, max_edit_distance_missing: int = 5,
+                              max_edit_distance_autocorrect: int = 5,
                               substitution_cost: int = 2) -> Tuple[List[Report], pd.DataFrame]:
     """
     process and extract data from a list of synoptic reports by using regular expression
 
     :param pickle_path:                    path to columns you want to exclude from autocorrect if applicable
-    :param column_mappings_dict:           human excel columns mapped to
+    :param column_mappings:                dict of human col name mapped to Column object
     :param max_edit_distance_autocorrect:  the maximum edit distance for autocorrecting extracted pairs
     :param substitution_cost:              the substitution cost for edit distance
     :param max_edit_distance_missing:      max allowed edit distance to find missing cells
@@ -315,7 +317,7 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report],
         print(report.report_id)
         print(report.text)
         report.extractions = process_synoptic_section(report.text, report.report_id, report.report_type, pickle_path,
-                                                      column_mappings_dict, list_of_dict_with_stats,
+                                                      column_mappings, list_of_dict_with_stats,
                                                       regex_mappings, specific_regex, general_regex, tools,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,

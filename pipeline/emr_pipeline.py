@@ -129,7 +129,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
     print(synoptic_regex)
     filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
-                                                                 column_mappings_dict,
+                                                                 column_mappings,
                                                                  synoptic_regex,
                                                                  r"(?P<column>.*){}(?P<value>.*)".format(seperator),
                                                                  print_debug=print_debug,
