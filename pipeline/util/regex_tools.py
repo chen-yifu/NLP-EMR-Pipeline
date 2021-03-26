@@ -206,19 +206,20 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
 
         # adding symbolic or between words and making punctuation regexible
         curr_col = make_punc_regex_literal("|".join(primary_curr_cols))
-
         next_col = make_punc_regex_literal("|".join(next_cols))
 
         # this is for only capturing a single line
         end_cap = ".+)"
+        # if we want to capture up to a keyword
+        if not capture_only_first_line or is_contained_capture and not use_seperater_for_contained_capture:
+            end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col)
+        elif use_seperater_for_contained_capture:
+            end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=seperator)
 
         # column has been converted to variable and seen is list of already used variable names
         # regex variable names must be unique
         primary_variablefied, seen = to_camel_or_underscore(curr_col, seen)
 
-        # if we want to capture up to a keyword
-        if not capture_only_first_line or is_contained_capture:
-            end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col)
         # if we want to "anchor" the word to the start of the document
         if is_anchor and not dont_add_anchor or add_anchor:
             capture_anchor = r"{anchor}({curr_col})".format(curr_col=curr_col, anchor=anchor)

@@ -27,9 +27,9 @@ from pipeline.util.utils import find_all_vocabulary, get_current_time
 
 def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str, report_ending: str,
                  baseline_version: str, anchor: str, seperator: str = ":", other_paths: dict = {},
-                 is_anchor: bool = False, multi_line_cols: list = [], cols_to_skip: list = [],
-                 contained_capture_list: list = [], no_anchor_list: list = [], anchor_list: list = [],
-                 print_debug: bool = True, max_edit_distance_missing: int = 5, tools: dict = {},
+                 use_seperator_to_capture: bool = False, is_anchor: bool = False, multi_line_cols: list = [],
+                 cols_to_skip: list = [], contained_capture_list: list = [], no_anchor_list: list = [],
+                 anchor_list: list = [], print_debug: bool = True, max_edit_distance_missing: int = 5, tools: dict = {},
                  max_edit_distance_autocorrect_path: int = 5, substitution_cost_oper: int = 1, sep_list: list = [],
                  max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2,
                  resolve_ocr=True) -> Union[Tuple[Optional[Tuple[int, int, int, int]], DataFrame], dict]:
@@ -50,7 +50,6 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     :param report_name:                             what is the type of the report? pathology, surgical, operative
     :param start:                                   the first report id
     :param end:                                     the last report id
-    :param skip:                                    reports to skip based on id
     :param report_type:                             the type of report being analyzed, is an Enum
     :param print_debug:                             print debug statements in Terminal if True
     :param max_edit_distance_missing:               the maximum edit distance for searching for missing cell values
