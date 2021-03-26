@@ -54,8 +54,7 @@ def import_code_book(code_book_path: str) -> dict:
     return code_book
 
 
-def get_input_paths(start: int, end: int, skip: List[int], path_to_reports: str,
-                    report_str: str) -> List[str]:
+def get_input_paths(start: int, end: int, path_to_reports: str, report_str: str) -> List[str]:
     """
     Given the starting and ending pdf ids, return the full path of all documents
     REQUIRES the pdfs to be located in "../data/input" folder
@@ -69,7 +68,7 @@ def get_input_paths(start: int, end: int, skip: List[int], path_to_reports: str,
     :return:                      list of paths
     """
     # make general list of paths
-    nums_list = [n for n in range(start, end + 1) if n not in skip]
+    nums_list = [n for n in range(start, end + 1)]
     return [path_to_reports + report_str.format(i) for i in nums_list]
 
 

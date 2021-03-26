@@ -25,7 +25,7 @@ from pipeline.util.report_type import ReportType
 from pipeline.util.utils import find_all_vocabulary, get_current_time
 
 
-def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType, report_name: str, report_ending: str,
+def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str, report_ending: str,
                  baseline_version: str, anchor: str, seperator: str = ":", other_paths: dict = {},
                  is_anchor: bool = False, multi_line_cols: list = [], cols_to_skip: list = [],
                  contained_capture_list: list = [], no_anchor_list: list = [], anchor_list: list = [],
@@ -63,12 +63,12 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     """
     timestamp = get_current_time()
     paths = get_paths(report_name, baseline_version, other_paths)
-    paths_to_pdfs = get_input_paths(start, end, skip=skip, path_to_reports=paths["path to reports"],
+    paths_to_pdfs = get_input_paths(start, end, path_to_reports=paths["path to reports"],
                                     report_str="{} " + report_ending)
     if report_type is ReportType.TEXT:
         report_ending = report_ending[:-3] + "txt"
 
-    paths_to_reports_to_read_in = get_input_paths(start, end, skip=skip, path_to_reports=paths["path to reports"],
+    paths_to_reports_to_read_in = get_input_paths(start, end, path_to_reports=paths["path to reports"],
                                                   report_str="{} " + report_ending)
 
     compare_file_path = "compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(timestamp,
@@ -80,11 +80,11 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     # try to read in the reports. if there is exception this is because the pdfs have to be turned into text files first
     # then try to read in again.
     try:
-        reports_string_form = load_in_reports(start=start, end=end, skip=skip, paths_to_r=paths_to_reports_to_read_in)
+        reports_string_form = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
     except FileNotFoundError or Exception:
         convert_pdf_to_text(path_to_input=paths["path to input"], paths_to_pdfs=paths_to_pdfs,
                             paths_to_texts=paths_to_reports_to_read_in)
-        reports_string_form = load_in_reports(start=start, end=end, skip=skip, paths_to_r=paths_to_reports_to_read_in)
+        reports_string_form = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
 
     medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
                                              print_debug=print_debug,

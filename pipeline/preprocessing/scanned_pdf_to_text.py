@@ -34,28 +34,32 @@ def convert_pdf_to_text(path_to_input: str, paths_to_pdfs: List[str], paths_to_t
      :param path_to_text:          path to where the generated text of the pdf reports should be put
 
      """
+    if not os.path.exists(path_to_input):
+        os.makedirs(path_to_input)
+
     pdf_path_and_text_path = zip(paths_to_pdfs, paths_to_texts)
     for pdf_path, output_filename in pdf_path_and_text_path:
-        if not os.path.exists(path_to_input):
-            os.makedirs(path_to_input)
-        pages = convert_from_path(pdf_path)
-        pg_cntr = 1
+        try:
+            pages = convert_from_path(pdf_path)
+            pg_cntr = 1
 
-        sub_dir = str(path_to_input + "images/" + pdf_path.split('/')[-1].replace('.pdf', '')[0:20] + "/")
-        if not os.path.exists(sub_dir):
-            os.makedirs(sub_dir)
+            sub_dir = str(path_to_input + "images/" + pdf_path.split('/')[-1].replace('.pdf', '')[0:20] + "/")
+            if not os.path.exists(sub_dir):
+                os.makedirs(sub_dir)
 
-        for page in pages:
-            if pg_cntr <= 20:
-                filename = "pg_" + str(pg_cntr) + '_' + pdf_path.split('/')[-1].replace('.pdf', '.jpg')
-                page.save(sub_dir + filename)
-                with io.open(output_filename, 'a+', encoding='utf8') as f:
-                    f.write(unicode(pytesseract.image_to_string(sub_dir + filename) + "\n"))
-                pg_cntr += 1
+            for page in pages:
+                if pg_cntr <= 20:
+                    filename = "pg_" + str(pg_cntr) + '_' + pdf_path.split('/')[-1].replace('.pdf', '.jpg')
+                    page.save(sub_dir + filename)
+                    with io.open(output_filename, 'a+', encoding='utf8') as f:
+                        f.write(unicode(pytesseract.image_to_string(sub_dir + filename) + "\n"))
+                    pg_cntr += 1
+        except FileNotFoundError or Exception:
+            print("Can't read in this report: ", pdf_path)
+            pass
 
 
-def load_in_reports(start: int, end: int, skip: List[int], paths_to_r: List[str],
-                    do_preprocessing: bool = True) -> List[Report]:
+def load_in_reports(start: int, end: int, paths_to_r: List[str], do_preprocessing: bool = True) -> List[Report]:
     """
     The pdf reports that were converted into text files are read into the pipeline by this function
 
@@ -67,28 +71,33 @@ def load_in_reports(start: int, end: int, skip: List[int], paths_to_r: List[str]
     :return:                 returns a list of Report objects with only report and id field initialized
     """
     emr_study_id = []
-    nums = [n for n in range(start, end + 1) if n not in skip]
+    nums = [n for n in range(start, end + 1)]
     text_paths_and_id = zip(paths_to_r, nums)
 
     for text_path, num in text_paths_and_id:
-        if text_path[-3:] == "txt":
-            emr_file_text = open(text_path, "r")
-            emr_text = emr_file_text.read()
-            emr_study_id.append(Report(text=emr_text, report_id=str(num), report_type=ReportType.TEXT))
-            emr_file_text.close()
-        elif text_path[-3:] == "pdf":
-            # extract text
-            pdfFileObj = open(text_path, "rb")
-            pdf_text_obj = pdftotext.PDF(pdfFileObj)
-            pdf_text_str = ""
-            # process each page
-            for page_num in range(len(pdf_text_obj)):
-                raw_text = pdf_text_obj[page_num]
-                pdf_text_str += raw_text
-            if do_preprocessing:
-                pdf_text_str = preprocess_remove_extra_text(pdf_text_str)
-            # append result for this iteration
-            emr_study_id.append(Report(text=pdf_text_str, report_id=str(num), report_type=ReportType.NUMERICAL))
-        else:
-            print("File must be in either pdf format or text format for extraction!")
+        try:
+            if text_path[-3:] == "txt":
+                emr_file_text = open(text_path, "r")
+                emr_text = emr_file_text.read()
+                emr_study_id.append(Report(text=emr_text, report_id=str(num), report_type=ReportType.TEXT))
+                emr_file_text.close()
+            elif text_path[-3:] == "pdf":
+                # extract text
+                pdfFileObj = open(text_path, "rb")
+                pdf_text_obj = pdftotext.PDF(pdfFileObj)
+                pdf_text_str = ""
+                # process each page
+                for page_num in range(len(pdf_text_obj)):
+                    raw_text = pdf_text_obj[page_num]
+                    pdf_text_str += raw_text
+                if do_preprocessing:
+                    pdf_text_str = preprocess_remove_extra_text(pdf_text_str)
+                # append result for this iteration
+                emr_study_id.append(Report(text=pdf_text_str, report_id=str(num), report_type=ReportType.NUMERICAL))
+            else:
+                print("File must be in either pdf format or text format for extraction!")
+        except FileNotFoundError or Exception:
+            print(text_path, " not found. Will not import this report.")
+            pass
+
     return emr_study_id
