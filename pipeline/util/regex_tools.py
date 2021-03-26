@@ -4,6 +4,8 @@ helper regex functions
 import random
 import re
 from typing import List, Tuple, Union, Dict
+
+from pipeline.util.column import Column
 from pipeline.util.import_tools import table
 
 
@@ -155,11 +157,11 @@ def make_punc_regex_literal(str_with_punc: str) -> str:
     return fixed_str
 
 
-def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = True, anchor_list: list = [],
+def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True, anchor_list: List[str] = [],
                            capture_only_first_line: bool = True, anchor: str = "", is_anchor: bool = False,
-                           last_word: str = "", list_multi_line_cols: list = [], no_anchor_list: list = [],
-                           contained_capture_list: list = [], seperator: str = ":", no_sep_list: list = [],
-                           add_sep: bool = False, sep_list: list = []) -> Tuple[str, Dict[str, List[str]]]:
+                           last_word: str = "", list_multi_line_cols: List[str] = [], no_anchor_list: List[str] = [],
+                           contained_capture_list: List[str] = [], seperator: str = ":", no_sep_list: List[str] = [],
+                           add_sep: bool = False, sep_list: List[str] = []) -> Tuple[str, Dict[str, List[str]]]:
     """
     Based on a regex pattern template, turns a list of columns into a regex that can capture the values associated with
     those columns.
@@ -185,14 +187,14 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
     mappings_to_regex_vals = {}
     seen = set()
     for index in range(len(col_keys) - 1):
-        col_key = col_keys[index].lower()
+        curr_col_key = col_keys[index].lower()
 
         # checking if we should contain, add anchor and add seperator
-        is_contained_capture = col_key in contained_capture_list
-        dont_add_anchor, add_anchor = col_key in no_anchor_list, col_key in anchor_list
-        dont_add_seperator, add_seperater = col_key not in no_sep_list, col_key in sep_list
+        is_contained_capture = curr_col_key in contained_capture_list
+        dont_add_anchor, add_anchor = curr_col_key in no_anchor_list, curr_col_key in anchor_list
+        dont_add_seperator, add_seperater = curr_col_key not in no_sep_list, curr_col_key in sep_list
 
-        curr_cols = columns[col_keys[index]]
+        curr_cols = columns[col_keys[index]].primary_report_col
 
         # adding seperator into regex
         if add_sep and not dont_add_seperator or add_seperater:
@@ -202,7 +204,7 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
 
         # adding symbolic or between words and making punctuation regexible
         curr_col = make_punc_regex_literal("|".join(curr_cols))
-        next_col = make_punc_regex_literal("|".join(next_cols))
+        next_col = make_punc_regex_literal("|".join(next_cols.primary_report_col))
 
         # this is for only capturing a single line
         end_cap = ".+)"
@@ -229,11 +231,11 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
         mappings_to_regex_vals[variablefied] = curr_cols
 
     # do last column
-    last_col = col_keys[-1].lower()
-    if add_sep and last_col not in no_sep_list or last_col in sep_list:
-        last_col = [c + seperator for c in columns[col_keys[-1]] if c not in no_sep_list]
+    last_col_key = col_keys[-1]
+    if add_sep and last_col_key.lower() not in no_sep_list or last_col_key.lower() in sep_list:
+        last_col = [c + seperator for c in columns[last_col_key].primary_report_col if c not in no_sep_list]
     else:
-        last_col = columns[col_keys[-1]]
+        last_col = columns[last_col_key].primary_report_col
     last_one = make_punc_regex_literal("|".join(last_col))
     last_one_variable, seen = to_camel_or_underscore(last_one, seen)
     if last_word == "":
@@ -244,7 +246,7 @@ def synoptic_capture_regex(columns: Dict[str, List[str]], ignore_caps: bool = Tr
         front_cap = r"{curr_col}:(?P<{curr_col_no_space}>".format(curr_col=last_one,
                                                                   curr_col_no_space=last_one_variable)
         template_regex += front_cap + end_cap
-    mappings_to_regex_vals[last_one_variable] = columns[col_keys[-1]]
+    mappings_to_regex_vals[last_one_variable] = columns[last_col_key].primary_report_col
 
     # this is for any columns that have the column on the first line and value on the second line
     if len(list_multi_line_cols) > 0:

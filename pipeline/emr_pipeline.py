@@ -18,7 +18,7 @@ from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spa
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
 from pipeline.util.import_tools import import_pdf_human_cols_tuples, get_input_paths, import_code_book, \
-    import_pdf_human_cols_as_dict
+    import_pdf_human_cols_as_dict, import_columns
 from pipeline.util.paths import get_paths
 from pipeline.util.regex_tools import synoptic_capture_regex
 from pipeline.util.report_type import ReportType
@@ -97,20 +97,19 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     # returns list[Report] with everything BUT encoded and not_found initialized
     cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_string_form)
 
-    column_mappings = import_pdf_human_cols_tuples(paths["path to mappings"])
+    column_mappings = import_columns(paths["path to mappings"])
+    column_mappings_tuples = import_pdf_human_cols_tuples(paths["path to mappings"])
     column_mappings_dict = import_pdf_human_cols_as_dict(paths["path to mappings"], skip=cols_to_skip)
 
-    capture_only_first_line = True
-
-    synoptic_regex, regex_variable_mappings = synoptic_capture_regex(column_mappings_dict,
-                                                                     contained_capture_list=contained_capture_list,
-                                                                     list_multi_line_cols=multi_line_cols,
-                                                                     capture_only_first_line=capture_only_first_line,
-                                                                     no_anchor_list=no_anchor_list,
-                                                                     anchor=anchor,
-                                                                     sep_list=sep_list,
-                                                                     anchor_list=anchor_list,
-                                                                     is_anchor=is_anchor)
+    synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
+        {k: v for k, v in column_mappings.items() if k.lower() not in cols_to_skip},
+        contained_capture_list=contained_capture_list,
+        list_multi_line_cols=multi_line_cols,
+        no_anchor_list=no_anchor_list,
+        anchor=anchor,
+        sep_list=sep_list,
+        anchor_list=anchor_list,
+        is_anchor=is_anchor)
 
     pickle_path = paths["pickle path"] if "pickle path" in paths else None
 
@@ -149,7 +148,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
 
         all_reports = filtered_reports + final_diagnosis_reports
         df_raw = save_dictionaries_into_csv_raw(all_reports,
-                                                column_mappings,
+                                                column_mappings_tuples,
                                                 csv_path=paths["csv path raw"],
                                                 print_debug=print_debug)
 
@@ -174,9 +173,9 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
                                function=change_unfiltered_to_dict)
 
         studies_with_cleaned_extractions = extract_cols(reports=filtered_reports,
-                                                        pdf_human_cols=column_mappings)
+                                                        pdf_human_cols=column_mappings_tuples)
         # turning raw text values into spreadsheet
-        raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols=column_mappings,
+        raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols=column_mappings_tuples,
                                    path_to_output=paths["path to output"])
 
         # changing the raw text into codes
