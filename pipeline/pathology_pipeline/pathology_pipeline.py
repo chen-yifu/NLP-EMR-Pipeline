@@ -6,7 +6,7 @@ from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_f
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
-from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths
+from pipeline.util.import_tools import import_pdf_human_cols_tuples, get_input_paths
 from pipeline.util.utils import get_full_path, get_current_time, find_all_vocabulary
 
 
@@ -68,7 +68,7 @@ def run_pathology_pipeline(start,
     # Sean's extracted encodings
     csv_path_baseline_SY = path_to_baselines + "data_collection_baseline_SY.csv"
 
-    column_mappings = import_pdf_human_cols(path_to_mappings)
+    column_mappings = import_pdf_human_cols_tuples(path_to_mappings)
 
     # convert pdf reports to a list of reports with report.text and report.report_id
     reports_string_form = load_in_reports(start=start, end=end, skip=skip, paths_to_texts=input_pdf_paths)

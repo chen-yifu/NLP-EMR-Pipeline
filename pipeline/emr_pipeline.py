@@ -17,7 +17,7 @@ from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_f
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
-from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths, import_code_book, \
+from pipeline.util.import_tools import import_pdf_human_cols_tuples, get_input_paths, import_code_book, \
     import_pdf_human_cols_as_dict
 from pipeline.util.paths import get_paths
 from pipeline.util.regex_tools import synoptic_capture_regex
@@ -97,7 +97,7 @@ def run_pipeline(start: int, end: int, skip: List[int], report_type: ReportType,
     # returns list[Report] with everything BUT encoded and not_found initialized
     cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_string_form)
 
-    column_mappings = import_pdf_human_cols(paths["path to mappings"])
+    column_mappings = import_pdf_human_cols_tuples(paths["path to mappings"])
     column_mappings_dict = import_pdf_human_cols_as_dict(paths["path to mappings"], skip=cols_to_skip)
 
     capture_only_first_line = True

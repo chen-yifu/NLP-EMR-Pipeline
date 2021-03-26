@@ -1,6 +1,8 @@
 import string
 from typing import Dict, List, Tuple
 import pandas as pd
+
+from pipeline.util.column import Column
 from pipeline.util.tuning import Tuning
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
@@ -20,30 +22,6 @@ def import_weights(path_to_weights: str) -> Dict[str, Tuning]:
         large_cost = row[1][2]
         tuning_dict[col_name] = Tuning(col_name=col_name, sub_cost=sub_cost, large_cost=large_cost)
     return tuning_dict
-
-
-def import_pdf_human_cols(pdf_human_csv: str, keep_punc: bool = False) -> List[Tuple[str, str]]:
-    """
-    Imports the columns you want to find from a csv file as a list of tuples.
-    [(pdf_col, human_annotated_col),(pdf_col, human_annotated_col),(pdf_col, human_annotated_col), ...]
-
-    :param pdf_human_csv:
-    :param keep_punc:
-    :return:
-    """
-    pdf_cols_human_cols_list = []
-    pdf_cols_human_cols = pd.read_csv(pdf_human_csv)
-    for index, row in pdf_cols_human_cols.iterrows():
-        pdf_cols = row[0]
-        human_col = row[1]
-        pdf_cols_list = pdf_cols.split(",")
-        if keep_punc:
-            cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
-        else:
-            cleaned_pdf_col_list = [p.translate(table).strip() for p in pdf_cols_list]
-        for pdf_col in cleaned_pdf_col_list:
-            pdf_cols_human_cols_list.append((pdf_col, human_col))
-    return pdf_cols_human_cols_list
 
 
 def import_code_book(code_book_path: str) -> dict:
@@ -88,10 +66,63 @@ def get_input_paths(start: int, end: int, skip: List[int], path_to_reports: str,
     return [path_to_reports + report_str.format(i) for i in nums_list]
 
 
-def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip=None) -> Dict[str, List[str]]:
+def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip=None, primary_row_index: int = 0,
+                                  alternative_row_index: int = 1, human_col_index: int = 2) -> Dict[str, List[str]]:
     """
     Imports the columns you want to find from a csv file as a dictionary.
     {human_annotated_col:[pdf_col, pdf_col, ...],human_annotated_col:[pdf_col, pdf_col, ...],... }
+
+    :param primary_row_index:
+    :param human_col:
+    :param pdf_human_excel_sheet:
+    :param skip:
+    :return:
+    """
+    if skip is None:
+        skip = []
+    pdf_cols_human_cols_dict = {}
+    pdf_cols_human_cols = pd.read_csv(pdf_human_excel_sheet)
+    for index, row in pdf_cols_human_cols.iterrows():
+        human_col = row[human_col_index]
+        if human_col.lower() in skip:
+            continue
+        else:
+            pdf_cols = row[primary_row_index]
+            pdf_cols_list = pdf_cols.split(",")
+            cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
+            pdf_cols_human_cols_dict[human_col] = cleaned_pdf_col_list
+    return pdf_cols_human_cols_dict
+
+
+def import_pdf_human_cols_tuples(pdf_human_csv: str, keep_punc: bool = False, primary_row_index: int = 0,
+                                 alternative_row_index: int = 1, human_col_index: int = 2) -> List[Tuple[str, str]]:
+    """
+    Imports the columns you want to find from a csv file as a list of tuples.
+    [(pdf_col, human_annotated_col),(pdf_col, human_annotated_col),(pdf_col, human_annotated_col), ...]
+
+    :param pdf_human_csv:
+    :param keep_punc:
+    :return:
+    """
+    pdf_cols_human_cols_list = []
+    pdf_cols_human_cols = pd.read_csv(pdf_human_csv)
+    for index, row in pdf_cols_human_cols.iterrows():
+        pdf_cols = row[primary_row_index]
+        human_col = row[human_col_index]
+        pdf_cols_list = pdf_cols.split(",")
+        if keep_punc:
+            cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
+        else:
+            cleaned_pdf_col_list = [p.translate(table).strip() for p in pdf_cols_list]
+        for pdf_col in cleaned_pdf_col_list:
+            pdf_cols_human_cols_list.append((pdf_col, human_col))
+    return pdf_cols_human_cols_list
+
+
+def import_columns(pdf_human_excel_sheet: str, skip=None, primary_row_index: int = 0,
+                   alternative_row_index: int = 1, human_col_index: int = 2) -> Dict[str, Column]:
+    """
+    Imports the columns you want to find from a csv file as a dict of type Column.
 
     :param pdf_human_excel_sheet:
     :param skip:
@@ -102,12 +133,14 @@ def import_pdf_human_cols_as_dict(pdf_human_excel_sheet: str, skip=None) -> Dict
     pdf_cols_human_cols_dict = {}
     pdf_cols_human_cols = pd.read_csv(pdf_human_excel_sheet)
     for index, row in pdf_cols_human_cols.iterrows():
-        human_col = row[1]
+        human_col = row[human_col_index]
         if human_col.lower() in skip:
             continue
         else:
-            pdf_cols = row[0]
-            pdf_cols_list = pdf_cols.split(",")
-            cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
-            pdf_cols_human_cols_dict[human_col] = cleaned_pdf_col_list
+            primary_pdf_col = row[primary_row_index]
+            primary_pdf_cols_list = primary_pdf_col.split(",")
+            alternative_pdf_col = row[alternative_row_index]
+            alternative_pdf_col_list = alternative_pdf_col.split(",")
+            pdf_cols_human_cols_dict[human_col] = Column(human_col=human_col, primary_report_col=primary_pdf_cols_list,
+                                                         alternative_report_col=alternative_pdf_col_list)
     return pdf_cols_human_cols_dict
