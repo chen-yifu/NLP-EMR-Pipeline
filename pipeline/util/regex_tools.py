@@ -159,6 +159,7 @@ def make_punc_regex_literal(str_with_punc: str) -> str:
 
 def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True, anchor_list: List[str] = [],
                            capture_only_first_line: bool = True, anchor: str = "", is_anchor: bool = False,
+                           use_seperater_for_contained_capture: bool = False,
                            last_word: str = "", list_multi_line_cols: List[str] = [], no_anchor_list: List[str] = [],
                            contained_capture_list: List[str] = [], seperator: str = ":", no_sep_list: List[str] = [],
                            add_sep: bool = False, sep_list: List[str] = []) -> Tuple[str, Dict[str, List[str]]]:
@@ -188,47 +189,60 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
     seen = set()
     for index in range(len(col_keys) - 1):
         curr_col_key = col_keys[index].lower()
+        current_col = columns[col_keys[index]]
 
         # checking if we should contain, add anchor and add seperator
         is_contained_capture = curr_col_key in contained_capture_list
         dont_add_anchor, add_anchor = curr_col_key in no_anchor_list, curr_col_key in anchor_list
         dont_add_seperator, add_seperater = curr_col_key not in no_sep_list, curr_col_key in sep_list
 
-        curr_cols = columns[col_keys[index]].primary_report_col
+        # all the columns we might use
+        primary_curr_cols = current_col.primary_report_col
+        next_cols = columns[col_keys[index + 1]].primary_report_col
 
         # adding seperator into regex
         if add_sep and not dont_add_seperator or add_seperater:
-            curr_cols = [c + seperator for c in curr_cols if c not in no_sep_list]
-
-        next_cols = columns[col_keys[index + 1]]
+            primary_curr_cols = [c + seperator for c in primary_curr_cols if c not in no_sep_list]
 
         # adding symbolic or between words and making punctuation regexible
-        curr_col = make_punc_regex_literal("|".join(curr_cols))
-        next_col = make_punc_regex_literal("|".join(next_cols.primary_report_col))
+        curr_col = make_punc_regex_literal("|".join(primary_curr_cols))
+
+        next_col = make_punc_regex_literal("|".join(next_cols))
 
         # this is for only capturing a single line
         end_cap = ".+)"
 
         # column has been converted to variable and seen is list of already used variable names
         # regex variable names must be unique
-        variablefied, seen = to_camel_or_underscore(curr_col, seen)
+        primary_variablefied, seen = to_camel_or_underscore(curr_col, seen)
 
         # if we want to capture up to a keyword
         if not capture_only_first_line or is_contained_capture:
-            end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col + "")
+            end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=next_col)
         # if we want to "anchor" the word to the start of the document
         if is_anchor and not dont_add_anchor or add_anchor:
             capture_anchor = r"{anchor}({curr_col})".format(curr_col=curr_col, anchor=anchor)
             front_cap = r"{capture_anchor}(?P<{curr_col_no_space}>".format(
-                capture_anchor=capture_anchor, curr_col_no_space=variablefied)
+                capture_anchor=capture_anchor, curr_col_no_space=primary_variablefied)
         else:
             front_cap = r"{curr_col}(?P<{curr_col_no_space}>".format(
-                curr_col=curr_col if len(curr_cols) == 1 else "(" + curr_col + ")",
-                curr_col_no_space=variablefied)
-        template_regex += front_cap + end_cap + "|"
+                curr_col=curr_col if len(primary_curr_cols) == 1 else "(" + curr_col + ")",
+                curr_col_no_space=primary_variablefied)
+
+        # make alternative column regex if needed
+        alternative_curr_cols = current_col.alternative_report_col
+        alternative_col_reg = ""
+        if len(alternative_curr_cols) != 0:
+            alternative_col = make_punc_regex_literal("|".join(alternative_curr_cols))
+            alternative_variablefied, seen = to_camel_or_underscore(alternative_col, seen)
+            alternative_col_reg = "{alternative_col}(?P<{alternative_variablefied}>((?!.+{sep}\?*)[\s\S])*)".format(
+                alternative_col=alternative_col, alternative_variablefied=alternative_variablefied, sep=seperator)
+            mappings_to_regex_vals[alternative_variablefied] = alternative_curr_cols
+
+        template_regex += front_cap + end_cap + "|" + alternative_col_reg
 
         # adding variable name so we can use for later
-        mappings_to_regex_vals[variablefied] = curr_cols
+        mappings_to_regex_vals[primary_variablefied] = primary_curr_cols
 
     # do last column
     last_col_key = col_keys[-1]
