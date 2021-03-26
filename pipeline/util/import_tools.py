@@ -8,6 +8,13 @@ from pipeline.util.tuning import Tuning
 table = str.maketrans(dict.fromkeys(string.punctuation))
 
 
+def extract_cols(row):
+    try:
+        return row.split(",")
+    except AttributeError:
+        return []
+
+
 def import_weights(path_to_weights: str) -> Dict[str, Tuning]:
     """
     Imports the tuning weights for the operative reports pipeline found in data/utils/training_metrics/params
@@ -130,17 +137,16 @@ def import_columns(pdf_human_excel_sheet: str, skip=None, primary_row_index: int
     """
     if skip is None:
         skip = []
-    pdf_cols_human_cols_dict = {}
+    pdf_cols_human_cols_dict_w_column = {}
     pdf_cols_human_cols = pd.read_csv(pdf_human_excel_sheet)
     for index, row in pdf_cols_human_cols.iterrows():
         human_col = row[human_col_index]
         if human_col.lower() in skip:
             continue
         else:
-            primary_pdf_col = row[primary_row_index]
-            primary_pdf_cols_list = primary_pdf_col.split(",")
-            alternative_pdf_col = row[alternative_row_index]
-            alternative_pdf_col_list = alternative_pdf_col.split(",")
-            pdf_cols_human_cols_dict[human_col] = Column(human_col=human_col, primary_report_col=primary_pdf_cols_list,
-                                                         alternative_report_col=alternative_pdf_col_list)
-    return pdf_cols_human_cols_dict
+            primary_pdf_cols_list = extract_cols(row[primary_row_index])
+            alternative_pdf_col_list = extract_cols(row[alternative_row_index])
+            pdf_cols_human_cols_dict_w_column[human_col] = Column(human_col=human_col,
+                                                                  primary_report_col=primary_pdf_cols_list,
+                                                                  alternative_report_col=alternative_pdf_col_list)
+    return pdf_cols_human_cols_dict_w_column
