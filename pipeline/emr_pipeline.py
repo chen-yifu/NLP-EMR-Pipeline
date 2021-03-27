@@ -34,6 +34,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                  max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2,
                  resolve_ocr=True) -> Union[Tuple[Optional[Tuple[int, int, int, int]], DataFrame], dict]:
     """
+    :param use_seperator_to_capture:
     :param sep_list:
     :param anchor_list:
     :param no_anchor_list:
@@ -98,10 +99,10 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
 
     column_mappings = import_columns(paths["path to mappings"])
     column_mappings_tuples = import_pdf_human_cols_tuples(paths["path to mappings"])
-    column_mappings_dict = import_pdf_human_cols_as_dict(paths["path to mappings"], skip=cols_to_skip)
 
     synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
         {k: v for k, v in column_mappings.items() if k.lower() not in cols_to_skip},
+        use_seperater_for_contained_capture=use_seperator_to_capture,
         contained_capture_list=contained_capture_list,
         list_multi_line_cols=multi_line_cols,
         no_anchor_list=no_anchor_list,
@@ -127,6 +128,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
             print(s)
 
     print(synoptic_regex)
+
     filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
                                                                  column_mappings,
                                                                  synoptic_regex,

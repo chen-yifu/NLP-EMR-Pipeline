@@ -315,8 +315,9 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
 
     for report in unfiltered_reports:
         print(report.report_id)
-        print(report.text)
-        report.extractions = process_synoptic_section(report.text, report.report_id, report.report_type, pickle_path,
+        cleaned_text = report.text.strip().replace(" is ", ":")
+        print(cleaned_text)
+        report.extractions = process_synoptic_section(cleaned_text, report.report_id, report.report_type, pickle_path,
                                                       column_mappings, list_of_dict_with_stats,
                                                       regex_mappings, specific_regex, general_regex, tools,
                                                       max_edit_distance_missing=max_edit_distance_missing,
