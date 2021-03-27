@@ -237,10 +237,11 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
             alternative_col = make_punc_regex_literal("|".join(alternative_curr_cols))
             alternative_variablefied, seen = to_camel_or_underscore(alternative_col, seen)
             alternative_col_reg = "{alternative_col}(?P<{alternative_variablefied}>((?!.+{sep}\?*)[\s\S])*)".format(
-                alternative_col=alternative_col, alternative_variablefied=alternative_variablefied, sep=seperator)
+                alternative_col=alternative_col if len(alternative_curr_cols) == 1 else "(" + alternative_col + ")",
+                alternative_variablefied=alternative_variablefied, sep=seperator)
             mappings_to_regex_vals[alternative_variablefied] = alternative_curr_cols
 
-        template_regex += front_cap + end_cap + "|" + alternative_col_reg
+        template_regex += front_cap + end_cap + "|" + alternative_col_reg + "|"
 
         # adding variable name so we can use for later
         mappings_to_regex_vals[primary_variablefied] = primary_curr_cols

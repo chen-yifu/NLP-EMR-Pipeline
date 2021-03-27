@@ -12,18 +12,18 @@ cols_to_skip = ["study #", "specimen", "treatment effect", "margins", "pathologi
 multi_line_cols = ["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage", "comment(s)",
                    "Part(s) Involved:"]
 
-run_pipeline(start=101, end=156,
-             report_type=ReportType.NUMERICAL,
-             cols_to_skip=cols_to_skip,
-             multi_line_cols=multi_line_cols,
-             report_name="pathology",
-             is_anchor=True,
-             sep_list=["invasive carcinoma"],
-             report_ending="Path_Redacted.pdf",
-             baseline_version="data_collection_baseline_SY.csv",
-             anchor=r"^ *-* *",
-             other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data")},
-             tools={"pathologic stage": find_pathologic_stage})
+# run_pipeline(start=101, end=156,
+#              report_type=ReportType.NUMERICAL,
+#              cols_to_skip=cols_to_skip,
+#              multi_line_cols=multi_line_cols,
+#              report_name="pathology",
+#              is_anchor=True,
+#              sep_list=["invasive carcinoma"],
+#              report_ending="Path_Redacted.pdf",
+#              baseline_version="data_collection_baseline_SY.csv",
+#              anchor=r"^ *-* *",
+#              other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data")},
+#              tools={"pathologic stage": find_pathologic_stage})
 
 stats_operative = run_pipeline(start=1, end=48,
                                report_type=ReportType.TEXT,
