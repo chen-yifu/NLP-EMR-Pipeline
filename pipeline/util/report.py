@@ -9,9 +9,8 @@ class Report:
     Represents information extracted and manipulated from a scanned pdf report.
     """
 
-    def __init__(self, text: str, report_id: str, extractions: Union[Dict[str, Value], List[str]] = None,
-                 laterality: str = "",
-                 not_found: list = None, encoded=None, report_type: ReportType = None):
+    def __init__(self, text: str, report_id: str, extractions: Dict[str, Union[str, Value]] = None,
+                 laterality: str = "", not_found: list = None, encoded=None, report_type: ReportType = None):
         """
         :param report_type:
         :param text:

@@ -17,8 +17,8 @@ from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_f
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
-from pipeline.util.import_tools import import_pdf_human_cols_tuples, get_input_paths, import_code_book, \
-    import_pdf_human_cols_as_dict, import_columns
+from pipeline.processing.turn_to_values import turn_reports_extractions_to_values
+from pipeline.util.import_tools import import_pdf_human_cols_tuples, get_input_paths, import_code_book, import_columns
 from pipeline.util.paths import get_paths
 from pipeline.util.regex_tools import synoptic_capture_regex
 from pipeline.util.report_type import ReportType
@@ -32,7 +32,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                  anchor_list: list = [], print_debug: bool = True, max_edit_distance_missing: int = 5, tools: dict = {},
                  max_edit_distance_autocorrect_path: int = 5, substitution_cost_oper: int = 1, sep_list: list = [],
                  max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2,
-                 resolve_ocr=True) -> Union[Tuple[Optional[Tuple[int, int, int, int]], DataFrame], dict]:
+                 resolve_ocr=True) -> DataFrame:
     """
     :param use_seperator_to_capture:
     :param sep_list:
@@ -172,6 +172,13 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
         reports_to_spreadsheet(filtered_reports, type_of_report="unfiltered_reports",
                                path_to_output=paths["path to output"],
                                function=change_unfiltered_to_dict)
+
+        # reports_with_values = turn_reports_extractions_to_values(filtered_reports, column_mappings)
+        #
+        # for report in reports_with_values:
+        #     for h, p in report.extractions.items():
+        #         print(report.report_id)
+        #         print(h, p.primary_value, p.alternative_value)
 
         studies_with_cleaned_extractions = extract_cols(reports=filtered_reports,
                                                         pdf_human_cols=column_mappings_tuples)
