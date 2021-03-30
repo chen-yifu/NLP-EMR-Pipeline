@@ -1,5 +1,4 @@
 from typing import List, Dict
-
 from pipeline.util.column import Column
 from pipeline.util.report import Report
 from pipeline.util.value import Value

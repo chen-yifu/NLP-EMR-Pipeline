@@ -1,15 +1,19 @@
 import re
+from typing import Dict
 
 
-def do_nothing(value: str) -> str:
+def do_nothing(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
+    if "l" in value and len(value.strip()) < 3:
+        return value.replace("l", "1")
     return value
 
 
-def nottingham_score(value: str) -> str:
-    return value
+def nottingham_score(encodings_so_far: Dict[str, str] = {}) -> str:
+    return str(int(encodings_so_far["Glandular Differentiation"]) + int(encodings_so_far["Nuclear Pleomorphism"]) + int(
+        encodings_so_far["Mitotic Rate"]))
 
 
-def process_mm_val(value: str) -> str:
+def process_mm_val(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
     """
     mm
     :param value:        unprocessed data
@@ -22,12 +26,13 @@ def process_mm_val(value: str) -> str:
         return matches[0]
 
 
-def number_of_foci(focality: str, num_foci: str) -> str:
+def number_of_foci(num_foci: str, encodings_so_far: Dict[str, str] = {}) -> str:
     """
     0=not specified #=#
     :param focality:         tumour focality
     :param num_foci:         # of foci
     """
+    focality = encodings_so_far["Tumour Focality"]
     if focality == "1":
         return "1"
     raw = str(num_foci)
@@ -42,7 +47,7 @@ def number_of_foci(focality: str, num_foci: str) -> str:
         return "cannot be determined"
 
 
-def tumour_site(value: str) -> str:
+def tumour_site(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
     """
     clock orientation
     :param value:           unprocessed data
@@ -74,7 +79,7 @@ def tumour_site(value: str) -> str:
     return value
 
 
-def archtectural_patterns(value: str) -> str:
+def archtectural_patterns(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
     """
     :param value:      unprocessed data
     """

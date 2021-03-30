@@ -10,7 +10,8 @@ class Report:
     """
 
     def __init__(self, text: str, report_id: str, extractions: Dict[str, Union[str, Value]] = None,
-                 laterality: str = "", not_found: list = None, encoded=None, report_type: ReportType = None):
+                 laterality: str = "", not_found: list = None, encoded: Dict[str, str] = None,
+                 report_type: ReportType = None):
         """
         :param report_type:
         :param text:

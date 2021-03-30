@@ -1,6 +1,7 @@
 """
 The pipeline for EMR
 """
+import copy
 
 from pandas import DataFrame
 from pipeline.operative_pipeline.postprocessing.compare_excel import nice_compare
@@ -31,6 +32,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                  max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect_path: int = 5,
                  sep_list: list = [], substitution_cost_path: int = 2, resolve_ocr=True) -> DataFrame:
     """
+    :param single_line_list:
     :param use_seperator_to_capture:
     :param sep_list:
     :param anchor_list:
@@ -52,8 +54,6 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     :param print_debug:                             print debug statements in Terminal if True
     :param max_edit_distance_missing:               the maximum edit distance for searching for missing cell values
     :param max_edit_distance_autocorrect_path:      the maximum edit distance for autocorrecting extracted pairs for pathology
-    :param substitution_cost_oper:                  the substitution cost for edit distance for operative
-    :param max_edit_distance_autocorrect_oper:      the maximum edit distance for autocorrecting extracted pairs for operative
     :param substitution_cost_path:                  the substitution cost for edit distance for pathology
     :param resolve_ocr:                             resolve ocr white space if true
     :return:
@@ -79,22 +79,21 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     # try to read in the reports. if there is exception this is because the pdfs have to be turned into text files first
     # then try to read in again.
     try:
-        reports_string_form = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
+        reports_loaded_in_str = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
     except FileNotFoundError or Exception:
         convert_pdf_to_text(path_to_input=paths["path to input"], paths_to_pdfs=paths_to_pdfs,
                             paths_to_texts=paths_to_reports_to_read_in)
-        reports_string_form = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
+        reports_loaded_in_str = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
 
-    medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
-                                             print_debug=print_debug,
-                                             min_freq=40)
+    reports_strings_only = [report.text for report in reports_loaded_in_str]
+    medical_vocabulary = find_all_vocabulary(reports_strings_only, print_debug=print_debug, min_freq=40)
 
     if resolve_ocr:
-        reports_string_form = preprocess_resolve_ocr_spaces(reports_string_form, print_debug=print_debug,
-                                                            medical_vocabulary=medical_vocabulary)
+        reports_loaded_in_str = preprocess_resolve_ocr_spaces(reports_loaded_in_str, print_debug=print_debug,
+                                                              medical_vocabulary=medical_vocabulary)
 
     # returns list[Report] with everything BUT encoded and not_found initialized
-    cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_string_form)
+    cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_loaded_in_str)
 
     column_mappings = import_columns(paths["path to mappings"])
     column_mappings_tuples = import_pdf_human_cols_tuples(paths["path to mappings"])
@@ -145,6 +144,32 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
         # https://regex101.com/r/RBWwBE/1
         # https://regex101.com/r/Gk4xv9/1
 
+        # making a deep copy
+        reports_to_use_to_turn_into_vals = copy.deepcopy(filtered_reports)
+
+        reports_to_use_to_turn_into_vals = turn_reports_extractions_to_values(reports_to_use_to_turn_into_vals,
+                                                                              column_mappings)
+        for report in reports_to_use_to_turn_into_vals:
+            print(report.report_id)
+            for lol, lmao in report.extractions.items():
+                print(lol, lmao.primary_value)
+
+        encoded_reports = encode_extractions(reports=reports_to_use_to_turn_into_vals, code_book=code_book, tools=tools)
+
+        for report in encoded_reports:
+            print(report.report_id)
+            print(report.encoded)
+
+        # turning coded to spreadsheets
+        dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],
+                                                 type_of_report="coded", function=add_report_id)
+
+        # doing nice comparison
+        training_dict = nice_compare(baseline_version=baseline_version, encoded_reports=encoded_reports,
+                                     baseline_path=paths["path to baseline"], path_to_outputs=paths["path to output"])
+
+        print(training_dict)
+
         final_diagnosis_reports = []
 
         all_reports = filtered_reports + final_diagnosis_reports
@@ -175,7 +200,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
 
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, column_mappings)
 
-        encoded_reports = encode_extractions(reports_with_values, code_book)
+        encoded_reports = encode_extractions(reports=reports_with_values, code_book=code_book, tools=tools)
 
         # turning coded to spreadsheets
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],

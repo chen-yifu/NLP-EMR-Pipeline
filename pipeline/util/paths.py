@@ -14,6 +14,7 @@ def get_paths(report_type: str, baseline_version: str, other_paths=None) -> dict
     if other_paths is None:
         other_paths = {}
     paths = {}
+    path_to_code_book = get_full_path("data/utils/{}_code_book.ods".format(report_type))
     path_to_output = get_full_path("data/output/{}_results/".format(report_type))
     path_to_reports = get_full_path("data/input/{}_reports/".format(report_type))
     path_to_baselines = get_full_path("data/baselines/")
@@ -28,5 +29,5 @@ def get_paths(report_type: str, baseline_version: str, other_paths=None) -> dict
         {"path to output": path_to_output, "path to reports": path_to_reports, "path to baselines": path_to_baselines,
          "path to output csv": path_to_output_csv, "path to output excel": path_to_output_excel,
          "path to mappings": path_to_mappings, "path to baseline": path_to_baseline, "csv path raw": csv_path_raw,
-         "csv path coded": csv_path_coded})
+         "csv path coded": csv_path_coded, "path to code book": path_to_code_book})
     return paths

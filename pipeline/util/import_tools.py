@@ -44,7 +44,7 @@ def import_code_book(code_book_path: str) -> Dict[str, List[Encoding]]:
         col_name = row[0]
         num = row[1]
         val = row[2]
-        val_list = val.split(",")
+        val_list = str(val).split(",")
         cleaned_val_list = [e.strip() for e in val_list]
         if col_name not in code_book:
             code_book[col_name] = []
