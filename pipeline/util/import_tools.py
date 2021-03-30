@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 import pandas as pd
 
 from pipeline.util.column import Column
+from pipeline.util.encoding import Encoding
 from pipeline.util.tuning import Tuning
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
@@ -31,26 +32,24 @@ def import_weights(path_to_weights: str) -> Dict[str, Tuning]:
     return tuning_dict
 
 
-def import_code_book(code_book_path: str) -> dict:
+def import_code_book(code_book_path: str) -> Dict[str, List[Encoding]]:
     """
     Imports a code book in excel sheet used for encoding extractions format into a dictionary.
 
     :param code_book_path: str
-    :return code_book: Dict of Dict
     """
     code_book = {}
     code_book_path_cols = pd.read_excel(code_book_path)
     for index, row in code_book_path_cols.iterrows():
         col_name = row[0]
-        encoded_val = row[1]
+        num = row[1]
         val = row[2]
         val_list = val.split(",")
         cleaned_val_list = [e.strip() for e in val_list]
         if col_name not in code_book:
-            code_book[col_name] = {}
-        val_dict = code_book[col_name]
-        for cleaned_val in cleaned_val_list:
-            val_dict[cleaned_val] = encoded_val
+            code_book[col_name] = []
+        encoding_list = code_book[col_name]
+        encoding_list.append(Encoding(cleaned_val_list, num))
     return code_book
 
 

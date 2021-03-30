@@ -8,6 +8,7 @@ from pipeline.operative_pipeline.postprocessing.compare_excel import nice_compar
 from pipeline.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, \
     raw_reports_to_spreadsheet, change_unfiltered_to_dict, add_report_id
 from pipeline.operative_pipeline.preprocessing.extract_cols import extract_cols
+from pipeline.postprocessing.encode_extractions import encode_extractions
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
 from pipeline.preprocessing.scanned_pdf_to_text import convert_pdf_to_text, load_in_reports
 from pipeline.operative_pipeline.processing.encode_extractions import code_extractions
@@ -61,6 +62,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     :param resolve_ocr:                             resolve ocr white space if true
     :return:
     """
+
     timestamp = get_current_time()
     paths = get_paths(report_name, baseline_version, other_paths)
     paths_to_pdfs = get_input_paths(start, end, path_to_reports=paths["path to reports"],
@@ -167,31 +169,16 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
 
     elif report_type is ReportType.TEXT:
         # https://regex101.com/r/XWffCF/1
+        code_book = import_code_book(paths["path to code book"])
 
         # raw to spreadsheet, no altering has been done
         reports_to_spreadsheet(filtered_reports, type_of_report="unfiltered_reports",
                                path_to_output=paths["path to output"],
                                function=change_unfiltered_to_dict)
 
-        # reports_with_values = turn_reports_extractions_to_values(filtered_reports, column_mappings)
-        #
-        # for report in reports_with_values:
-        #     for h, p in report.extractions.items():
-        #         print(report.report_id)
-        #         print(h, p.primary_value, p.alternative_value)
+        reports_with_values = turn_reports_extractions_to_values(filtered_reports, column_mappings)
 
-        studies_with_cleaned_extractions = extract_cols(reports=filtered_reports,
-                                                        pdf_human_cols=column_mappings_tuples)
-        # turning raw text values into spreadsheet
-        raw_reports_to_spreadsheet(reports=studies_with_cleaned_extractions, pdf_human_cols=column_mappings_tuples,
-                                   path_to_output=paths["path to output"])
-
-        # changing the raw text into codes
-        encoded_reports = code_extractions(reports=studies_with_cleaned_extractions,
-                                           substitution_cost=substitution_cost_oper,
-                                           largest_cost=max_edit_distance_autocorrect_oper,
-                                           code_book=import_code_book(paths["path to code book"]),
-                                           path_to_weights=paths["path to weights"])
+        encoded_reports = encode_extractions(reports_with_values, code_book)
 
         # turning coded to spreadsheets
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],
