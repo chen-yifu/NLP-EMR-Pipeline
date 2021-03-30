@@ -160,6 +160,7 @@ def make_punc_regex_literal(str_with_punc: str) -> str:
 
 
 def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True, anchor_list: List[str] = [],
+                           single_line_list=[],
                            capture_only_first_line: bool = True, anchor: str = "", is_anchor: bool = False,
                            use_seperater_for_contained_capture: bool = False, last_word: str = "",
                            list_multi_line_cols: List[str] = [], no_anchor_list: List[str] = [],
@@ -223,6 +224,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
         is_contained_capture = curr_col_key in contained_capture_list
         dont_add_anchor, add_anchor = curr_col_key in no_anchor_list, curr_col_key in anchor_list
         dont_add_seperator, add_seperater = curr_col_key not in no_sep_list, curr_col_key in sep_list
+        single_line = curr_col_key in single_line_list
 
         # all the columns we might use
         primary_curr_cols = current_col.primary_report_col
@@ -241,7 +243,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
         # if we want to capture up to a keyword
         if not capture_only_first_line or is_contained_capture and not use_seperater_for_contained_capture:
             end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=primary_next_col_str)
-        elif use_seperater_for_contained_capture:
+        elif use_seperater_for_contained_capture and not single_line:
             end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=seperator)
 
         # column has been converted to variable and seen is list of already used variable names

@@ -21,8 +21,9 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
     def encode_extraction_for_single_report(extractions: Dict[str, Value], report_id: str) -> Dict[str, str]:
         encoded_extractions_dict = {}
         for human_col, encodings in code_book.items():
+
             def get_entities(val: str) -> List[Union[Span, str]]:
-                entities = list(nlp(val).ents)
+                entities = list(nlp(val).ents) if len(val.split()) > 3 else [val]
                 print(report.report_id)
                 print(human_col + " " + str(entities))
                 return entities if len(entities) > 0 else [val]
@@ -31,22 +32,26 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                              threshold: int = 0.5) -> Tuple[bool, str]:
                 num = ""
                 found = False
+                pipeline_val_str = ""
                 # init this to very low number
                 alpha = float("-inf")
                 for encoding in encodings:
                     for encoding_val in encoding.val:
                         code_book_doc = nlp(encoding_val)
                         for pipeline_val in primary_value:
-                            pipeline_doc = nlp(pipeline_val.text) if isinstance(pipeline_val, Span) else nlp(
-                                pipeline_val)
+                            pipeline_val_str = pipeline_val.text if isinstance(pipeline_val, Span) else pipeline_val
+                            pipeline_doc = nlp(pipeline_val_str)
                             sim = pipeline_doc.similarity(code_book_doc)
                             if sim > alpha and sim > threshold:
                                 alpha = sim
                                 num = str(encoding.num)
                                 found = True
-                            if alpha == 1:
+                            if alpha == 1 or encoding_val.lower() in pipeline_val_str:
                                 return True, str(encoding.num)
-                return found, num
+                if found:
+                    return found, num
+                else:
+                    return found, pipeline_val_str
 
             # find the corresponding value from extractions
 

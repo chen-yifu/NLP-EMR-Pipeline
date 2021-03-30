@@ -27,13 +27,12 @@ from pipeline.util.utils import find_all_vocabulary, get_current_time
 
 
 def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str, report_ending: str,
-                 baseline_version: str, anchor: str, seperator: str = ":", other_paths: dict = {},
-                 use_seperator_to_capture: bool = False, is_anchor: bool = False, multi_line_cols: list = [],
-                 cols_to_skip: list = [], contained_capture_list: list = [], no_anchor_list: list = [],
-                 anchor_list: list = [], print_debug: bool = True, max_edit_distance_missing: int = 5, tools: dict = {},
-                 max_edit_distance_autocorrect_path: int = 5, substitution_cost_oper: int = 1, sep_list: list = [],
-                 max_edit_distance_autocorrect_oper: int = 4, substitution_cost_path: int = 2,
-                 resolve_ocr=True) -> DataFrame:
+                 baseline_version: str, anchor: str, single_line_list: list = [], seperator: str = ":",
+                 other_paths: dict = {}, use_seperator_to_capture: bool = False, is_anchor: bool = False,
+                 multi_line_cols: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
+                 no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True,
+                 max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect_path: int = 5,
+                 sep_list: list = [], substitution_cost_path: int = 2, resolve_ocr=True) -> DataFrame:
     """
     :param use_seperator_to_capture:
     :param sep_list:
@@ -104,6 +103,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
 
     synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
         {k: v for k, v in column_mappings.items() if k.lower() not in cols_to_skip},
+        single_line_list=single_line_list,
         use_seperater_for_contained_capture=use_seperator_to_capture,
         contained_capture_list=contained_capture_list,
         list_multi_line_cols=multi_line_cols,

@@ -70,7 +70,7 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     """
     if is_text:
         cleaned_val = remove_new_line_if_colon_present(val)
-        cleaned_val = cleaned_val.strip().lower().translate(table)
+        cleaned_val = cleaned_val.strip().lower().replace("-", " ").replace(".","")
         return " ".join([w for w in cleaned_val.split() if len(w) > 1])
     colon_index = val.find(":")
     if colon_index != -1:
