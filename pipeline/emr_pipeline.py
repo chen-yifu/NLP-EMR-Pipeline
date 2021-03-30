@@ -165,7 +165,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                                                  type_of_report="coded", function=add_report_id)
 
         # doing nice comparison
-        training_dict = nice_compare(baseline_version=baseline_version, encoded_reports=encoded_reports,
+        training_dict = nice_compare(baseline_version=baseline_version, pipeline_dataframe=dataframe_coded,
                                      baseline_path=paths["path to baseline"], path_to_outputs=paths["path to output"])
 
         print(training_dict)

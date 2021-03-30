@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class EncodingValue:
+class ComparisonHelperType:
     """
     Data Class used for returning information needed in creating excel sheet
     """
