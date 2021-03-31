@@ -16,3 +16,4 @@ data/utils/*.data
 data/utils/*.ods
 data/utils/*.xlsx
 .idea
+.Rhistory
