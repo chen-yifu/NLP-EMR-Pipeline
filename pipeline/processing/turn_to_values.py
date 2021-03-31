@@ -19,7 +19,6 @@ def turn_extractions_to_values_single(extractions: Dict[str, str], column_mappin
             if alternative_col in extractions:
                 a_val.alternative_value.append(extractions[alternative_col])
         value_extractions[human_col_key] = a_val
-    value_extractions["Laterality"] = Value(lat)
     return value_extractions
 
 

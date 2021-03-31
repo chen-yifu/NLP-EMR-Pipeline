@@ -1,12 +1,12 @@
 """
-Value is a dataclass that holds information about a comparison between pipeline and human value.
+ComparisonHelper is a dataclass that holds information about a comparison between pipeline and human value.
 """
 
 from dataclasses import dataclass
 
 
 @dataclass
-class ComparisonHelperType:
+class ComparisonHelper:
     """
     Data Class used for returning information needed in creating excel sheet
     """

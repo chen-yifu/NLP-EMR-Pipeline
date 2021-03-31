@@ -1,11 +1,10 @@
-from typing import List, Dict
+from typing import Dict
 import pandas as pd
-from pipeline.util.report import Report
 from pipeline.util.utils import get_current_time
-from pipeline.util.comparisonhelpertype import ComparisonHelperType
+from pipeline.util.comparison_helper import ComparisonHelper
 
 
-def compare_baseline_pipeline_val(baselineval, pipelineval) -> ComparisonHelperType:
+def compare_baseline_pipeline_val(baselineval, pipelineval) -> ComparisonHelper:
     """
     :param baselineval:
     :param pipelineval:
@@ -15,38 +14,38 @@ def compare_baseline_pipeline_val(baselineval, pipelineval) -> ComparisonHelperT
     str_pipelineval = str(pipelineval) if str(pipelineval) != "nan" else ""
     # both vals are null
     if pd.isna(baselineval) and pd.isna(pipelineval):
-        return ComparisonHelperType(value="", correct=True, missing=False, wrong=False)
+        return ComparisonHelper(value="", correct=True, missing=False, wrong=False)
     # baseline is null and pipeline return ""
     elif pd.isna(baselineval) and str(pipelineval) == "":
-        return ComparisonHelperType(value="", correct=True, missing=False, wrong=False)
+        return ComparisonHelper(value="", correct=True, missing=False, wrong=False)
     # pipeline is null and baseline returned ""
     elif pd.isna(pipelineval) and str(baselineval) == "":
-        return ComparisonHelperType(value="", correct=True, missing=False, wrong=False)
+        return ComparisonHelper(value="", correct=True, missing=False, wrong=False)
 
     # try turning the inputs into ints
     try:
         # both can be converted to ints and they are the same
         if int(baselineval) == int(pipelineval):
-            return ComparisonHelperType(value=str(baselineval), correct=True, missing=False, wrong=False)
+            return ComparisonHelper(value=str(baselineval), correct=True, missing=False, wrong=False)
         # both can be converted to int but do not equal each other
         elif int(baselineval) != int(pipelineval):
-            return ComparisonHelperType(value=str_baselineval + "|" + str_pipelineval, correct=False,
-                                        missing=False if str_pipelineval != "" else True, wrong=True)
+            return ComparisonHelper(value=str_baselineval + "|" + str_pipelineval, correct=False,
+                                    missing=False if str_pipelineval != "" else True, wrong=True)
     except Exception:
         # both can be converted to str and they are the same
         if str_baselineval == str_pipelineval:
-            return ComparisonHelperType(value=str_baselineval, correct=True, missing=False, wrong=False)
+            return ComparisonHelper(value=str_baselineval, correct=True, missing=False, wrong=False)
         # both can be converted to str but do not equal each other
         elif str_baselineval != str_pipelineval:
-            return ComparisonHelperType(value=str_baselineval + "|" + str_pipelineval, correct=False,
-                                        missing=False if str_pipelineval != "" else True, wrong=True)
+            return ComparisonHelper(value=str_baselineval + "|" + str_pipelineval, correct=False,
+                                    missing=False if str_pipelineval != "" else True, wrong=True)
         # baseline is null but pipeline got a value
         elif pd.isnull(baselineval):
-            return ComparisonHelperType(value="|" + str_pipelineval, correct=False, missing=False, wrong=True)
+            return ComparisonHelper(value="|" + str_pipelineval, correct=False, missing=False, wrong=True)
         else:
             # pipeline did not get a value but there is a value in baseline
-            return ComparisonHelperType(value=str_baselineval + "|", correct=False,
-                                        missing=False if str_pipelineval != "" else True, wrong=True)
+            return ComparisonHelper(value=str_baselineval + "|", correct=False,
+                                    missing=False if str_pipelineval != "" else True, wrong=True)
 
 
 def compare_dataframes_dev(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseline_path: str,
@@ -149,8 +148,8 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
     pipeline_ids = pipeline_dict.keys()
 
     # checking to see if there are any report ids missing in baseline but found in pipeline and vice versa
-    missing_from_pipeline = set(pipeline_ids) - set(baseline_ids)
-    missing_from_baseline = set(baseline_ids) - set(pipeline_ids)
+    missing_from_baseline = set(pipeline_ids) - set(baseline_ids)
+    missing_from_pipeline = set(baseline_ids) - set(pipeline_ids)
 
     # init the dict that will keep track of the comparisons
     default_col_comparison_dict = {"Total": 0, "Correct": 0, "Missing": 0, "Wrong": 0, "Accuracy": 0}
@@ -166,45 +165,48 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
             baseline_cols_vals = baseline_dict[baseline_id]
             pipeline_cols_vals = pipeline_dict[baseline_id]
             for col in baseline_dataframe_cols:
-                baseline_val = baseline_cols_vals[col]
-                pipeline_val = pipeline_cols_vals[col]
-                result = compare_baseline_pipeline_val(baseline_val, pipeline_val)
-                wrong_missing_correct_dict[col]["Total"] += 1
-                comparison_report_dict[col] = result.value
-                if result.missing:
-                    wrong_missing_correct_dict[col]["Missing"] += 1
-                if result.wrong:
-                    wrong_missing_correct_dict[col]["Wrong"] += 1
-                if result.correct:
-                    wrong_missing_correct_dict[col]["Correct"] += 1
-                csf = wrong_missing_correct_dict[col]["Correct"]
-                tsf = wrong_missing_correct_dict[col]["Total"]
-                wrong_missing_correct_dict[col]["Accuracy"] = csf / tsf
+                if col == id_col:
+                    continue
+                else:
+                    baseline_val = baseline_cols_vals[col]
+                    pipeline_val = pipeline_cols_vals[col]
+                    result = compare_baseline_pipeline_val(baseline_val, pipeline_val)
+                    wrong_missing_correct_dict[col]["Total"] += 1
+                    comparison_report_dict[col] = result.value
+                    if result.missing:
+                        wrong_missing_correct_dict[col]["Missing"] += 1
+                    if result.wrong:
+                        wrong_missing_correct_dict[col]["Wrong"] += 1
+                    if result.correct:
+                        wrong_missing_correct_dict[col]["Correct"] += 1
+                    csf = wrong_missing_correct_dict[col]["Correct"]
+                    tsf = wrong_missing_correct_dict[col]["Total"]
+                    wrong_missing_correct_dict[col]["Accuracy"] = csf / tsf
             comparison_list.append(comparison_report_dict)
-        else:
-            # if report id is not found in pipeline, make sure we have it in the missing_from_baseline set
-            if baseline_id not in missing_from_baseline:
-                missing_from_pipeline.add(baseline_id)
 
     # add missing ones
     for missing_from_pipeline_id in missing_from_pipeline:
         # add | to the right of the value
         report_missing_from_pipeline = {id_col: missing_from_pipeline_id}
         report_missing_from_pipeline.update(baseline_dict[missing_from_pipeline_id])
-        comparison_list.append({k: str(v) + "|" for k, v in report_missing_from_pipeline})
+        report_missing_from_pipeline = {k: str(v) + "|" for k, v in report_missing_from_pipeline.items()}
+        comparison_list.append(report_missing_from_pipeline)
         # update the wrong_missing_correct_dict, need to update the missing field for each
-        wrong_missing_correct_dict = {k: v["Missing"] + 1 for k, v in wrong_missing_correct_dict}
+        for col, rsf in wrong_missing_correct_dict.items():
+            rsf["Missing"] += 1
 
     for missing_from_baseline_id in missing_from_baseline:
         # add | to the left of the value
         report_missing_from_baseline = {id_col: missing_from_baseline_id}
         report_missing_from_baseline.update(pipeline_dict[missing_from_baseline_id])
-        comparison_list.append({k: "|" + str(v) for k, v in report_missing_from_baseline})
+        report_missing_from_baseline = {k: "|" + str(v) for k, v in report_missing_from_baseline.items()}
+        comparison_list.append(report_missing_from_baseline)
         # don't need to add anything, this means extra report found
 
     current_time = str(get_current_time())
     comparison_df = pd.DataFrame(comparison_list)
     comparison_df.sort_values(id_col)
+    comparison_df = comparison_df.reindex(columns=list(baseline_dataframe.columns))
     comparison_df.to_excel(
         path_to_outputs + "compare/compare_with_" + baseline_version[:-4] + current_time + ".xlsx")
 

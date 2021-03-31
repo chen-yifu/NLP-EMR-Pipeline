@@ -2,6 +2,15 @@ import re
 from typing import Dict
 
 
+def get_laterality(value: str) -> str:
+    if value == "right":
+        return "2"
+    elif value == "left":
+        return "1"
+    elif value == "bilateral":
+        return "3"
+
+
 def do_nothing(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
     if "l" in value and len(value.strip()) < 3:
         return value.replace("l", "1")

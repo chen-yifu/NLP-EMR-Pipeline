@@ -149,16 +149,8 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
 
         reports_to_use_to_turn_into_vals = turn_reports_extractions_to_values(reports_to_use_to_turn_into_vals,
                                                                               column_mappings)
-        for report in reports_to_use_to_turn_into_vals:
-            print(report.report_id)
-            for lol, lmao in report.extractions.items():
-                print(lol, lmao.primary_value)
 
         encoded_reports = encode_extractions(reports=reports_to_use_to_turn_into_vals, code_book=code_book, tools=tools)
-
-        for report in encoded_reports:
-            print(report.report_id)
-            print(report.encoded)
 
         # turning coded to spreadsheets
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],

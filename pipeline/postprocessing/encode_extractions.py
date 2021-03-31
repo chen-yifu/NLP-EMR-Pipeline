@@ -8,7 +8,7 @@ import torch
 import scispacy
 import spacy
 
-from pipeline.postprocessing.report_specific_encoding import do_nothing
+from pipeline.postprocessing.report_specific_encoding import do_nothing, get_laterality
 from pipeline.util.encoding import Encoding
 from pipeline.util.report import Report
 from pipeline.util.value import Value
@@ -22,11 +22,9 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
         if val is None:
             val = ""
         entities = list(nlp(val).ents) if len(val.split()) > 3 else [val]
-        print(report.report_id)
-        print(human_col + " " + str(entities))
         return entities if len(entities) > 0 else [val]
 
-    def encode_extraction_for_single_report(extractions: Dict[str, Value], report_id: str) -> Dict[str, str]:
+    def encode_extraction_for_single_report(extractions: Dict[str, Value], report_id: str, lat: str) -> Dict[str, str]:
         encoded_extractions_dict = {}
         for human_col, encodings in code_book.items():
             done_encoding = False
@@ -66,6 +64,8 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     except KeyError:
                         # means it probably has its own function
                         function_in_tools_name = encoding.val[0]
+                        if function_in_tools_name == "get_laterality":
+                            encoded_extractions_dict[human_col] = get_laterality(lat)
                         try:
                             func_in_tools = tools[function_in_tools_name]
                             encoded_extractions_dict[human_col] = func_in_tools(extractions[human_col].primary_value,
@@ -98,5 +98,5 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
         return encoded_extractions_dict
 
     for report in reports:
-        report.encoded = encode_extraction_for_single_report(report.extractions, report.report_id)
+        report.encoded = encode_extraction_for_single_report(report.extractions, report.report_id, report.laterality)
     return reports
