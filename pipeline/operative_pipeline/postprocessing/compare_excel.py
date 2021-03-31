@@ -105,18 +105,21 @@ def make_custom_id_dict(id_col: str, id_col_dict: dict, old_dict: dict) -> Dict[
 def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseline_path: str,
                  path_to_outputs: str, id_col: str = "Study #") -> pd.DataFrame:
     """
+    :param id_col:
     :param path_to_outputs:
     :param baseline_version:
     :param pipeline_dataframe:
     :param baseline_path:
     :return:
     """
-
+    # loading in the baseline as a dataframe
     baseline_dataframe = pd.read_csv(baseline_path)
-    baseline_dataframe_cols = (set(baseline_dataframe.columns))
 
+    # getting columns from both baseline and pipeline to make sure they match
+    baseline_dataframe_cols = (set(baseline_dataframe.columns))
     pipeline_dataframe_cols = set(pipeline_dataframe.columns)
 
+    # if they dont match, force to remove them from pipeline
     if baseline_dataframe_cols != pipeline_dataframe_cols:
         extra_cols = baseline_dataframe_cols - pipeline_dataframe_cols
         print("Here are the column differences:")
@@ -130,24 +133,35 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
                 pass
 
     baseline_dataframe_cols = list(baseline_dataframe_cols)
+
+    # changing dataframes to dict for easier comparing
     baseline_unchanged_dict = baseline_dataframe.to_dict()
     baseline_dict = make_custom_id_dict(id_col, baseline_unchanged_dict[id_col], baseline_unchanged_dict)
 
     pipeline_unchanged_dict = pipeline_dataframe.to_dict()
     pipeline_dict = make_custom_id_dict(id_col, pipeline_unchanged_dict[id_col], pipeline_unchanged_dict)
+
+    # init empty list to store compared reports
     comparison_list = []
 
+    # all of the ids of the reports
     baseline_ids = baseline_dict.keys()
     pipeline_ids = pipeline_dict.keys()
+
+    # checking to see if there are any report ids missing in baseline but found in pipeline and vice versa
     missing_from_pipeline = set(pipeline_ids) - set(baseline_ids)
     missing_from_baseline = set(baseline_ids) - set(pipeline_ids)
 
+    # init the dict that will keep track of the comparisons
     default_col_comparison_dict = {"Total": 0, "Correct": 0, "Missing": 0, "Wrong": 0, "Accuracy": 0}
     wrong_missing_correct_dict = dict.fromkeys(baseline_dataframe_cols, default_col_comparison_dict)
 
     for baseline_id in baseline_ids:
+        # set up default comparison dict to have "" to prevent exceptions
         comparison_report_dict = dict.fromkeys(baseline_dataframe_cols, "")
+        # adding report id to the comparison dict
         comparison_report_dict[id_col] = baseline_id
+        # if the report id is in both pipeline and baseline we start to compare
         if baseline_id in pipeline_ids:
             baseline_cols_vals = baseline_dict[baseline_id]
             pipeline_cols_vals = pipeline_dict[baseline_id]
@@ -158,22 +172,35 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
                 wrong_missing_correct_dict[col]["Total"] += 1
                 comparison_report_dict[col] = result.value
                 if result.missing:
-                    wrong_missing_correct_dict[col]["Missing"] += result.missing
+                    wrong_missing_correct_dict[col]["Missing"] += 1
                 if result.wrong:
-                    wrong_missing_correct_dict[col]["Wrong"] += result.wrong
+                    wrong_missing_correct_dict[col]["Wrong"] += 1
                 if result.correct:
-                    wrong_missing_correct_dict[col]["Correct"] += result.correct
-
+                    wrong_missing_correct_dict[col]["Correct"] += 1
                 csf = wrong_missing_correct_dict[col]["Correct"]
                 tsf = wrong_missing_correct_dict[col]["Total"]
                 wrong_missing_correct_dict[col]["Accuracy"] = csf / tsf
-        comparison_list.append(comparison_report_dict)
+            comparison_list.append(comparison_report_dict)
+        else:
+            # if report id is not found in pipeline, make sure we have it in the missing_from_baseline set
+            if baseline_id not in missing_from_baseline:
+                missing_from_pipeline.add(baseline_id)
 
     # add missing ones
     for missing_from_pipeline_id in missing_from_pipeline:
-        print("")
+        # add | to the right of the value
+        report_missing_from_pipeline = {id_col: missing_from_pipeline_id}
+        report_missing_from_pipeline.update(baseline_dict[missing_from_pipeline_id])
+        comparison_list.append({k: str(v) + "|" for k, v in report_missing_from_pipeline})
+        # update the wrong_missing_correct_dict, need to update the missing field for each
+        wrong_missing_correct_dict = {k: v["Missing"] + 1 for k, v in wrong_missing_correct_dict}
+
     for missing_from_baseline_id in missing_from_baseline:
-        print("")
+        # add | to the left of the value
+        report_missing_from_baseline = {id_col: missing_from_baseline_id}
+        report_missing_from_baseline.update(pipeline_dict[missing_from_baseline_id])
+        comparison_list.append({k: "|" + str(v) for k, v in report_missing_from_baseline})
+        # don't need to add anything, this means extra report found
 
     current_time = str(get_current_time())
     comparison_df = pd.DataFrame(comparison_list)
@@ -184,3 +211,5 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
     wrong_missing_correct_df = pd.DataFrame(wrong_missing_correct_dict)
     wrong_missing_correct_df.to_excel(
         path_to_outputs + "compare/accuracy_results_" + baseline_version[:-4] + current_time + ".xlsx")
+
+    return wrong_missing_correct_df
