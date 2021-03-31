@@ -1,14 +1,10 @@
-from typing import Dict, List, Union, Tuple
-import pandas as pd
-import re
-from nltk import edit_distance
-from spacy.tokens import Span
-from transformers import BertModel, BertTokenizer
-import torch
-import scispacy
-import spacy
+"""
+Encodes the extractions to numbers in code book.
+"""
 
-from pipeline.postprocessing.report_specific_encoding import do_nothing
+from typing import Dict, List, Union, Tuple
+import spacy
+from spacy.tokens import Span
 from pipeline.util.encoding import Encoding
 from pipeline.util.report import Report
 from pipeline.util.value import Value

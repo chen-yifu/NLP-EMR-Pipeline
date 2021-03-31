@@ -1,45 +1,47 @@
 from collections import defaultdict
+from typing import Dict, List
+
 import pandas as pd
 
+from pipeline.util.column import Column
+from pipeline.util.report import Report
 
-def save_dictionaries_into_csv_raw(reports, column_mapping, csv_path, print_debug=True):
+
+def save_dictionaries_into_csv_raw(reports: List[Report], column_mapping: Dict[str, Column], csv_path: str,
+                                   print_debug=True) -> pd.DataFrame:
     """
-    given a list of dictionaries, keeping only the targeted columns in column_mapping, save them to a csv file
+    given a list of reports, keeping only the targeted columns in column_mapping, save them to a csv file
     i.e., even if we extracted other columns, if it's not a target column, we don't keep it
-    :param reports:                a list of dict;             each element is a dictionary that is a row in dataframe
-    :param column_mapping:      a list of (str, str);   first str is col name from PDF, second str is col from Excel
-    :param csv_path:            str;                        path to output csv
-    :param print_debug:         boolean;                    print debug statements and resulting dataframe if True
-    :return:                    dataframe;                  resulting dataframe that has been saved
+    :param reports:
+    :param column_mapping:
+    :param csv_path:                                     path to output csv
+    :param print_debug:                                  print debug statements and resulting dataframe if True
     """
-    pdf_columns = [col_pdf for col_pdf, col_csv in column_mapping]
-    csv_columns = [col_csv for col_pdf, col_csv in column_mapping]
+
+    report_cols = []
+    human_cols = []
+    for human_col, report_col in column_mapping.items():
+        human_cols.append(human_col)
+        report_cols += report_col.primary_report_col
+        report_cols += report_col.alternative_report_col
+
     pd.options.mode.chained_assignment = None  # default="warn"
     pd.options.display.width = 0
 
-    # remove unneeded column-value pairs
+    to_encode = []
     for report in reports:
-        keys = list(report.extractions.keys())
-        for k in keys:
-            if k not in pdf_columns:  # if a col-val pair in dictionary is not useful
-                del report.extractions[k]  # don't include it in final csv
-
-    # rename the column names
-    renamed_dictionaries = []
-    for report in reports:
-        renamed_dictionary = defaultdict(str)
-        renamed_dictionary["Study #"] = report.report_id
-        for index, col in enumerate(pdf_columns):
-            if renamed_dictionary[col] == "":
-                val = report.extractions[col]
-                renamed_dictionary[csv_columns[index]] = val
-        renamed_dictionaries.append(renamed_dictionary)
+        to_encode_dict = {}
+        for col, extract in report.extractions.items():
+            to_encode_dict[col] = extract.primary_value + str(
+                extract.alternative_value) if extract.alternative_value != [] else extract.primary_value
+        to_encode_dict.update({"Study #": report.report_id})
+        to_encode.append(to_encode_dict)
 
     # keep only unique csv column names (e.g. we have a duplicate "Histologic Grade", if keep both, will cause "ValueError: cannot reindex from a duplicate axis")
     unique_cols = []
-    [unique_cols.append(col) for col in csv_columns if col not in unique_cols]
-    print([(d["Study #"], d["Histologic Grade"]) for d in renamed_dictionaries])
-    df = pd.DataFrame(renamed_dictionaries, columns=unique_cols)
+    [unique_cols.append(col) for col in human_cols if col not in unique_cols]
+    print([(d["Study #"], d["Histologic Grade"]) for d in to_encode])
+    df = pd.DataFrame(to_encode, columns=unique_cols)
 
     df.to_csv(csv_path, index=False)
 

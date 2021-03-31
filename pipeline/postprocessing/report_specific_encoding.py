@@ -9,18 +9,42 @@ def do_nothing(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
 
 
 def nottingham_score(encodings_so_far: Dict[str, str] = {}) -> str:
+    glandular = str(encodings_so_far["Glandular Differentiation"])
+    nuclear_p = str(encodings_so_far["Nuclear Pleomorphism"])
+    mitotic = str(encodings_so_far["Mitotic Rate"])
     try:
-        glandular = int(encodings_so_far["Glandular Differentiation"])
+        glandular = int(glandular)
     except Exception:
-        glandular = 0
+        if "3" in glandular:
+            glandular = 3
+        elif "2" in glandular:
+            glandular = 2
+        elif "1" in glandular:
+            glandular = 1
+        else:
+            glandular = 0
     try:
-        nuclear_p = int(encodings_so_far["Nuclear Pleomorphism"])
+        nuclear_p = int(nuclear_p)
     except Exception:
-        nuclear_p = 0
+        if "3" in nuclear_p:
+            nuclear_p = 3
+        elif "2" in nuclear_p:
+            nuclear_p = 2
+        elif "1" in nuclear_p:
+            nuclear_p = 1
+        else:
+            nuclear_p = 0
     try:
-        mitotic = int(encodings_so_far["Mitotic Rate"])
+        mitotic = int(mitotic)
     except Exception:
-        mitotic = 0
+        if "3" in mitotic:
+            mitotic = 3
+        elif "2" in mitotic:
+            mitotic = 2
+        elif "1" in mitotic:
+            mitotic = 1
+        else:
+            mitotic = 0
 
     return str(glandular + nuclear_p + mitotic)
 

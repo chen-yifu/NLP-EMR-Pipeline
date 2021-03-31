@@ -318,12 +318,13 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost)
+
         report.extractions.update({"laterality": report.laterality})
+        report.extractions = {" ".join(k.translate(table).lower().strip().split()): v for k, v in
+                              report.extractions.items()}
         result.append(report)
         print(report.report_id)
         print(report.extractions)
-        if "Additional notes on breast procedure" in report.extractions.keys():
-            print(report.report_id, "has: Additional notes on breast procedure")
 
     # sort DataFrame by study ID
     df_with_stats = pd.DataFrame(list_of_dict_with_stats)
