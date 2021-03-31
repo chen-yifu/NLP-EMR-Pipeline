@@ -37,10 +37,8 @@ def save_dictionaries_into_csv_raw(reports: List[Report], column_mapping: Dict[s
         to_encode_dict.update({"Study #": report.report_id})
         to_encode.append(to_encode_dict)
 
-    # keep only unique csv column names (e.g. we have a duplicate "Histologic Grade", if keep both, will cause "ValueError: cannot reindex from a duplicate axis")
     unique_cols = []
     [unique_cols.append(col) for col in human_cols if col not in unique_cols]
-    print([(d["Study #"], d["Histologic Grade"]) for d in to_encode])
     df = pd.DataFrame(to_encode, columns=unique_cols)
 
     df.to_csv(csv_path, index=False)

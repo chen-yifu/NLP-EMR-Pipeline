@@ -33,20 +33,19 @@ run_pipeline(start=101, end=156,
                     "do_nothing": do_nothing,
                     "archtectural_patterns": archtectural_patterns})
 
-stats_operative = run_pipeline(start=1, end=48,
-                               report_type=ReportType.TEXT,
-                               anchor=r"^\d*\.* *", is_anchor=True, use_seperator_to_capture=True,
-                               single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
-                               cols_to_skip=["immediate reconstruction mentioned", "laterality",
-                                             "reconstruction mentioned"],
-                               sep_list=["surgical indication", "immediate reconstruction type"],
-                               report_name="operative", report_ending="OR_Redacted.pdf",
-                               contained_capture_list=["breast incision type", "immediate reconstruction type"],
-                               no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
-                                               "localization"],
-                               other_paths={
-                                   "path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv")},
-                               baseline_version="data_collection_baseline_VZ_48.csv")
-print(stats_operative)
+run_pipeline(start=1, end=48,
+             report_type=ReportType.TEXT,
+             anchor=r"^\d*\.* *", is_anchor=True, use_seperator_to_capture=True,
+             single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
+             cols_to_skip=["immediate reconstruction mentioned", "laterality",
+                           "reconstruction mentioned"],
+             sep_list=["surgical indication", "immediate reconstruction type"],
+             report_name="operative", report_ending="OR_Redacted.pdf",
+             contained_capture_list=["breast incision type", "immediate reconstruction type"],
+             no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
+                             "localization"],
+             other_paths={
+                 "path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv")},
+             baseline_version="data_collection_baseline_VZ_48.csv")
 
 # ^\d*\.* *

@@ -7,7 +7,7 @@ from collections import defaultdict
 from typing import Dict, List, Tuple
 from nltk import edit_distance
 from nltk.corpus import stopwords
-from pipeline.pathology_pipeline.processing.columns import load_excluded_columns_as_list
+from pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.processing.clean_text import cleanse_column, cleanse_value
 from pipeline.util.column import Column
 from pipeline.util.report import Report

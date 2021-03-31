@@ -1,23 +1,22 @@
 """
-The pipeline for EMR
+🧬 file that contains the function that runs the emr pipeline
 """
 
 from typing import Tuple, Any
-from pandas import DataFrame
-from pipeline.operative_pipeline.postprocessing.compare_excel import nice_compare
-from pipeline.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, change_unfiltered_to_dict, \
-    add_report_id
+import pandas as pd
+from pipeline.archive.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, add_report_id, \
+    change_unfiltered_to_dict
 from pipeline.postprocessing.encode_extractions import encode_extractions
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
 from pipeline.preprocessing.scanned_pdf_to_text import convert_pdf_to_text, load_in_reports
-from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
-from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
-from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
+from pipeline.postprocessing.highlight_differences import highlight_csv_differences
+from pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
+from pipeline.archive.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
-from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
+from pipeline.archive.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
 from pipeline.processing.turn_to_values import turn_reports_extractions_to_values
-from pipeline.util.import_tools import import_pdf_human_cols_tuples, get_input_paths, import_code_book, import_columns
+from pipeline.util.import_tools import get_input_paths, import_code_book, import_columns
 from pipeline.util.paths import get_paths
 from pipeline.util.regex_tools import synoptic_capture_regex
 from pipeline.util.report_type import ReportType
@@ -30,7 +29,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                  multi_line_cols: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
                  no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True,
                  max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect_path: int = 5,
-                 sep_list: list = [], substitution_cost_path: int = 2, resolve_ocr=True) -> Tuple[Any, DataFrame]:
+                 sep_list: list = [], substitution_cost_path: int = 2, resolve_ocr=True) -> Tuple[Any, pd.DataFrame]:
     """
     :param single_line_list:
     :param use_seperator_to_capture:
@@ -140,46 +139,44 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
 
     reports_with_values = turn_reports_extractions_to_values(filtered_reports, column_mappings)
 
+    df_raw = save_dictionaries_into_csv_raw(reports_with_values, column_mappings, csv_path=paths["csv path raw"],
+                                            print_debug=print_debug)
+
+    encoded_reports = encode_extractions(reports=reports_with_values, code_book=code_book, tools=tools)
+
+    dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],
+                                             type_of_report="coded", function=add_report_id)
     # split starts here
     if report_type is ReportType.NUMERICAL:
         # https://regex101.com/r/RBWwBE/1
         # https://regex101.com/r/Gk4xv9/1
 
-        encoded_reports = encode_extractions(reports=reports_with_values, code_book=code_book, tools=tools)
+        dataframe_coded_old = encode_extractions_to_dataframe(df_raw, print_debug=print_debug)
 
-        df_raw = save_dictionaries_into_csv_raw(reports_with_values,
-                                                column_mappings,
-                                                csv_path=paths["csv path raw"],
-                                                print_debug=print_debug)
+        # this is just for now: to compare to the old encoding
+        dataframe_coded_old.to_csv("../data/output/pathology_results/csv_files/old_encoding.csv", index=False)
 
-        df_coded = encode_extractions_to_dataframe(df_raw, print_debug=print_debug)
-
-        df_coded.to_csv(paths["csv path coded"], index=False)
-
-        stats = highlight_csv_differences(paths["csv path coded"], paths["path to baseline"],
+        stats = highlight_csv_differences("../data/output/pathology_results/csv_files/old_encoding.csv",
+                                          paths["path to baseline"],
                                           excel_path_highlight_differences, print_debug=print_debug)
 
         if print_debug:
-            print("\nPipeline process finished.\nStats:{}".format(stats))
-
-        return stats, autocorrect_df
+            print("\nOld encoding code -> Pipeline process finished.\nStats:{}".format(stats))
 
     elif report_type is ReportType.TEXT:
         # https://regex101.com/r/XWffCF/1
 
-        # raw to spreadsheet, no altering has been done
+        # # raw to spreadsheet, no altering has been done
         reports_to_spreadsheet(filtered_reports, type_of_report="unfiltered_reports",
                                path_to_output=paths["path to output"],
                                function=change_unfiltered_to_dict)
 
-        encoded_reports = encode_extractions(reports=reports_with_values, code_book=code_book, tools=tools)
+    dataframe_coded.to_csv(paths["csv path coded"], index=False)
 
-        # turning coded to spreadsheets
-        dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],
-                                                 type_of_report="coded", function=add_report_id)
+    stats = highlight_csv_differences(paths["csv path coded"], paths["path to baseline"],
+                                      excel_path_highlight_differences, print_debug=print_debug)
 
-        # doing nice comparison
-        training_dict = nice_compare(baseline_version=baseline_version, pipeline_dataframe=dataframe_coded,
-                                     baseline_path=paths["path to baseline"], path_to_outputs=paths["path to output"])
+    if print_debug:
+        print("\nPipeline process finished.\nStats:{}".format(stats))
 
-        return training_dict
+    return stats, autocorrect_df

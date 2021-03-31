@@ -1,6 +1,6 @@
 from collections import defaultdict
 import pandas as pd
-from pipeline.pathology_pipeline.processing import columns
+from pipeline.processing import columns
 
 zero_empty_columns = columns.get_zero_empty_columns()
 
@@ -15,16 +15,11 @@ def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path,
     :return:                    None
     """
     df_coded = pd.read_csv(csv_path_coded, dtype=str)
-    try:
-        del df_coded["Laterality"]
-    except Exception:
-        pass
     df_human = pd.read_csv(csv_path_human, dtype=str)
+    df_coded = df_coded.reindex(columns=list(df_human.columns))
 
     # if the two dataframes are having different columns, stop and return
-    print(df_coded.columns)
-    print(df_human.columns)
-    print(set(df_human.columns) - set(df_coded.columns))
+
     if (df_coded.columns != df_human.columns).any():
         s = "The resulting csv file have different columns than human baseline, couldn't compare the results."
         print(s)
