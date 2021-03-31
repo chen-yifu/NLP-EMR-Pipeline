@@ -8,7 +8,7 @@ import torch
 import scispacy
 import spacy
 
-from pipeline.postprocessing.report_specific_encoding import do_nothing, get_laterality
+from pipeline.postprocessing.report_specific_encoding import do_nothing
 from pipeline.util.encoding import Encoding
 from pipeline.util.report import Report
 from pipeline.util.value import Value
@@ -63,26 +63,22 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                             human_col] = "0" if val_depends_on == "0" or val_depends_on == "" else "1"
                     except KeyError:
                         # means it probably has its own function
-                        function_in_tools_name = encoding.val[0]
-                        if function_in_tools_name == "get_laterality":
-                            encoded_extractions_dict[human_col] = get_laterality(lat)
+                        function_in_tools_name = encoding.val[0].strip().lower()
                         try:
                             func_in_tools = tools[function_in_tools_name]
                             encoded_extractions_dict[human_col] = func_in_tools(extractions[human_col].primary_value,
-                                                                                extractions)
+                                                                                encoded_extractions_dict)
                         except KeyError:
                             try:
                                 func_in_tools = tools[function_in_tools_name]
-                                encoded_extractions_dict[human_col] = func_in_tools(extractions)
-                            except Exception:
-                                print(function_in_tools_name,
-                                      "function cannot be found, or the extraction value cannot be found")
+                                encoded_extractions_dict[human_col] = func_in_tools(encoded_extractions_dict)
+                            except Exception as e:
+                                print(e)
                                 encoded_extractions_dict[human_col] = "pipeline malfunction"
-                            # encoded_extractions_dict[human_col] = do_nothing(extractions[human_col].primary_value)
 
                     done_encoding = True
 
-            # try to findest the highest number, if its one then we return that num
+            # try to find the highest number, if its one then we return that num
             if not done_encoding:
                 try:
                     primary_value = get_entities(extractions[human_col].primary_value, human_col)

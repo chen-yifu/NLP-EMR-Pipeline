@@ -3,6 +3,17 @@ import pandas as pd
 from pipeline.util.utils import get_current_time
 from pipeline.util.comparison_helper import ComparisonHelper
 
+color_palette = {
+    "pink": "#FFC0CD",
+    "orange": "#FFD7BD",
+    "yellow": "#FFF1C3",
+    "green": "#E9FFC2",
+    "blue": "#B3FFED",
+    "light green": "#D0FFE4",
+    "light blue": "#ebfcfc",
+    "gray": "#E3E3E3",
+}
+
 
 def compare_baseline_pipeline_val(baselineval, pipelineval) -> ComparisonHelper:
     """
@@ -115,7 +126,7 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
     baseline_dataframe = pd.read_csv(baseline_path)
 
     # getting columns from both baseline and pipeline to make sure they match
-    baseline_dataframe_cols = (set(baseline_dataframe.columns))
+    baseline_dataframe_cols = set(baseline_dataframe.columns)
     pipeline_dataframe_cols = set(pipeline_dataframe.columns)
 
     # if they dont match, force to remove them from pipeline
@@ -152,8 +163,9 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
     missing_from_pipeline = set(baseline_ids) - set(pipeline_ids)
 
     # init the dict that will keep track of the comparisons
-    default_col_comparison_dict = {"Total": 0, "Correct": 0, "Missing": 0, "Wrong": 0, "Accuracy": 0}
-    wrong_missing_correct_dict = dict.fromkeys(baseline_dataframe_cols, default_col_comparison_dict)
+    wrong_missing_correct_dict = {}
+    for col in baseline_dataframe_cols:
+        wrong_missing_correct_dict[col] = {"Total": 0, "Correct": 0, "Missing": 0, "Wrong": 0, "Accuracy": 0}
 
     for baseline_id in baseline_ids:
         # set up default comparison dict to have "" to prevent exceptions
@@ -187,30 +199,33 @@ def nice_compare(baseline_version: str, pipeline_dataframe: pd.DataFrame, baseli
     # add missing ones
     for missing_from_pipeline_id in missing_from_pipeline:
         # add | to the right of the value
-        report_missing_from_pipeline = {id_col: missing_from_pipeline_id}
-        report_missing_from_pipeline.update(baseline_dict[missing_from_pipeline_id])
+        report_missing_from_pipeline = baseline_dict[missing_from_pipeline_id]
         report_missing_from_pipeline = {k: str(v) + "|" for k, v in report_missing_from_pipeline.items()}
+        report_missing_from_pipeline.update({id_col: missing_from_pipeline_id})
         comparison_list.append(report_missing_from_pipeline)
+        # 🦔 :D
         # update the wrong_missing_correct_dict, need to update the missing field for each
         for col, rsf in wrong_missing_correct_dict.items():
             rsf["Missing"] += 1
 
     for missing_from_baseline_id in missing_from_baseline:
         # add | to the left of the value
-        report_missing_from_baseline = {id_col: missing_from_baseline_id}
-        report_missing_from_baseline.update(pipeline_dict[missing_from_baseline_id])
+        report_missing_from_baseline = pipeline_dict[missing_from_baseline_id]
         report_missing_from_baseline = {k: "|" + str(v) for k, v in report_missing_from_baseline.items()}
+        report_missing_from_baseline.update({id_col: missing_from_baseline_id})
         comparison_list.append(report_missing_from_baseline)
         # don't need to add anything, this means extra report found
 
+    ordered_cols = list(baseline_dataframe.columns)
     current_time = str(get_current_time())
     comparison_df = pd.DataFrame(comparison_list)
+    comparison_df = comparison_df.reindex(columns=ordered_cols)
     comparison_df.sort_values(id_col)
-    comparison_df = comparison_df.reindex(columns=list(baseline_dataframe.columns))
     comparison_df.to_excel(
         path_to_outputs + "compare/compare_with_" + baseline_version[:-4] + current_time + ".xlsx")
 
     wrong_missing_correct_df = pd.DataFrame(wrong_missing_correct_dict)
+    wrong_missing_correct_df = wrong_missing_correct_df.reindex(columns=ordered_cols)
     wrong_missing_correct_df.to_excel(
         path_to_outputs + "compare/accuracy_results_" + baseline_version[:-4] + current_time + ".xlsx")
 

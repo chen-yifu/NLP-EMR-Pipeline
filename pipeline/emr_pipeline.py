@@ -67,6 +67,8 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     if report_type is ReportType.TEXT:
         report_ending = report_ending[:-3] + "txt"
 
+    lmao = "🐄"
+
     paths_to_reports_to_read_in = get_input_paths(start, end, path_to_reports=paths["path to reports"],
                                                   report_str="{} " + report_ending)
 

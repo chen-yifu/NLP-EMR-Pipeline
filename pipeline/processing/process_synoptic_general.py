@@ -318,6 +318,7 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost)
+        report.extractions.update({"laterality": report.laterality})
         result.append(report)
         print(report.report_id)
         print(report.extractions)

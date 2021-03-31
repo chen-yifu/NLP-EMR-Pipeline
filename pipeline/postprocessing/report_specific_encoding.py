@@ -2,15 +2,6 @@ import re
 from typing import Dict
 
 
-def get_laterality(value: str) -> str:
-    if value == "right":
-        return "2"
-    elif value == "left":
-        return "1"
-    elif value == "bilateral":
-        return "3"
-
-
 def do_nothing(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
     if "l" in value and len(value.strip()) < 3:
         return value.replace("l", "1")
@@ -18,8 +9,20 @@ def do_nothing(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
 
 
 def nottingham_score(encodings_so_far: Dict[str, str] = {}) -> str:
-    return str(int(encodings_so_far["Glandular Differentiation"]) + int(encodings_so_far["Nuclear Pleomorphism"]) + int(
-        encodings_so_far["Mitotic Rate"]))
+    try:
+        glandular = int(encodings_so_far["Glandular Differentiation"])
+    except Exception:
+        glandular = 0
+    try:
+        nuclear_p = int(encodings_so_far["Nuclear Pleomorphism"])
+    except Exception:
+        nuclear_p = 0
+    try:
+        mitotic = int(encodings_so_far["Mitotic Rate"])
+    except Exception:
+        mitotic = 0
+
+    return str(glandular + nuclear_p + mitotic)
 
 
 def process_mm_val(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
