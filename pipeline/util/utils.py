@@ -11,7 +11,7 @@ def get_current_time():
     """
     :return:
     """
-    timestamp = datetime.now().strftime("-%Y-%m-%d~%H%M")
+    timestamp = datetime.now().strftime("%d-%m-%Y~%H%M")
     return timestamp
 
 

@@ -5,17 +5,21 @@ from pipeline.processing import columns
 zero_empty_columns = columns.get_zero_empty_columns()
 
 
-def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path, print_debug=True):
+def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_excel_path: str, report_type: str,
+                              print_debug=True, id_col: str = "Study #"):
     """
     given two csv files to compare, merge the data into a xlsx file, while highlighting the cells that are different
-    :param csv_path_coded:      str;            path to csv file that has been codified
-    :param csv_path_human:      str;            path to csv file that is human-annotated baseline
-    :param output_excel_path:   str;            path to save the highlighted excel file
-    :param print_debug:         boolean;        print debug statements in Terminal if True
-    :return:                    None
+
+    :param csv_path_coded:             path to csv file that has been codified
+    :param csv_path_human:             path to csv file that is human-annotated baseline
+    :param output_excel_path:          path to save the highlighted excel file
+    :param print_debug:                print debug statements in Terminal if True
+    :return:                           None
     """
     df_coded = pd.read_csv(csv_path_coded, dtype=str)
     df_human = pd.read_csv(csv_path_human, dtype=str)
+
+    # matching up the columns from baseline with pipeline so it can be compared
     df_coded = df_coded.reindex(columns=list(df_human.columns))
 
     # if the two dataframes are having different columns, stop and return
@@ -37,7 +41,7 @@ def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path,
     writer = pd.ExcelWriter(output_path, engine='xlsxwriter')
 
     workbook = writer.book
-    worksheet = workbook.add_worksheet(name="Pathology")
+    worksheet = workbook.add_worksheet(name=report_type)
 
     color_palette = {
         "pink": "#FFC0CD",
@@ -91,11 +95,11 @@ def highlight_csv_differences(csv_path_coded, csv_path_human, output_excel_path,
     for row_index in range(df_coded.shape[0]):  # TODO compare and copy/highlight
         for col_index, col_name in enumerate(df_coded.columns):
             # resolve possibly redundant ID suffixes. For example, if we have 101L, but 101 is available, then use 101
-            coded_id = df_coded["Study #"][row_index]
+            coded_id = df_coded[id_col][row_index]
 
             coded_val = str(df_coded[col_name][row_index])
             try:
-                human_val = str(df_human[df_human["Study #"] == coded_id][col_name].values[0])
+                human_val = str(df_human[df_human[id_col] == coded_id][col_name].values[0])
             except IndexError:
                 human_val = ""
             if coded_val == "nan":
@@ -176,8 +180,8 @@ By comparing the extracted annotations by human and this converter, we found:\n
                     num_different,
                     num_extra)
         # following is deprecated
-        # {} cells are empty by human but '0' by converter, or vise versa.        (e.g. human=0/None, converter=None/0)\n
-        # {} cells are empty in both human and converter annotations              (e.g. human=None, converter=None)""" \
+        # {} cells are empty by human but '0' by converter, or vise versa.       (e.g. human=0/None, converter=None/0)\n
+        # {} cells are empty in both human and converter annotations             (e.g. human=None, converter=None)""" \
         # num_empty_zeros,
         # num_empty_empty)
         print(s)
@@ -211,7 +215,7 @@ def are_different(val1, val2):
             return True
 
 
-def calculate_statistics(df_coded, df_human):
+def calculate_statistics(df_coded, df_human, id_col: str = "Study #"):
     """
     calculate the overall accuracy, as well as accuracy for each column
     :return: int, int, int, int, int, int;  num_same, num_different, num_missing, num_extra, num_empty_zeros, num_empty
@@ -225,22 +229,39 @@ def calculate_statistics(df_coded, df_human):
     num_empty_zeros = 0
     num_empty = 0
 
+    baseline_report_ids = set(df_human[id_col])
+    pipeline_report_ids = set(df_coded[id_col])
+    # get reports that exist in pipeline but not in baseline
+    report_ids_missing_from_baseline = list(pipeline_report_ids - baseline_report_ids)
+
+    # get reports that exist in baseline but not in pipeline
+    report_ids_missing_from_pipeline = list(baseline_report_ids - pipeline_report_ids)
+    report_ids_missing_from_pipeline_no_laterality = ["".join([l for l in list(report_id) if not l.isalpha()]) for
+                                                      report_id in report_ids_missing_from_pipeline]
+    print("Reports missing from baseline", report_ids_missing_from_baseline, "\n")
+    print("Reports missing from pipeline", report_ids_missing_from_pipeline, "\n")
+
     column_accuracy_dict = defaultdict(lambda: defaultdict(int))
     # iterate through each cell of two csv files, copy values if they are same; highlight values if they are different
     for row_index in range(df_coded.shape[0]):  # TODO compare and copy/highlight
         for col_index, col_name in enumerate(df_coded.columns):
             # resolve possibly redundant ID suffixes. For example, if we have 101L, but 101 is available, then use 101
-            coded_id = df_coded["Study #"][row_index]
-            # TODO check if the result is correct after commenting out this hard-coded portion
-            if coded_id == "126":
+            coded_id = df_coded[id_col][row_index]
+            # check if the report is missing from the pipeline. In that case do nothing
+            if coded_id in report_ids_missing_from_pipeline:
                 continue
-            if coded_id == "126L":
-                coded_id = "126"
-            if coded_id == "125R":
-                coded_id = "125"
+            # check if the report is missing from the baseline.
+            # check if there is a version (R or L) in reports missing from pipeline, but not missing in baseline
+            # and use that baseline version to check accuracy
+            if coded_id in report_ids_missing_from_baseline:
+                coded_id_no_lat = "".join([l for l in list(coded_id) if not l.isalpha()])
+                for index, report_id in enumerate(report_ids_missing_from_pipeline_no_laterality):
+                    if coded_id_no_lat == report_id:
+                        coded_id = report_ids_missing_from_pipeline[index]
+
             coded_val = str(df_coded[col_name][row_index])
             try:
-                human_val = str(df_human[df_human["Study #"] == coded_id][col_name].values[0])
+                human_val = str(df_human[df_human[id_col] == coded_id][col_name].values[0])
             except IndexError:
                 human_val = ""
             if coded_val == "nan" or coded_val == None:
@@ -272,8 +293,8 @@ def calculate_statistics(df_coded, df_human):
                 raise ValueError("Should not reach this branch.")
 
     # for study_id that are in human-annotated but not in difference, count the entire row as missing
-    coded_ids = list(df_coded["Study #"])
-    human_ids = list(df_human["Study #"])
+    coded_ids = list(df_coded[id_col])
+    human_ids = list(df_human[id_col])
     print("There are {} rows extracted by humans, and {} rows by the pathology_pipeline".format(len(human_ids),
                                                                                                 len(coded_ids)))
 

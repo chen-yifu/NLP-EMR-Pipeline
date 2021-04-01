@@ -28,8 +28,8 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                  other_paths: dict = {}, use_seperator_to_capture: bool = False, is_anchor: bool = False,
                  multi_line_cols: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
                  no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True,
-                 max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect_path: int = 5,
-                 sep_list: list = [], substitution_cost_path: int = 2, resolve_ocr=True) -> Tuple[Any, pd.DataFrame]:
+                 max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect: int = 5,
+                 sep_list: list = [], substitution_cost: int = 2, resolve_ocr=True) -> Tuple[Any, pd.DataFrame]:
     """
     :param single_line_list:
     :param use_seperator_to_capture:
@@ -52,8 +52,8 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     :param report_type:                             the type of report being analyzed, is an Enum
     :param print_debug:                             print debug statements in Terminal if True
     :param max_edit_distance_missing:               the maximum edit distance for searching for missing cell values
-    :param max_edit_distance_autocorrect_path:      the maximum edit distance for autocorrecting extracted pairs for pathology
-    :param substitution_cost_path:                  the substitution cost for edit distance for pathology
+    :param max_edit_distance_autocorrect:      the maximum edit distance for autocorrecting extracted pairs for pathology
+    :param substitution_cost:                  the substitution cost for edit distance for pathology
     :param resolve_ocr:                             resolve ocr white space if true
     :return:
     """
@@ -69,10 +69,11 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     paths_to_reports_to_read_in = get_input_paths(start, end, path_to_reports=paths["path to reports"],
                                                   report_str="{} " + report_ending)
 
-    compare_file_path = "compare_{}_corD{}_misD{}_subC{}_STAT.xlsx".format(timestamp,
-                                                                           max_edit_distance_autocorrect_path,
+    compare_file_path = "compare_w_{}_{}_corD{}_misD{}_subC{}.xlsx".format(baseline_version[-6:-4],
+                                                                           timestamp,
+                                                                           max_edit_distance_autocorrect,
                                                                            max_edit_distance_missing,
-                                                                           substitution_cost_path)
+                                                                           substitution_cost)
     excel_path_highlight_differences = paths["path to output excel"] + compare_file_path
 
     # try to read in the reports. if there is exception this is because the pdfs have to be turned into text files first
@@ -131,8 +132,8 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                                                                  r"(?P<column>.*){}(?P<value>.*)".format(seperator),
                                                                  print_debug=print_debug,
                                                                  max_edit_distance_missing=max_edit_distance_missing,
-                                                                 max_edit_distance_autocorrect=max_edit_distance_autocorrect_path,
-                                                                 substitution_cost=substitution_cost_path,
+                                                                 max_edit_distance_autocorrect=max_edit_distance_autocorrect,
+                                                                 substitution_cost=substitution_cost,
                                                                  tools=tools,
                                                                  regex_mappings=regex_variable_mappings,
                                                                  pickle_path=pickle_path)
@@ -156,12 +157,14 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
         # this is just for now: to compare to the old encoding
         dataframe_coded_old.to_csv("../data/output/pathology_results/csv_files/old_encoding.csv", index=False)
 
-        stats = highlight_csv_differences("../data/output/pathology_results/csv_files/old_encoding.csv",
-                                          paths["path to baseline"],
-                                          excel_path_highlight_differences, print_debug=print_debug)
+        stats = highlight_csv_differences(csv_path_coded="../data/output/pathology_results/csv_files/old_encoding.csv",
+                                          csv_path_human=paths["path to baseline"],
+                                          output_excel_path="../data/output/pathology_results/excel_files/old_encoding_{}.xlsx".format(
+                                              timestamp),
+                                          report_type="Pathology", print_debug=print_debug)
 
         if print_debug:
-            print("\nOld encoding code -> Pipeline process finished.\nStats:{}".format(stats))
+            print("\nOld encoding code 🧬 -> Pipeline process finished.\nStats:{}".format(stats))
 
     elif report_type is ReportType.TEXT:
         # https://regex101.com/r/XWffCF/1
@@ -173,10 +176,11 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
 
     dataframe_coded.to_csv(paths["csv path coded"], index=False)
 
-    stats = highlight_csv_differences(paths["csv path coded"], paths["path to baseline"],
-                                      excel_path_highlight_differences, print_debug=print_debug)
+    stats = highlight_csv_differences(csv_path_coded=paths["csv path coded"], csv_path_human=paths["path to baseline"],
+                                      report_type=report_name[0].upper() + report_name[1:],
+                                      output_excel_path=excel_path_highlight_differences, print_debug=print_debug)
 
     if print_debug:
-        print("\nPipeline process finished.\nStats:{}".format(stats))
+        print("\nNew encoding code 🧬 -> Pipeline process finished.\nStats:{}".format(stats))
 
     return stats, autocorrect_df
