@@ -6,6 +6,7 @@ from pdf2image import convert_from_path
 import os
 import io
 from appdirs import unicode
+from pdf2image.exceptions import PDFPageCountError
 
 from pipeline.util import utils
 from pipeline.util.report import Report
@@ -54,7 +55,7 @@ def convert_pdf_to_text(path_to_input: str, paths_to_pdfs: List[str], paths_to_t
                     with io.open(output_filename, 'a+', encoding='utf8') as f:
                         f.write(unicode(pytesseract.image_to_string(sub_dir + filename) + "\n"))
                     pg_cntr += 1
-        except FileNotFoundError or Exception:
+        except:
             print("Can't read in this report: ", pdf_path)
             pass
 
@@ -97,7 +98,10 @@ def load_in_reports(start: int, end: int, paths_to_r: List[str], do_preprocessin
             else:
                 print("File must be in either pdf format or text format for extraction!")
         except FileNotFoundError or Exception:
-            print(text_path, " not found. Will not import this report.")
-            pass
+            if num != start:
+                print(text_path, " not found. Will not import this report.")
+                pass
+            else:
+                raise FileNotFoundError
 
     return emr_study_id
