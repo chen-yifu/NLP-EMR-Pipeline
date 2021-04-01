@@ -15,7 +15,7 @@ cols_to_skip = ["study #", "specimen", "treatment effect", "margins", "pathologi
 multi_line_cols = ["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage", "comment(s)",
                    "Part(s) Involved:"]
 
-# pathology pipeline with Vito's baseline
+# pathology pipeline
 run_pipeline(start=101, end=156,
              report_type=ReportType.NUMERICAL,
              cols_to_skip=cols_to_skip,
@@ -63,5 +63,5 @@ stats_human_baselines_o = highlight_csv_differences(csv_path_coded="../data/base
                                                     report_type="Human Baselines",
                                                     output_excel_path="../data/output/compare_human_baseline_operative.xlsx")
 
-print(stats_human_baselines_p)
-print(stats_human_baselines_o)
+print("Comparing human baselines for pathology:", stats_human_baselines_p)
+print("Comparing human baselines for operative:", stats_human_baselines_o)

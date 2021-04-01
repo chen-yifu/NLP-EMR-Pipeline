@@ -50,8 +50,7 @@ def find_left_right_label(string, report_type, print_debug=True):
 
 
 def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: ReportType,
-                            list_of_regex: List[List[Tuple[str, str]]],
-                            lat: str = "",
+                            list_of_regex: List[List[Tuple[str, str]]], lat: str = "",
                             is_bilateral=False) -> List[Report]:
     """
     Takes in a single report and extracts useful sections as well as laterality of report.
@@ -89,7 +88,7 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
         extracted_sections.append(extract_section(regex, uncleaned_txt))
 
     if all(len(single_section) == 0 for single_section in extracted_sections):
-        return report_id
+        return []
 
     elif all(len(single_section) == 1 for single_section in extracted_sections):
         merged_extractions = list(itertools.chain(*extracted_sections))

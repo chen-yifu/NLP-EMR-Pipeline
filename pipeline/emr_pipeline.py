@@ -40,24 +40,23 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     :param contained_capture_list:
     :param is_anchor:
     :param seperator:
-    :param tools:                                   functions that other columns need for cleansing
-    :param other_paths:                             other more specific paths
-    :param baseline_version:                        the baseline version to compare to
-    :param cols_to_skip:                            which columns to not put in the regex
-    :param multi_line_cols:                         the columns in the report that span two lines
-    :param report_ending:                           the file endings of the reports, all must be same
-    :param report_name:                             what is the type of the report? pathology, surgical, operative
-    :param start:                                   the first report id
-    :param end:                                     the last report id
-    :param report_type:                             the type of report being analyzed, is an Enum
-    :param print_debug:                             print debug statements in Terminal if True
-    :param max_edit_distance_missing:               the maximum edit distance for searching for missing cell values
+    :param tools:                              functions that other columns need for cleansing
+    :param other_paths:                        other more specific paths
+    :param baseline_versions:                  the baseline version to compare to
+    :param cols_to_skip:                       which columns to not put in the regex
+    :param multi_line_cols:                    the columns in the report that span two lines
+    :param report_ending:                      the file endings of the reports, all must be same
+    :param report_name:                        what is the type of the report? pathology, surgical, operative
+    :param start:                              the first report id
+    :param end:                                the last report id
+    :param report_type:                        the type of report being analyzed, is an Enum
+    :param print_debug:                        print debug statements in Terminal if True
+    :param max_edit_distance_missing:          the maximum edit distance for searching for missing cell values
     :param max_edit_distance_autocorrect:      the maximum edit distance for autocorrecting extracted pairs for pathology
     :param substitution_cost:                  the substitution cost for edit distance for pathology
-    :param resolve_ocr:                             resolve ocr white space if true
+    :param resolve_ocr:                        resolve ocr white space if true
     :return:
     """
-
     timestamp = get_current_time()
     paths = get_paths(report_name, other_paths)
     code_book = import_code_book(paths["path to code book"])
@@ -71,9 +70,11 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
 
     # try to read in the reports. if there is exception this is because the pdfs have to be turned into text files first
     # then try to read in again.
+
     try:
         reports_loaded_in_str = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
-    except FileNotFoundError or Exception:
+    except:
+        print("Your reports are most likely still in .pdf format. Will attept to convert to .txt format.")
         convert_pdf_to_text(path_to_input=paths["path to input"], paths_to_pdfs=paths_to_pdfs,
                             paths_to_texts=paths_to_reports_to_read_in)
         reports_loaded_in_str = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
@@ -160,7 +161,8 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                 report_type="Pathology", print_debug=print_debug)
 
             if print_debug:
-                print("\nOld encoding code 🧬 -> Pipeline process finished.\nStats:{}".format(stats))
+                print("\nOld encoding code 🧬 compared to {} -> Pipeline process finished.\nStats:{}".format(
+                    baseline_version, stats))
 
     elif report_type is ReportType.TEXT:
         # https://regex101.com/r/XWffCF/1
