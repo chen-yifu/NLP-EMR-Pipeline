@@ -150,14 +150,17 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
         # this is just for now: to compare to the old encoding
         dataframe_coded_old.to_csv("../data/output/pathology_results/csv_files/old_encoding.csv", index=False)
 
-        stats = highlight_csv_differences(csv_path_coded="../data/output/pathology_results/csv_files/old_encoding.csv",
-                                          csv_path_human=paths["path to baselines"] + "pathology_SY.csv",
-                                          output_excel_path="../data/output/pathology_results/excel_files/old_encoding_{}.xlsx".format(
-                                              timestamp),
-                                          report_type="Pathology", print_debug=print_debug)
+        for baseline_version in baseline_versions:
+            stats = highlight_csv_differences(
+                csv_path_coded="../data/output/pathology_results/csv_files/old_encoding.csv",
+                csv_path_human=paths["path to baselines"] + baseline_version,
+                output_excel_path="../data/output/pathology_results/excel_files/old_encoding_w_{}_{}.xlsx".format(
+                    baseline_version[-6:-4],
+                    timestamp),
+                report_type="Pathology", print_debug=print_debug)
 
-        if print_debug:
-            print("\nOld encoding code 🧬 -> Pipeline process finished.\nStats:{}".format(stats))
+            if print_debug:
+                print("\nOld encoding code 🧬 -> Pipeline process finished.\nStats:{}".format(stats))
 
     elif report_type is ReportType.TEXT:
         # https://regex101.com/r/XWffCF/1
