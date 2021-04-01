@@ -5,8 +5,8 @@ from tkinter import ttk
 from pandastable import Table
 
 # fonts
-import pipeline.pathology_pipeline.pathology_pipeline.processing.columns
-from pipeline.pathology_pipeline.pathology_pipeline import *
+import pipeline.archive.pathology_pipeline.pathology_pipeline.processing.columns
+from pipeline.archive.pathology_pipeline.pathology_pipeline import *
 
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
@@ -215,7 +215,7 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = pipeline.pathology_pipeline.pathology_pipeline.processing.columns.load_excluded_columns_as_list()
+            cols = pipeline.archive.pathology_pipeline.pathology_pipeline.processing.columns.load_excluded_columns_as_list()
             cols.append((original, corrected))
             save_excluded_columns(cols)
             df = load_excluded_columns_as_df()
@@ -238,7 +238,7 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = pipeline.pathology_pipeline.pathology_pipeline.processing.columns.load_excluded_columns_as_list()
+            cols = pipeline.archive.pathology_pipeline.pathology_pipeline.processing.columns.load_excluded_columns_as_list()
             if (original, corrected) in cols:
                 cols.remove((original, corrected))
                 save_excluded_columns(cols)

@@ -1,18 +1,11 @@
-"""
-Value is a dataclass that holds information about a comparison between pipeline and human value.
-"""
-
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass
 class Value:
-    """
-    Data Class used for returning information needed in creating excel sheet
-    """
-
-    def __init__(self, value: str, missing: bool, wrong: bool, correct: bool):
-        self.value = value
-        self.missing = missing
-        self.wrong = wrong
-        self.correct = correct
+    def __init__(self, primary_value: str, alternative_value: List[str] = None):
+        if alternative_value is None:
+            alternative_value = []
+        self.primary_value = primary_value
+        self.alternative_value = alternative_value

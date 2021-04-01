@@ -1,4 +1,6 @@
 import re
+from typing import Dict
+
 from nltk.corpus import stopwords
 import pandas as pd
 from nltk import edit_distance
@@ -137,7 +139,7 @@ def find_category(index: int, category_dict: list, stage: str) -> (str, int):
     return stage[index], 0
 
 
-def find_pathologic_stage(stage: str) -> str:
+def find_pathologic_stage(stage: str, encodings_so_far: Dict[str, str] = {}) -> str:
     """
     :param stage: str
     :return edited_stage: str

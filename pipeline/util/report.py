@@ -1,5 +1,6 @@
-from typing import Union
+from typing import Union, List, Dict
 
+from pipeline.util.value import Value
 from pipeline.util.report_type import ReportType
 
 
@@ -7,8 +8,10 @@ class Report:
     """
     Represents information extracted and manipulated from a scanned pdf report.
     """
-    def __init__(self, text: str, report_id: str, extractions: Union[dict, list] = None, laterality: str = "",
-                 not_found: list = None, encoded=None, report_type: ReportType = None):
+
+    def __init__(self, text: str, report_id: str, extractions: Dict[str, Union[str, Value]] = None,
+                 laterality: str = "", not_found: list = None, encoded: Dict[str, str] = None,
+                 report_type: ReportType = None):
         """
         :param report_type:
         :param text:

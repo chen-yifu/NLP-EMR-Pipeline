@@ -1,12 +1,12 @@
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
 from pipeline.preprocessing.scanned_pdf_to_text import load_in_reports
-from pipeline.pathology_pipeline.postprocessing.highlight_differences import highlight_csv_differences
-from pipeline.pathology_pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
-from pipeline.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
+from pipeline.postprocessing.highlight_differences import highlight_csv_differences
+from pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
+from pipeline.archive.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
-from pipeline.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
-from pipeline.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
-from pipeline.util.import_tools import import_pdf_human_cols, get_input_paths
+from pipeline.archive.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
+from pipeline.archive.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
+from pipeline.util.import_tools import import_pdf_human_cols_tuples, get_input_paths
 from pipeline.util.utils import get_full_path, get_current_time, find_all_vocabulary
 
 
@@ -68,7 +68,7 @@ def run_pathology_pipeline(start,
     # Sean's extracted encodings
     csv_path_baseline_SY = path_to_baselines + "data_collection_baseline_SY.csv"
 
-    column_mappings = import_pdf_human_cols(path_to_mappings)
+    column_mappings = import_pdf_human_cols_tuples(path_to_mappings)
 
     # convert pdf reports to a list of reports with report.text and report.report_id
     reports_string_form = load_in_reports(start=start, end=end, skip=skip, paths_to_texts=input_pdf_paths)
