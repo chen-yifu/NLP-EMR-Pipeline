@@ -24,7 +24,7 @@ run_pipeline(start=101, end=156,
              is_anchor=True,
              sep_list=["invasive carcinoma"],
              report_ending="Path_Redacted.pdf",
-             baseline_version="pathology_VZ.csv",
+             baseline_versions=["pathology_VZ.csv", "pathology_SY.csv"],
              anchor=r"^ *-* *",
              other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data")},
              tools={"pathologic stage": find_pathologic_stage,
@@ -35,27 +35,7 @@ run_pipeline(start=101, end=156,
                     "do_nothing": do_nothing,
                     "archtectural_patterns": archtectural_patterns})
 
-# pathology pipeline with Shon's baseline
-run_pipeline(start=101, end=156,
-             report_type=ReportType.NUMERICAL,
-             cols_to_skip=cols_to_skip,
-             multi_line_cols=multi_line_cols,
-             report_name="pathology",
-             is_anchor=True,
-             sep_list=["invasive carcinoma"],
-             report_ending="Path_Redacted.pdf",
-             baseline_version="pathology_SY.csv",
-             anchor=r"^ *-* *",
-             other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data")},
-             tools={"pathologic stage": find_pathologic_stage,
-                    "nottingham_score": nottingham_score,
-                    "process_mm_val": process_mm_val,
-                    "number_of_foci": number_of_foci,
-                    "tumour_site": tumour_site,
-                    "do_nothing": do_nothing,
-                    "archtectural_patterns": archtectural_patterns})
-
-# operative pipeline with Vito's baseline
+# operative pipeline
 run_pipeline(start=1, end=48,
              report_type=ReportType.TEXT,
              anchor=r"^\d*\.* *", is_anchor=True, use_seperator_to_capture=True,
@@ -69,28 +49,19 @@ run_pipeline(start=1, end=48,
                              "localization"],
              other_paths={
                  "path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv")},
-             baseline_version="operative_VZ.csv")
-
-# operative pipeline with Shon's baseline
-run_pipeline(start=1, end=48,
-             report_type=ReportType.TEXT,
-             anchor=r"^\d*\.* *", is_anchor=True, use_seperator_to_capture=True,
-             single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
-             cols_to_skip=["immediate reconstruction mentioned", "laterality",
-                           "reconstruction mentioned"],
-             sep_list=["surgical indication", "immediate reconstruction type"],
-             report_name="operative", report_ending="OR_Redacted.pdf",
-             contained_capture_list=["breast incision type", "immediate reconstruction type"],
-             no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
-                             "localization"],
-             other_paths={
-                 "path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv")},
-             baseline_version="operative_SY.csv")
+             baseline_versions=["operative_VZ.csv", "operative_SY.csv"])
 
 # difference between the two human baselines
-stats_human_baselines = highlight_csv_differences(csv_path_coded="../data/baselines/data_collection_baseline_SY.csv",
-                                                  csv_path_human="../data/baselines/data_collection_baseline_VZ.csv",
-                                                  report_type="Human Baselines",
-                                                  output_excel_path="../data/output/compare_human_baseline.xlsx")
+stats_human_baselines_p = highlight_csv_differences(csv_path_coded="../data/baselines/pathology_SY.csv",
+                                                    csv_path_human="../data/baselines/pathology_VZ.csv",
+                                                    report_type="Human Baselines",
+                                                    output_excel_path="../data/output/compare_human_baseline_pathology.xlsx")
 
-print(stats_human_baselines)
+# difference between the two human baselines
+stats_human_baselines_o = highlight_csv_differences(csv_path_coded="../data/baselines/operative_SY.csv",
+                                                    csv_path_human="../data/baselines/operative_VZ.csv",
+                                                    report_type="Human Baselines",
+                                                    output_excel_path="../data/output/compare_human_baseline_operative.xlsx")
+
+print(stats_human_baselines_p)
+print(stats_human_baselines_o)
