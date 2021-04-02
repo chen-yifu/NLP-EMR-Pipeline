@@ -7,7 +7,7 @@ def get_paths(report_type: str, other_paths=None) -> dict:
 
     :param report_type:           the report name. should be same for all reports you want to use the pipeline on
     :param other_paths:           any additional paths which are not covered by the function.
-    :return:
+    :return: paths
     """
     timestamp = get_current_time()
     if other_paths is None:

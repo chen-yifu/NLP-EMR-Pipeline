@@ -12,21 +12,45 @@ from pipeline.util.value import Value
 
 def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], tools: dict = {},
                        model: str = "en_core_sci_lg") -> List[Report]:
+    """
+    :param reports:
+    :param code_book:
+    :param tools:
+    :param model:
+    :return:
+    """
     nlp = spacy.load(model)
 
     def get_entities(val: str, human_col) -> List[Union[Span, str]]:
+        """
+        :param val:
+        :param human_col:
+        :return:
+        """
         if val is None:
             val = ""
         entities = list(nlp(val).ents) if len(val.split()) > 3 else [val]
         return entities if len(entities) > 0 else [val]
 
     def encode_extraction_for_single_report(extractions: Dict[str, Value], report_id: str, lat: str) -> Dict[str, str]:
+        """
+        :param extractions:
+        :param report_id:
+        :param lat:
+        :return:
+        """
         encoded_extractions_dict = {}
         for human_col, encodings in code_book.items():
             done_encoding = False
 
             def try_encoding(primary_value: List[Span], alternative_value: List[str],
                              threshold: int = 0.5) -> Tuple[bool, str]:
+                """
+                :param primary_value:
+                :param alternative_value:
+                :param threshold:
+                :return:
+                """
                 num = ""
                 found = False
                 pipeline_val_str = ""

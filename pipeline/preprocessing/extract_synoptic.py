@@ -8,15 +8,14 @@ from pipeline.util.report_type import ReportType
 
 
 # TODO: This is still pretty bad
-def find_left_right_label(string, report_type, print_debug=True):
+def find_left_right_label(string: str, report_type: ReportType, print_debug=True):
     """
     given the synoptic report, detect it's about the left or right breast
 
-    :param report_type:
-    :param study_id:    string;           study id of report
-    :param string:      string;           input synoptic report
-    :param print_debug: boolean;          print debug statements if True
-    :return:            string;           suffix, one of "L", "R", or "_laterality_undetected"
+    :param report_type:       enum, TEXT or NUMERICAL
+    :param string:            input synoptic report
+    :param print_debug:       print debug statements if True
+    :return:                  suffix, one of "L", "R", or "_laterality_undetected"
     """
     match = ""
     # https://regex101.com/r/ITYrAN/1
@@ -25,7 +24,8 @@ def find_left_right_label(string, report_type, print_debug=True):
     clinical_pream = r"(?i)CLINICAL PREAMBLE[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*"
     op_perforemd = r"OPERATION PERFORMED[\s\S]*?(?P<laterality>l *e *f *t|r *i *g *h *t|Right|Left).*"
     # regex demo: https://regex101.com/r/FX8VfI/8
-    parts_involved = r"(?i)p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g *h *t *).*"
+    parts_involved = r"(?i)p *a *r *t *\( *s *\) *i *n *v *o *l *v *e *d *: *\n.*(?P<laterality>l *e *f *t *|r *i *g " \
+                     r"*h *t *).* "
     list_of_laterality_regex = [parts_involved, preop_diag, clinical_pream, op_perforemd]
 
     for laterality_regex in list_of_laterality_regex:

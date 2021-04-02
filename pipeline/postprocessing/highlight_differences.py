@@ -10,6 +10,8 @@ def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_e
     """
     given two csv files to compare, merge the data into a xlsx file, while highlighting the cells that are different
 
+    :param id_col:                     columns name that stores the report ids
+    :param report_type:                the report category
     :param csv_path_coded:             path to csv file that has been codified
     :param csv_path_human:             path to csv file that is human-annotated baseline
     :param output_excel_path:          path to save the highlighted excel file
@@ -264,9 +266,9 @@ def calculate_statistics(df_coded, df_human, id_col: str = "Study #"):
                 human_val = str(df_human[df_human[id_col] == coded_id][col_name].values[0])
             except IndexError:
                 human_val = ""
-            if coded_val == "nan" or coded_val == None:
+            if coded_val == "nan" or coded_val is None:
                 coded_val = ""
-            if human_val == "nan" or human_val == None:
+            if human_val == "nan" or human_val is None:
                 human_val = ""
 
             # if both pathology_pipeline and human extracted empty cells

@@ -106,8 +106,8 @@ def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of
     """
     using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
 
-    :param tools:
-    :param pickle_path:
+    :param tools:                        functions that some columns may use for cleaning
+    :param pickle_path:                  path to pickled data from GUI
     :param correct_col_names:            a list of correct column names
     :param extractions_so_far:           extracted generic key-value pairs from synoptic reports
     :param study_id:                     the study id of the dictionary
@@ -168,16 +168,16 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
                              tools: dict = {}, print_debug: bool = True, max_edit_distance_missing=5,
                              max_edit_distance_autocorrect=5, substitution_cost=2, skip_threshold=0.95) -> dict:
     """
-    :param pickle_path:
-    :param column_mappings:
-    :param report_type:
-    :param substitution_cost:
-    :param specific_regex:
-    :param general_regex:
-    :param regex_mappings:
-    :param tools:
+    :param pickle_path:                        path to pickled data via GUI
+    :param column_mappings:                    human columns and report columns where that inforamtion can be found
+    :param report_type:                        enum of either TEXT or NUMERICAL
+    :param substitution_cost:                  cost for a letter substitution
+    :param specific_regex:                     regular pattern that was generated earlier by synoptic_capture_regex
+    :param general_regex:                      general regular pattern based on the separator
+    :param regex_mappings:                     the variables that were made earlier for regular pattern mapped to their columns
+    :param tools:                              functions that columns may need to use for cleaning
     :param synoptic_report_str:                synoptic report section
-    :param report_id:                           the study id of this report
+    :param report_id:                          the study id of this report
     :param column_mappings:                    first str is col name from PDF, second str is col from Excel
     :param list_of_dict_with_stats:            save the auto-corrected columns into this DataFrame
     :param print_debug:                        print debug statements in Terminal if true
