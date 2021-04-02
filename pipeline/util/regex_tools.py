@@ -4,32 +4,31 @@ helper regex functions
 import random
 import re
 from typing import List, Tuple, Union, Dict
-
 from pipeline.util.column import Column
 from pipeline.util.import_tools import table
 
 
-def regex_extract(regex: str, uncleaned_txt: str) -> list:
+def regex_extract(regex: str, text: str) -> list:
     """
     Helper function to execute extraction based on inputted regex pattern.
 
-    :param regex:
-    :param uncleaned_txt:
+    :param regex:           regular pattern you want to use on text
+    :param text:            text to have extractions done on
     :return:
     """
-    return re.findall(re.compile(regex), uncleaned_txt)
+    return re.findall(re.compile(regex), text)
 
 
-def extract_section(regexs: List[Tuple[str, str]], uncleaned_txt: str) -> list:
+def extract_section(regexs: List[Tuple[str, str]], text: str) -> list:
     """
     General function that takes in a list of regex and returns the first one that returns a result.
 
-    :param uncleaned_txt:     string to use regex on
-    :param regexs:            list of tuple(regex,to_append) and the list should be entered in priority
-    :return:
+    :param text:          string to use regex on
+    :param regexs:        list of tuple(regex,to_append) and the list should be entered in priority
+    :return:              the first extraction to be found. If to_append is not "", then it will append that string to the found extraction. if no extraction is found, [] is returned
     """
     for regex, to_append in regexs:
-        extraction_result = regex_extract(regex, uncleaned_txt)
+        extraction_result = regex_extract(regex, text)
         if len(extraction_result) != 0:
             if to_append == "":
                 return extraction_result
@@ -40,15 +39,11 @@ def extract_section(regexs: List[Tuple[str, str]], uncleaned_txt: str) -> list:
 
 def add_asterisk_and_ors(list_of_words: List[Union[str, List[str]]]) -> str:
     """
-    Helper function to convert a string to a regex format.
-
+    Helper function to convert a list of string into regular pattern with OR between the words.
     - [cat] becomes c * a * t
-
     - [cat,dog] becomes (c *a *t|d *o *g)
-
-
-    :param list_of_words:
-    :return:
+    :param list_of_words:   words you want to concat together with | (or)
+    :return:                the regular pattern
     """
     result = ""
     for word in list_of_words[:-1]:
@@ -71,8 +66,8 @@ def add_asterisk(word: str) -> str:
     """
     Adds asterisk where appropriate
 
-    :param word:
-    :return:
+    :param word: the string to be changed
+    :return:  changed string
     """
     letters = list(word)
     result = ""
@@ -94,15 +89,15 @@ def add_asterisk(word: str) -> str:
 
 def to_camel_or_underscore(col: str, seen: set) -> Tuple[str, set]:
     """
-    Since regex needs variable names, we change the columns into variables names.
+    Since regular pattern needs variable names, we change the columns into variables names.
     Example:
 
     - indication -> indication (stays as is)
     - pathologic stage -> pathologic_stage (space is converted into _)
     - incision and its relation to tumour -> incisionAndItsRelationToTumour (if it is longer than 32 chars with spaces it becomes camelCase instead of underscore.
 
-    :param col:
-    :param seen:
+    :param col:          the column to change into a variable name
+    :param seen:         set with previously generated variable names, regular pattern does not allow duplicate variable names
     :return:
     """
     col = col.strip()
@@ -160,16 +155,17 @@ def make_punc_regex_literal(str_with_punc: str) -> str:
 
 
 def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True, anchor_list: List[str] = [],
-                           single_line_list=[],
-                           capture_only_first_line: bool = True, anchor: str = "", is_anchor: bool = False,
-                           use_seperater_for_contained_capture: bool = False, last_word: str = "",
-                           list_multi_line_cols: List[str] = [], no_anchor_list: List[str] = [],
-                           contained_capture_list: List[str] = [], seperator: str = ":", no_sep_list: List[str] = [],
+                           single_line_list=[], capture_only_first_line: bool = True, anchor: str = "",
+                           is_anchor: bool = False, use_seperater_for_contained_capture: bool = False,
+                           last_word: str = "", list_multi_line_cols: List[str] = [], no_anchor_list: List[str] = [],
+                           contained_capture_list: List[str] = [], separator: str = ":", no_sep_list: List[str] = [],
                            add_sep: bool = False, sep_list: List[str] = []) -> Tuple[str, Dict[str, List[str]]]:
     """
     Based on a regex pattern template, turns a list of columns into a regex that can capture the values associated with
     those columns.
 
+    :param use_seperater_for_contained_capture:  whether or not to use the separator as part of regular pattern
+    :param single_line_list:              columns that have their values on the same line (single value)
     :param columns:                       the columns that you want to capture
     :param ignore_caps:                   False if you want the regex to be case sensitive, True (default) otherwise: https://regex101.com/r/G44Egb/1
     :param anchor_list:                   list of columns you want to match to the start of the line.
@@ -180,7 +176,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
     :param list_multi_line_cols:          Columns that you know have values that span two lines: https://regex101.com/r/pgzUuH/1
     :param no_anchor_list:                Columns you do not want to have the anchor
     :param contained_capture_list:        Columns you want the capture to be between columns: https://regex101.com/r/akxofC/1
-    :param seperator:                     The punctuation or letters that seperates a column and value. Default is :
+    :param separator:                     The punctuation or letters that seperates a column and value. Default is :
     :param no_sep_list:                   Columns which you do not want the separator to be used in the regex
     :param add_sep:                       Whether or not you want the separator to be included in the regex. Default is False.
     :param sep_list:                      Columns where you want the separator to be added to the regex.
@@ -194,7 +190,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
         # adding seperator into regex
         if add_sep and not dont_add_seperator or add_seperater:
             # ["col1","col2"] -> ["col1:","col2:"]
-            cols = [c + seperator for c in cols if c not in no_sep_list]
+            cols = [c + separator for c in cols if c not in no_sep_list]
         cols_str = make_punc_regex_literal("|".join(cols))
         if len(cols) > 1:
             return "(" + cols_str + ")"
@@ -203,11 +199,14 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
     def create_regex_str(col: str, col_var: str, end_cap: str, front_cap: str = r"{col}(?P<{col_var}>",
                          no_or: bool = False) -> str:
         """
-        :param col:
-        :param col_var:
-        :param end_cap:
-        :param front_cap:
-        :return:
+        Generic function to create a capture regular pattern. See examples in above links under synoptic_capture_regex
+
+        :param no_or:     whether or not to add a OR (|) to the end of the regular pattern
+        :param col:       column we are capturing
+        :param col_var:   the column but as a variable, previously generated
+        :param end_cap:   the end of the regular pattern, variations can be seen under synoptic_capture_regex
+        :param front_cap: the front of the regular pattern, variations can be seen under synoptic_capture_regex
+        :return:          regular pattern
         """
         front_cap = front_cap.format(col=col, col_var=col_var)
         return front_cap + end_cap if no_or else front_cap + end_cap + "|"
@@ -244,7 +243,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
         if not capture_only_first_line or is_contained_capture and not use_seperater_for_contained_capture:
             end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=primary_next_col_str)
         elif use_seperater_for_contained_capture and not single_line:
-            end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=seperator)
+            end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=separator)
 
         # column has been converted to variable and seen is list of already used variable names
         # regex variable names must be unique
@@ -262,7 +261,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
         alternative_col_reg = r""
         if len(alternative_curr_cols) != 0:
             alternative_variablefied, seen = to_camel_or_underscore(alternative_curr_cols[0], seen)
-            end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=seperator)
+            end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=separator)
             alternative_col_reg = create_regex_str(alternative_curr_col_str, alternative_variablefied, end_cap)
             mappings_to_regex_vals[alternative_variablefied] = alternative_curr_cols
 
@@ -274,7 +273,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
     # do last column
     last_col_key = col_keys[-1]
     if add_sep and last_col_key.lower() not in no_sep_list or last_col_key.lower() in sep_list:
-        last_col = [c + seperator for c in columns[last_col_key].primary_report_col if c not in no_sep_list]
+        last_col = [c + separator for c in columns[last_col_key].primary_report_col if c not in no_sep_list]
     else:
         last_col = columns[last_col_key].primary_report_col
 
@@ -348,6 +347,8 @@ def capture_double_regex(starting_word: List[Union[str, List[str]]],
         ending_word=modified_ending_word)
     return modified_regex
 
+
+# exporting regular patterns for use in pipeline (not all of them are being used):
 
 # regex patterns for operative reports
 # https://regex101.com/r/kEj3Fs/1

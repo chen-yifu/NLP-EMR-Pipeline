@@ -6,6 +6,13 @@ from pipeline.util.value import Value
 
 def turn_extractions_to_values_single(extractions: Dict[str, str],
                                       column_mappings: Dict[str, Column]) -> Dict[str, Value]:
+    """
+    Turns string extractions into Value objects for a single report.
+
+    :param extractions:     the extracted values and their respective columns
+    :param column_mappings: human columns and their respective report columns
+    :return:                single report with Value objects in extractions
+    """
     value_extractions = {}
     for human_col_key, col in column_mappings.items():
         a_val = Value("")
@@ -26,6 +33,12 @@ def turn_extractions_to_values_single(extractions: Dict[str, str],
 
 
 def turn_reports_extractions_to_values(reports: List[Report], column_mappings: Dict[str, Column]) -> List[Report]:
+    """
+    Outer function that takes all reports and turns their string extractions into Value objects
+    :param reports:          all the reports with extractions
+    :param column_mappings:  human columns and their respective report columns
+    :return:                 reports with Values objects
+    """
     result = []
     for report in reports:
         report.extractions = turn_extractions_to_values_single(report.extractions, column_mappings)

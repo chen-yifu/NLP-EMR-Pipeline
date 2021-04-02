@@ -1,7 +1,3 @@
-"""
-ComparisonHelper is a dataclass that holds information about a comparison between pipeline and human value.
-"""
-
 from dataclasses import dataclass
 
 

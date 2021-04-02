@@ -1,3 +1,6 @@
+"""
+Other functions to help the pipeline run
+"""
 import collections
 import os
 import re

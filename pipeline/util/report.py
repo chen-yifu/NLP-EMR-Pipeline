@@ -13,12 +13,13 @@ class Report:
                  laterality: str = "", not_found: list = None, encoded: Dict[str, str] = None,
                  report_type: ReportType = None):
         """
-        :param report_type:
-        :param text:
-        :param report_id:
-        :param laterality:
-        :param not_found:
-        :param encoded:
+        :param report_type: the type of report, is an enumeration
+        :param text:        the literal report
+        :param report_id:   the id of the report
+        :param laterality:  laterality of breast for report
+        :param not_found:   columns that are not found
+        :param encoded:     encoded extractions
+        :param extractions: the extracted values
         """
         if encoded is None:
             self.encoded = {}

@@ -25,12 +25,13 @@ def preprocess_remove_extra_text(input_report):
     return res
 
 
-def convert_pdf_to_text(path_to_input: str, paths_to_pdfs: List[str], paths_to_texts: List[str]):
+def convert_pdfs_to_texts(path_to_input: str, paths_to_pdfs: List[str], paths_to_texts: List[str]):
     """
      Converts pdf reports into images that is finally converted to text by optical character recognition
 
-     :param path_to_input:        path to inputs
-     :param path_to_text:          path to where the generated text of the pdf reports should be put
+     :param paths_to_texts:       path to where the generated text of the pdf reports should be put
+     :param paths_to_pdfs:        paths to the pdf files
+     :param path_to_input:        path to input folder
 
      """
     if not os.path.exists(path_to_input):
@@ -63,10 +64,9 @@ def load_in_reports(start: int, end: int, paths_to_r: List[str], do_preprocessin
     The pdf reports that were converted into text files are read into the pipeline by this function
 
     :param do_preprocessing:
-    :param paths_to_texts:   the path to where the report text files are
+    :param paths_to_r:       the path to where the report text files are
     :param start:            first report
     :param end:              last report
-    :param skip:             reports to skip
     :return:                 returns a list of Report objects with only report and id field initialized
     """
     emr_study_id = []
@@ -106,6 +106,12 @@ def load_in_reports(start: int, end: int, paths_to_r: List[str], do_preprocessin
 
 
 def load_in_report(report_path: str, num: str, do_preprocessing: bool = True) -> Report:
+    """
+    :param report_path:       path to report, can be pdf or txt
+    :param num:               the num (report id)
+    :param do_preprocessing:  whether or not you want to clean the text
+    :return:
+    """
     if not os.path.exists(report_path):
         raise FileNotFoundError
 
@@ -133,13 +139,13 @@ def load_in_report(report_path: str, num: str, do_preprocessing: bool = True) ->
         print("File must be in either pdf format or text format for extraction!")
 
 
-def convert_pdf_report_to_text(path_to_input, path_to_pdf, path_to_txt):
+def convert_pdf_to_text(path_to_input, path_to_pdf, path_to_txt):
     """
      Converts pdf reports into images that is finally converted to text by optical character recognition
 
+     :param path_to_txt:          path to where the generated text of the pdf reports should be put
+     :param path_to_pdf:          path of the pdf to be converted to text
      :param path_to_input:        path to inputs
-     :param path_to_text:          path to where the generated text of the pdf reports should be put
-
      """
     if not os.path.exists(path_to_input):
         os.makedirs(path_to_input)
@@ -167,7 +173,16 @@ def convert_pdf_report_to_text(path_to_input, path_to_pdf, path_to_txt):
         pass
 
 
-def load_reports_into_pipeline(paths, paths_to_pdfs, paths_to_reports_to_read_in, start):
+def load_reports_into_pipeline(path_to_input: str, paths_to_pdfs: List[str],
+                               paths_to_reports_to_read_in: List[str], start: int) -> List[Report]:
+    """
+
+    :param path_to_input:                 path to input folder
+    :param paths_to_pdfs:                 paths to report pdfs
+    :param paths_to_reports_to_read_in:   paths that you want to eventually read in (pdf or txt)
+    :param start:                         first report id
+    :return:                              reports with text field initialized
+    """
     reports_loaded_in_str = []
     pdf_text_paths = zip(paths_to_pdfs, paths_to_reports_to_read_in)
     for num, pdf_text_paths in enumerate(pdf_text_paths):
@@ -179,7 +194,7 @@ def load_reports_into_pipeline(paths, paths_to_pdfs, paths_to_reports_to_read_in
             reports_loaded_in_str.append(loaded_report)
         except:
             try:
-                convert_pdf_report_to_text(paths["path to input"], pdf_path, text_path)
+                convert_pdf_to_text(path_to_input, pdf_path, text_path)
                 loaded_report = load_in_report(text_path, report_id)
                 reports_loaded_in_str.append(loaded_report)
             except:
