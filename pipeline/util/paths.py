@@ -1,3 +1,5 @@
+import os
+
 from pipeline.util.utils import get_full_path, get_current_time
 
 
@@ -29,4 +31,10 @@ def get_paths(report_type: str, other_paths=None) -> dict:
          "path to output csv": path_to_output_csv, "path to output excel": path_to_output_excel,
          "path to mappings": path_to_mappings, "csv path raw": csv_path_raw,
          "csv path coded": csv_path_coded, "path to code book": path_to_code_book, "path to input": path_to_input})
+    for path_name, actual_path in paths.items():
+        if not os.path.exists(actual_path) and path_name not in ["csv path raw", "csv path coded"]:
+            print("Warning, {} does not exist and may be needed to run the pipeline.".format(actual_path))
+            if actual_path[-1] == "/":
+                os.makedirs(actual_path)
+                print("{} folder has been created.".format(actual_path))
     return paths
