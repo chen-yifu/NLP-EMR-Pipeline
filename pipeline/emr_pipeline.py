@@ -114,6 +114,7 @@ class EMRPipeline:
         without_synoptics_strs_and_ids = [report for report in cleaned_emr if report.report_id in ids_without_synoptic]
 
         # If the PDF doesn't contain a synoptic section, use the Final Diagnosis section instead
+        # this part is in development
         final_diagnosis_reports, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
             without_synoptics_strs_and_ids,
             print_debug=print_debug)
@@ -168,14 +169,6 @@ class EMRPipeline:
                 if print_debug:
                     print("\nOld encoding code 🧬 compared to {} -> Pipeline process finished.\nStats:{}".format(
                         baseline_version, stats))
-
-        elif report_type is ReportType.TEXT:
-            # https://regex101.com/r/XWffCF/1
-
-            # # raw to spreadsheet, no altering has been done
-            reports_to_spreadsheet(filtered_reports, type_of_report="unfiltered_reports",
-                                   path_to_output=paths["path to output"],
-                                   function=change_unfiltered_to_dict)
 
         dataframe_coded.to_csv(paths["csv path coded"], index=False)
 

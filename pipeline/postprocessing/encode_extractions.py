@@ -19,35 +19,33 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
     :param model:
     :return:
     """
+    print("Beginning to encode the extractions using {}".format(model))
     nlp = spacy.load(model)
 
-    def get_entities(val: str, human_col) -> List[Union[Span, str]]:
+    def get_entities(val: str) -> List[Union[Span, str]]:
         """
         :param val:
-        :param human_col:
         :return:
         """
         if val is None:
             val = ""
-        entities = list(nlp(val).ents) if len(val.split()) > 3 else [val]
+        entities = list(nlp(val).ents) if len(val.split()) > 5 else [val]
         return entities if len(entities) > 0 else [val]
 
-    def encode_extraction_for_single_report(extractions: Dict[str, Value], report_id: str, lat: str) -> Dict[str, str]:
+    def encode_extraction_for_single_report(extractions: Dict[str, Value]) -> Dict[str, str]:
         """
         :param extractions:
-        :param report_id:
-        :param lat:
         :return:
         """
         encoded_extractions_dict = {}
         for human_col, encodings in code_book.items():
             done_encoding = False
+            if human_col == "Breast Incision Type":
+                print("breakpoint")
 
-            def try_encoding(primary_value: List[Span], alternative_value: List[str],
-                             threshold: int = 0.5) -> Tuple[bool, str]:
+            def try_encoding(primary_value: List[Span], threshold: int = 0.6) -> Tuple[bool, str, int]:
                 """
                 :param primary_value:
-                :param alternative_value:
                 :param threshold:
                 :return:
                 """
@@ -68,13 +66,15 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                                 num = str(encoding.num)
                                 found = True
                             if alpha == 1 or encoding_val.lower() in pipeline_val_str:
-                                return True, str(encoding.num)
+                                return True, str(encoding.num), alpha
                 if found:
-                    return found, num
+                    return found, num, alpha
                 else:
-                    return found, pipeline_val_str
+                    return found, "", alpha
 
             for encoding in encodings:
+                # is the encoding is -1 it means it either depends on another column or uses a special function to be
+                # encoded
                 if encoding.num == -1:
                     # could either be that the column depends on another columns or has its own function to encode
                     try:
@@ -95,24 +95,32 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                             except Exception as e:
                                 print(e)
                                 encoded_extractions_dict[human_col] = "pipeline malfunction"
-
                     done_encoding = True
 
             # try to find the highest number, if its one then we return that num
             if not done_encoding:
                 try:
-                    primary_value = get_entities(extractions[human_col].primary_value, human_col)
+                    primary_value = get_entities(extractions[human_col].primary_value)
                     alternative_val_list = extractions[human_col].alternative_value
                     has_alternative_value = alternative_val_list != []
-                    alternative_value = get_entities(alternative_val_list[0],
-                                                     human_col) if has_alternative_value else ""
-                    found, encoded_value = try_encoding(primary_value, alternative_value)
-                    encoded_extractions_dict[human_col] = encoded_value if found else ""
+                    alternative_value = get_entities(alternative_val_list[0]) if has_alternative_value else ""
+                    found_primary, primary_encoded_value, primary_alpha = try_encoding(primary_value)
+                    found_alternative, alternative_encoded_value, alternative_alpha = try_encoding(alternative_value)
+                    if primary_alpha == 1 and found_primary:
+                        encoded_extractions_dict[human_col] = primary_encoded_value
+                    elif alternative_alpha == 1 and found_alternative:
+                        encoded_extractions_dict[human_col] = alternative_encoded_value
+                    elif primary_alpha > alternative_alpha and found_primary:
+                        encoded_extractions_dict[human_col] = primary_encoded_value
+                    elif alternative_alpha > primary_alpha and found_alternative:
+                        encoded_extractions_dict[human_col] = alternative_encoded_value
+                    else:
+                        encoded_extractions_dict[human_col] = ""
                 except KeyError:
                     print("This should of not occurred.")
 
         return encoded_extractions_dict
 
     for report in reports:
-        report.encoded = encode_extraction_for_single_report(report.extractions, report.report_id, report.laterality)
+        report.encoded = encode_extraction_for_single_report(report.extractions)
     return reports
