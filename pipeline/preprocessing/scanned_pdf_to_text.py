@@ -105,3 +105,85 @@ def load_in_reports(start: int, end: int, paths_to_r: List[str], do_preprocessin
                 raise FileNotFoundError
 
     return emr_study_id
+
+
+def load_in_report(report_path: str, num: str, do_preprocessing: bool = True) -> Report:
+    if not os.path.exists(report_path):
+        raise FileNotFoundError
+
+    if report_path[-3:] == "txt":
+        emr_file_text = open(report_path, "r")
+        emr_text = emr_file_text.read()
+        report = Report(text=emr_text, report_id=num, report_type=ReportType.TEXT)
+        emr_file_text.close()
+        return report
+    elif report_path[-3:] == "pdf":
+        # extract text
+        pdfFileObj = open(report_path, "rb")
+        pdf_text_obj = pdftotext.PDF(pdfFileObj)
+        pdf_text_str = ""
+        # process each page
+        for page_num in range(len(pdf_text_obj)):
+            raw_text = pdf_text_obj[page_num]
+            pdf_text_str += raw_text
+        if do_preprocessing:
+            pdf_text_str = preprocess_remove_extra_text(pdf_text_str)
+        # append result for this iteration
+        report = Report(text=pdf_text_str, report_id=num, report_type=ReportType.NUMERICAL)
+        return report
+    else:
+        print("File must be in either pdf format or text format for extraction!")
+
+
+def convert_pdf_report_to_text(path_to_input, path_to_pdf, path_to_txt):
+    """
+     Converts pdf reports into images that is finally converted to text by optical character recognition
+
+     :param path_to_input:        path to inputs
+     :param path_to_text:          path to where the generated text of the pdf reports should be put
+
+     """
+    if not os.path.exists(path_to_input):
+        os.makedirs(path_to_input)
+
+    if not os.path.exists(path_to_pdf):
+        raise FileNotFoundError
+
+    try:
+        pages = convert_from_path(path_to_pdf)
+        pg_cntr = 1
+
+        sub_dir = str(path_to_input + "images/" + path_to_pdf.split('/')[-1].replace('.pdf', '')[0:20] + "/")
+        if not os.path.exists(sub_dir):
+            os.makedirs(sub_dir)
+
+        for page in pages:
+            if pg_cntr <= 20:
+                filename = "pg_" + str(pg_cntr) + '_' + path_to_pdf.split('/')[-1].replace('.pdf', '.jpg')
+                page.save(sub_dir + filename)
+                with io.open(path_to_txt, 'a+', encoding='utf8') as f:
+                    f.write(unicode(pytesseract.image_to_string(sub_dir + filename) + "\n"))
+                pg_cntr += 1
+    except:
+        print("Can't read in this report: ", path_to_pdf)
+        pass
+
+
+def load_reports_into_pipeline(paths, paths_to_pdfs, paths_to_reports_to_read_in, start):
+    reports_loaded_in_str = []
+    pdf_text_paths = zip(paths_to_pdfs, paths_to_reports_to_read_in)
+    for num, pdf_text_paths in enumerate(pdf_text_paths):
+        report_id = str(num + start)
+        pdf_path = pdf_text_paths[0]
+        text_path = pdf_text_paths[1]
+        try:
+            loaded_report = load_in_report(text_path, report_id)
+            reports_loaded_in_str.append(loaded_report)
+        except:
+            try:
+                convert_pdf_report_to_text(paths["path to input"], pdf_path, text_path)
+                loaded_report = load_in_report(text_path, report_id)
+                reports_loaded_in_str.append(loaded_report)
+            except:
+                print(pdf_path, "does not exist. Will not import.")
+    return reports_loaded_in_str

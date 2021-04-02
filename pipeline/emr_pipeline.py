@@ -8,7 +8,7 @@ from pipeline.archive.operative_pipeline.postprocessing.to_spreadsheet import re
     change_unfiltered_to_dict
 from pipeline.postprocessing.encode_extractions import encode_extractions
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
-from pipeline.preprocessing.scanned_pdf_to_text import convert_pdf_to_text, load_in_reports
+from pipeline.preprocessing.scanned_pdf_to_text import load_reports_into_pipeline
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.archive.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
@@ -71,13 +71,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     # try to read in the reports. if there is exception this is because the pdfs have to be turned into text files first
     # then try to read in again.
 
-    try:
-        reports_loaded_in_str = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
-    except:
-        print("Your reports are most likely still in .pdf format. Will attept to convert to .txt format.")
-        convert_pdf_to_text(path_to_input=paths["path to input"], paths_to_pdfs=paths_to_pdfs,
-                            paths_to_texts=paths_to_reports_to_read_in)
-        reports_loaded_in_str = load_in_reports(start=start, end=end, paths_to_r=paths_to_reports_to_read_in)
+    reports_loaded_in_str = load_reports_into_pipeline(paths, paths_to_pdfs, paths_to_reports_to_read_in, start)
 
     reports_strings_only = [report.text for report in reports_loaded_in_str]
     medical_vocabulary = find_all_vocabulary(reports_strings_only, print_debug=print_debug, min_freq=40)
@@ -191,3 +185,5 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                                                                                                   stats))
 
     return stats, autocorrect_df
+
+

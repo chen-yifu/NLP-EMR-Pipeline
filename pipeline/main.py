@@ -36,7 +36,7 @@ run_pipeline(start=101, end=156,
                     "archtectural_patterns": archtectural_patterns})
 
 # operative pipeline
-run_pipeline(start=1, end=48,
+run_pipeline(start=1, end=50,
              report_type=ReportType.TEXT,
              anchor=r"^\d*\.* *", is_anchor=True, use_seperator_to_capture=True,
              single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
