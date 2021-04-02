@@ -3,12 +3,23 @@ from typing import Dict
 
 
 def do_nothing(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
+    """
+
+    :param value:
+    :param encodings_so_far:
+    :return:
+    """
     if "l" in value and len(value.strip()) < 3:
         return value.replace("l", "1")
     return value
 
 
 def nottingham_score(encodings_so_far: Dict[str, str] = {}) -> str:
+    """
+
+    :param encodings_so_far:
+    :return:
+    """
     glandular = str(encodings_so_far["Glandular Differentiation"])
     nuclear_p = str(encodings_so_far["Nuclear Pleomorphism"])
     mitotic = str(encodings_so_far["Mitotic Rate"])

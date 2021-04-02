@@ -26,7 +26,7 @@ def main():
                               add_anchor=True,
                               sep_list=["invasive carcinoma"],
                               report_ending="Path_Redacted.pdf",
-                              baseline_versions=["pathology_VZ.csv", "pathology_SY.csv"],
+                              baseline_versions=["pathology_VZ.csv", "data_collection_baseline_SY.csv"],
                               anchor=r"^ *-* *",
                               other_paths={
                                   "pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data")},
