@@ -6,8 +6,6 @@ from pdf2image import convert_from_path
 import os
 import io
 from appdirs import unicode
-from pdf2image.exceptions import PDFPageCountError
-
 from pipeline.util import utils
 from pipeline.util.report import Report
 from pipeline.util.report_type import ReportType

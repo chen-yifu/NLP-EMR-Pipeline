@@ -24,22 +24,26 @@ from pipeline.util.utils import find_all_vocabulary, get_current_time
 
 
 def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str, report_ending: str,
-                 baseline_versions: List[str], anchor: str, single_line_list: list = [], seperator: str = ":",
-                 other_paths: dict = {}, use_seperator_to_capture: bool = False, is_anchor: bool = False,
+                 baseline_versions: List[str], anchor: str, single_line_list: list = [], separator: str = ":",
+                 other_paths: dict = {}, use_separator_to_capture: bool = False, add_anchor: bool = False,
                  multi_line_cols: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
                  no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True,
                  max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect: int = 5,
                  sep_list: list = [], substitution_cost: int = 2, resolve_ocr=True) -> Tuple[Any, pd.DataFrame]:
     """
-    :param single_line_list:
-    :param use_seperator_to_capture:
-    :param sep_list:
-    :param anchor_list:
-    :param no_anchor_list:
-    :param anchor:
-    :param contained_capture_list:
-    :param is_anchor:
-    :param seperator:
+    The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into the
+    pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly alphabetical do not
+    need to be preprocessed, as the pytesseract library will turn them into .txt files.
+
+    :param single_line_list:                   columns that have their values on the same line as the column (single line)
+    :param use_separator_to_capture:           whether or not you want to use the separator for the regular pattern
+    :param sep_list:                           columns that you want to use the separator to capture the value
+    :param anchor_list:                        columns to add anchor to. use if add_anchor is False
+    :param no_anchor_list:                     columns to not add anchor to. use if add_anchor is True
+    :param anchor:                             the anchor that the regular pattern will look for to anchor to the start of page
+    :param contained_capture_list:             columns that you want to use contained capture on
+    :param add_anchor:                         whether or not you want to add anchor, default is False
+    :param separator:                          what is used to separate the column and value, ex -> invasive carcinoma : negative
     :param tools:                              functions that other columns need for cleansing
     :param other_paths:                        other more specific paths
     :param baseline_versions:                  the baseline version to compare to
@@ -58,10 +62,14 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     :return:
     """
     timestamp = get_current_time()
+
+    # get paths for pipeline
     paths = get_paths(report_name, other_paths)
     code_book = import_code_book(paths["path to code book"])
     paths_to_pdfs = get_input_paths(start, end, path_to_reports=paths["path to reports"],
                                     report_str="{} " + report_ending)
+
+    # for reports that have mostly alphabetical values, we can put them into the pipeline without preprocessing
     if report_type is ReportType.TEXT:
         report_ending = report_ending[:-3] + "txt"
 
@@ -88,14 +96,14 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
         {k: v for k, v in column_mappings.items() if k.lower() not in cols_to_skip},
         single_line_list=single_line_list,
-        use_seperater_for_contained_capture=use_seperator_to_capture,
+        use_seperater_for_contained_capture=use_separator_to_capture,
         contained_capture_list=contained_capture_list,
         list_multi_line_cols=multi_line_cols,
         no_anchor_list=no_anchor_list,
         anchor=anchor,
         sep_list=sep_list,
         anchor_list=anchor_list,
-        is_anchor=is_anchor)
+        is_anchor=add_anchor)
 
     pickle_path = paths["pickle path"] if "pickle path" in paths else None
 
@@ -117,7 +125,7 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
     filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
                                                                  column_mappings,
                                                                  synoptic_regex,
-                                                                 r"(?P<column>.*){}(?P<value>.*)".format(seperator),
+                                                                 r"(?P<column>.*){}(?P<value>.*)".format(separator),
                                                                  print_debug=print_debug,
                                                                  max_edit_distance_missing=max_edit_distance_missing,
                                                                  max_edit_distance_autocorrect=max_edit_distance_autocorrect,
@@ -174,7 +182,9 @@ def run_pipeline(start: int, end: int, report_type: ReportType, report_name: str
                                                                                max_edit_distance_autocorrect,
                                                                                max_edit_distance_missing,
                                                                                substitution_cost)
+
         excel_path_highlight_differences = paths["path to output excel"] + compare_file_path
+
         stats = highlight_csv_differences(csv_path_coded=paths["csv path coded"],
                                           csv_path_human=paths["path to baselines"] + baseline_version,
                                           report_type=report_name[0].upper() + report_name[1:],
