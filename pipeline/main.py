@@ -16,6 +16,7 @@ multi_line_cols = ["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage"
 
 
 def main():
+    """ Main method to run the pipeline"""
     emr_pipeline = EMRPipeline()
     # pathology pipeline
     emr_pipeline.run_pipeline(start=101, end=156,
@@ -71,4 +72,3 @@ def main():
 
 
 main()
-
