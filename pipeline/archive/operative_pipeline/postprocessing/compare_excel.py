@@ -1,7 +1,7 @@
 from typing import Dict
 import pandas as pd
-from pipeline.util.utils import get_current_time
-from pipeline.util.comparison_helper import ComparisonHelper
+from pipeline.utils.utils import get_current_time
+from pipeline.archive.operative_pipeline.comparison_helper import ComparisonHelper
 
 color_palette = {
     "pink": "#FFC0CD",

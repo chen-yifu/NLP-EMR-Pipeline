@@ -9,10 +9,10 @@ from nltk import edit_distance
 from nltk.corpus import stopwords
 from pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.processing.clean_text import cleanse_column, cleanse_value
-from pipeline.util.column import Column
-from pipeline.util.report import Report
+from pipeline.utils.column import Column
+from pipeline.utils.report import Report
 import pandas as pd
-from pipeline.util.report_type import ReportType
+from pipeline.utils.report_type import ReportType
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
 stop_words = set(stopwords.words('english'))
@@ -187,7 +187,7 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     :return:                                   extracted data, represented by dictionary {column: value}
     """
     # checking if is text or numerical
-    is_text = True if report_type is ReportType.TEXT else False
+    is_text = True if report_type is ReportType.ALPHA else False
 
     # todo
     def missing_columns(correct_cols: List[str], cols_so_far: List[str]):

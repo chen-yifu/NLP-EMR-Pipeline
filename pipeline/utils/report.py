@@ -1,7 +1,7 @@
 from typing import Union, List, Dict
 
-from pipeline.util.value import Value
-from pipeline.util.report_type import ReportType
+from pipeline.utils.value import Value
+from pipeline.utils.report_type import ReportType
 
 
 class Report:

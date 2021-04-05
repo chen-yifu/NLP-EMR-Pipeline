@@ -1,6 +1,6 @@
 import os
 
-from pipeline.util.utils import get_full_path, get_current_time
+from pipeline.utils.utils import get_full_path, get_current_time
 
 
 def get_paths(report_type: str, other_paths=None) -> dict:

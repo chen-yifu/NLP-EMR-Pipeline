@@ -16,11 +16,11 @@ from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spa
 from pipeline.archive.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
 from pipeline.processing.turn_to_values import turn_reports_extractions_to_values
-from pipeline.util.import_tools import get_input_paths, import_code_book, import_columns
-from pipeline.util.paths import get_paths
-from pipeline.util.regex_tools import synoptic_capture_regex
-from pipeline.util.report_type import ReportType
-from pipeline.util.utils import find_all_vocabulary, get_current_time
+from pipeline.utils.import_tools import get_input_paths, import_code_book, import_columns
+from pipeline.utils.paths import get_paths
+from pipeline.utils.regex_tools import synoptic_capture_regex
+from pipeline.utils.report_type import ReportType
+from pipeline.utils.utils import find_all_vocabulary, get_current_time
 
 
 class EMRPipeline:
@@ -72,7 +72,7 @@ class EMRPipeline:
                                         report_str="{} " + report_ending)
 
         # for reports that have mostly alphabetical values, we can put them into the pipeline without preprocessing
-        if report_type is ReportType.TEXT:
+        if report_type is ReportType.ALPHA:
             report_ending = report_ending[:-3] + "txt"
 
         paths_to_reports_to_read_in = get_input_paths(start, end, path_to_reports=paths["path to reports"],
@@ -98,10 +98,10 @@ class EMRPipeline:
 
         synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
             {k: v for k, v in column_mappings.items() if k.lower() not in cols_to_skip},
-            single_line_list=single_line_list,
+            capture_till_end_of_val_list=single_line_list,
             use_seperater_for_contained_capture=use_separator_to_capture,
             contained_capture_list=contained_capture_list,
-            list_multi_line_cols=multi_line_cols,
+            multi_line_cols_list=multi_line_cols,
             no_anchor_list=no_anchor_list,
             anchor=anchor,
             sep_list=sep_list,

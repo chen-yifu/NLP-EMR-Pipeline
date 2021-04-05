@@ -6,9 +6,9 @@ from pdf2image import convert_from_path
 import os
 import io
 from appdirs import unicode
-from pipeline.util import utils
-from pipeline.util.report import Report
-from pipeline.util.report_type import ReportType
+from pipeline.utils import utils
+from pipeline.utils.report import Report
+from pipeline.utils.report_type import ReportType
 
 
 def preprocess_remove_extra_text(input_report):
@@ -78,7 +78,7 @@ def load_in_reports(start: int, end: int, paths_to_r: List[str], do_preprocessin
             if text_path[-3:] == "txt":
                 emr_file_text = open(text_path, "r")
                 emr_text = emr_file_text.read()
-                emr_study_id.append(Report(text=emr_text, report_id=str(num), report_type=ReportType.TEXT))
+                emr_study_id.append(Report(text=emr_text, report_id=str(num), report_type=ReportType.ALPHA))
                 emr_file_text.close()
             elif text_path[-3:] == "pdf":
                 # extract text
@@ -118,7 +118,7 @@ def load_in_report(report_path: str, num: str, do_preprocessing: bool = True) ->
     if report_path[-3:] == "txt":
         emr_file_text = open(report_path, "r")
         emr_text = emr_file_text.read()
-        report = Report(text=emr_text, report_id=num, report_type=ReportType.TEXT)
+        report = Report(text=emr_text, report_id=num, report_type=ReportType.ALPHA)
         emr_file_text.close()
         return report
     elif report_path[-3:] == "pdf":

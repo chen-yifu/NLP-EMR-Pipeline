@@ -1,10 +1,9 @@
-from collections import defaultdict
 from typing import Dict, List
 
 import pandas as pd
 
-from pipeline.util.column import Column
-from pipeline.util.report import Report
+from pipeline.utils.column import Column
+from pipeline.utils.report import Report
 
 
 def save_dictionaries_into_csv_raw(reports: List[Report], column_mapping: Dict[str, Column], csv_path: str,

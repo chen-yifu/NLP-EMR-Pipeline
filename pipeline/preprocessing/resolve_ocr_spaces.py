@@ -4,8 +4,8 @@ from typing import Dict
 from nltk.corpus import stopwords
 import pandas as pd
 from nltk import edit_distance
-from pipeline.util import utils
-from pipeline.util.utils import get_full_path
+from pipeline.utils import utils
+from pipeline.utils.utils import get_full_path
 
 
 def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True,

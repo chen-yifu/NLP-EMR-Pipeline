@@ -4,8 +4,8 @@ helper regex functions
 import random
 import re
 from typing import List, Tuple, Union, Dict
-from pipeline.util.column import Column
-from pipeline.util.import_tools import table
+from pipeline.utils.column import Column
+from pipeline.utils.import_tools import table
 
 
 def regex_extract(regex: str, text: str) -> list:
@@ -155,9 +155,9 @@ def make_punc_regex_literal(str_with_punc: str) -> str:
 
 
 def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True, anchor_list: List[str] = [],
-                           single_line_list=[], capture_only_first_line: bool = True, anchor: str = "",
+                           capture_till_end_of_val_list=[], stop_capture_at_end_of_value: bool = True, anchor: str = "",
                            is_anchor: bool = False, use_seperater_for_contained_capture: bool = False,
-                           last_word: str = "", list_multi_line_cols: List[str] = [], no_anchor_list: List[str] = [],
+                           multi_line_cols_list: List[str] = [], no_anchor_list: List[str] = [],
                            contained_capture_list: List[str] = [], separator: str = ":", no_sep_list: List[str] = [],
                            add_sep: bool = False, sep_list: List[str] = []) -> Tuple[str, Dict[str, List[str]]]:
     """
@@ -165,15 +165,14 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
     those columns.
 
     :param use_seperater_for_contained_capture:  whether or not to use the separator as part of regular pattern
-    :param single_line_list:              columns that have their values on the same line (single value)
+    :param capture_till_end_of_val_list:  columns that have their values on the same line (single value)
     :param columns:                       the columns that you want to capture
     :param ignore_caps:                   False if you want the regex to be case sensitive, True (default) otherwise: https://regex101.com/r/G44Egb/1
     :param anchor_list:                   list of columns you want to match to the start of the line.
-    :param capture_only_first_line:       If you know the value only spans one line, leave this as True. Otherwise change to False: https://regex101.com/r/xDrHz4/1
+    :param stop_capture_at_end_of_value:  If you know the value only spans one line, leave this as True. Otherwise change to False: https://regex101.com/r/xDrHz4/1
     :param anchor:                        What position is being matched before the column: https://regex101.com/r/JGWIKB/1
     :param is_anchor:                     Whether or not you want to match at the start of the line. Default is False.
-    :param last_word:                     The last word you want to cap the regex at if it is not the last column
-    :param list_multi_line_cols:          Columns that you know have values that span two lines: https://regex101.com/r/pgzUuH/1
+    :param multi_line_cols_list:          Columns that you know have values that span two lines: https://regex101.com/r/pgzUuH/1
     :param no_anchor_list:                Columns you do not want to have the anchor
     :param contained_capture_list:        Columns you want the capture to be between columns: https://regex101.com/r/akxofC/1
     :param separator:                     The punctuation or letters that seperates a column and value. Default is :
@@ -223,7 +222,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
         is_contained_capture = curr_col_key in contained_capture_list
         dont_add_anchor, add_anchor = curr_col_key in no_anchor_list, curr_col_key in anchor_list
         dont_add_seperator, add_seperater = curr_col_key not in no_sep_list, curr_col_key in sep_list
-        single_line = curr_col_key in single_line_list
+        single_line = curr_col_key in capture_till_end_of_val_list
 
         # all the columns we might use
         primary_curr_cols = current_col.primary_report_col
@@ -240,7 +239,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
         end_cap = ".+)"
 
         # if we want to capture up to a keyword
-        if not capture_only_first_line or is_contained_capture and not use_seperater_for_contained_capture:
+        if not stop_capture_at_end_of_value or is_contained_capture and not use_seperater_for_contained_capture:
             end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=primary_next_col_str)
         elif use_seperater_for_contained_capture and not single_line:
             end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=separator)
@@ -279,18 +278,13 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
 
     last_one = make_punc_regex_literal("|".join(last_col))
     last_one_variable, seen = to_camel_or_underscore(last_one, seen)
-    if last_word == "":
-        template_regex += r"{last_one}(?P<{last_no_space}>.+)".format(last_one=last_one,
-                                                                      last_no_space=last_one_variable)
-    else:
-        end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=last_word)
-        last_col_regex = create_regex_str(last_one, last_one_variable, end_cap, r"{col}:(?P<{col_var}>", False)
-        template_regex += last_col_regex
+    template_regex += r"{last_one}(?P<{last_no_space}>.+)".format(last_one=last_one,
+                                                                  last_no_space=last_one_variable)
     mappings_to_regex_vals[last_one_variable] = columns[last_col_key].primary_report_col
 
     # this is for any columns that have the column on the first line and value on the second line
-    if len(list_multi_line_cols) > 0:
-        for col in list_multi_line_cols:
+    if len(multi_line_cols_list) > 0:
+        for col in multi_line_cols_list:
             multi_col_var, seen = to_camel_or_underscore(col, seen)
             multi_col_str = make_punc_regex_literal(col.lower())
             multi_line_regex = r"{column}\s*-*(?P<{multi_col_var}>.+)".format(column=multi_col_str,

@@ -5,9 +5,9 @@ Encodes the extractions to numbers in code book.
 from typing import Dict, List, Union, Tuple
 import spacy
 from spacy.tokens import Span
-from pipeline.util.encoding import Encoding
-from pipeline.util.report import Report
-from pipeline.util.value import Value
+from pipeline.utils.encoding import Encoding
+from pipeline.utils.report import Report
+from pipeline.utils.value import Value
 
 
 def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], tools: dict = {},
@@ -40,8 +40,6 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
         encoded_extractions_dict = {}
         for human_col, encodings in code_book.items():
             done_encoding = False
-            if human_col == "Breast Incision Type":
-                print("breakpoint")
 
             def try_encoding(primary_value: List[Span], threshold: int = 0.6) -> Tuple[bool, str, int]:
                 """

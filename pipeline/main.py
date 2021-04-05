@@ -6,8 +6,8 @@ from pipeline.postprocessing.highlight_differences import highlight_csv_differen
 from pipeline.postprocessing.report_specific_encoding import nottingham_score, process_mm_val, archtectural_patterns, \
     tumour_site, number_of_foci, do_nothing
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
-from pipeline.util.report_type import ReportType
-from pipeline.util.utils import get_full_path
+from pipeline.utils.report_type import ReportType
+from pipeline.utils.utils import get_full_path
 
 cols_to_skip = ["study #", "specimen", "treatment effect", "margins", "pathologic stage", "comment(s)",
                 "part(s) involved"]
@@ -41,7 +41,7 @@ def main():
 
     # operative pipeline
     emr_pipeline.run_pipeline(start=1, end=50,
-                              report_type=ReportType.TEXT,
+                              report_type=ReportType.ALPHA,
                               anchor=r"^\d*\.* *", add_anchor=True, use_separator_to_capture=True,
                               single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
                               cols_to_skip=["immediate reconstruction mentioned", "laterality",

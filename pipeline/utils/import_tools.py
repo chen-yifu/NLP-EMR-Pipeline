@@ -4,8 +4,8 @@ This file contains methods that import tools needed to run the pipeline
 import string
 from typing import Dict, List, Tuple
 import pandas as pd
-from pipeline.util.column import Column
-from pipeline.util.encoding import Encoding
+from pipeline.utils.column import Column
+from pipeline.utils.encoding import Encoding
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
 

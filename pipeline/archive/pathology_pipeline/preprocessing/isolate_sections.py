@@ -1,7 +1,7 @@
 import re
 
-from pipeline.util.report import Report
-from pipeline.util.regex_tools import capture_double_regex
+from pipeline.utils.report import Report
+from pipeline.utils.regex_tools import capture_double_regex
 
 
 def isolate_synoptic_sections(reports_string_form, print_debug=True):

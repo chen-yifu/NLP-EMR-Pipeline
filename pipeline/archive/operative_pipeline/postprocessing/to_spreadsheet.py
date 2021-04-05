@@ -1,8 +1,8 @@
 import os
 from typing import List, Tuple
 import pandas as pd
-from pipeline.util.report import Report
-from pipeline.util.utils import get_current_time
+from pipeline.utils.report import Report
+from pipeline.utils.utils import get_current_time
 
 
 def to_spreadsheet(dataframe: pd.DataFrame, type_of_output: str, path_to_output: str):

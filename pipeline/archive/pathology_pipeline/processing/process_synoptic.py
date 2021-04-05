@@ -4,7 +4,7 @@ from collections import defaultdict
 from nltk.metrics.distance import edit_distance
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.processing.columns import load_excluded_columns_as_list
-from pipeline.util import utils
+from pipeline.utils import utils
 
 
 def process_synoptics_and_ids(unfiltered_reports, column_mappings, path_to_stages, pickle_path, print_debug=True,

@@ -1,7 +1,7 @@
 import pickle
 import pandas as pd
 
-from pipeline.util import utils
+from pipeline.utils import utils
 
 
 def get_zero_empty_columns():

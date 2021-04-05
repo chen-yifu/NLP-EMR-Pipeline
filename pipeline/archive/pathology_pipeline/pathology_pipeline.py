@@ -6,8 +6,8 @@ from pipeline.archive.pathology_pipeline.preprocessing.isolate_sections import i
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.archive.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.archive.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
-from pipeline.util.import_tools import import_pdf_human_cols_tuples, get_input_paths
-from pipeline.util.utils import get_full_path, get_current_time, find_all_vocabulary
+from pipeline.utils.import_tools import import_pdf_human_cols_tuples, get_input_paths
+from pipeline.utils.utils import get_full_path, get_current_time, find_all_vocabulary
 
 
 def run_pathology_pipeline(start,

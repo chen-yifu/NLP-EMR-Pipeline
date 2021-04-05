@@ -18,3 +18,5 @@ data/utils/*.ods
 data/utils/*.xlsx
 .idea
 .Rhistory
+/data/output/compare_human_baseline_operative.xlsx
+/data/output/compare_human_baseline_pathology.xlsx
