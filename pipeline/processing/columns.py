@@ -24,7 +24,7 @@ def get_zero_empty_columns():
     return zero_empty_columns
 
 
-def load_excluded_columns_as_df(pickle_path):
+def load_excluded_columns_as_df(pickle_path: str = "data/utils/excluded_autocorrect_column_pairs.data"):
     """
     Load a list of excluded columns from pickle file
     :return:        pandas DataFrame;            columns to be excluded
@@ -44,7 +44,7 @@ def load_excluded_columns_as_df(pickle_path):
         return excl_df
 
 
-def load_excluded_columns_as_list(pickle_path):
+def load_excluded_columns_as_list(pickle_path: str = "data/utils/excluded_autocorrect_column_pairs.data"):
     """
     Load a list of excluded columns from pickle file
     :return:        list of str;            columns to be excluded

@@ -1,12 +1,12 @@
-
-import tkinter as tk         #
+import tkinter as tk  #
 from tkinter import font as tkfont
 from tkinter import ttk
 from pandastable import Table
 
 # fonts
-import pipeline.archive.pathology_pipeline.pathology_pipeline.processing.columns
-from pipeline.archive.pathology_pipeline.pathology_pipeline import *
+from pipeline.archive.pathology_pipeline.pathology_pipeline import run_pathology_pipeline
+from pipeline.processing.columns import load_excluded_columns_as_df, load_excluded_columns_as_list, \
+    save_excluded_columns
 
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
@@ -27,6 +27,7 @@ max_edit_distance_missing = 5
 max_edit_distance_autocorrect = 5
 substitution_cost = 1
 resolve_ocr = True
+
 
 class SampleApp(tk.Tk):
 
@@ -64,10 +65,10 @@ class SampleApp(tk.Tk):
     def show_frame(self, page_name):
         '''Show a frame for the given page name'''
         if page_name == "PageAutocorrect" and "PageAutocorrect" not in self.frames.keys():
-                # initialize the auto-correct if it didn't exist
-                frame = PageAutocorrect(parent=self.container, controller=self)
-                self.frames[page_name] = frame
-                frame.grid(row=0, column=0, sticky="nsew")
+            # initialize the auto-correct if it didn't exist
+            frame = PageAutocorrect(parent=self.container, controller=self)
+            self.frames[page_name] = frame
+            frame.grid(row=0, column=0, sticky="nsew")
         else:
             frame = self.frames[page_name]
         if page_name == "PageAutocorrect":
@@ -85,14 +86,14 @@ class StartPage(tk.Frame):
         label.pack(side="top", fill="x", pady=10)
 
         self.button_auto = ttk.Button(self, text="Auto-corrected Columns",
-                            command=lambda: controller.show_frame("PageAutocorrect"))
+                                      command=lambda: controller.show_frame("PageAutocorrect"))
 
         self.button_rerun = ttk.Button(self, text="Run converter", command=lambda: self.run_converter())
         self.button_rerun.pack(side="bottom", pady=10)
-        self.stats_label = None     # result statistics
-        self.log_box = None         # terminal logging
+        self.stats_label = None  # result statistics
+        self.log_box = None  # terminal logging
         self.log_scroll_bar = None  # scroll bar for log_box
-        self.hint_label = None      # a hint label (printed progress is a scrollable box)
+        self.hint_label = None  # a hint label (printed progress is a scrollable box)
 
     def run_converter(self):
         self.button_rerun.pack_forget()
@@ -116,7 +117,8 @@ class StartPage(tk.Frame):
                 widget.destroy()
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
-        controller.stats, controller.auto_correct_df = run_pathology_pipeline(print_debug=print_debug,
+        controller.stats, controller.auto_correct_df = run_pathology_pipeline(start=101, end=156,
+                                                                              print_debug=print_debug,
                                                                               max_edit_distance_missing=max_edit_distance_missing,
                                                                               max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                                               substitution_cost=substitution_cost,
@@ -133,7 +135,11 @@ class StartPage(tk.Frame):
 
         stats = controller.stats
         # format statistics as string, e.g. (1655, 22, 16, 151, 56) becomes: "1655 same, 22 different, 16 missing..."
-        stats_str = "Result: out of {} cells, {} cells are same, {} different, {} missing, {} extra".format(sum(stats), stats[0], stats[1], stats[2], stats[3])
+        stats_str = "Result: out of {} cells, {} cells are same, {} different, {} missing, {} extra".format(sum(stats),
+                                                                                                            stats[0],
+                                                                                                            stats[1],
+                                                                                                            stats[2],
+                                                                                                            stats[3])
 
         # add back the removed widgets
         self.stats_label = ttk.Label(self, anchor="center", text=stats_str, font=EXTRA_SMALL_FONT)
@@ -181,16 +187,17 @@ class PageAutocorrect(tk.Frame):
         #     self.auto_table.destroy()
         if self.excl_table:
             self.excl_table.destroy()
-            self.excl_table = Table(self.excl_table_holder, dataframe=load_excluded_columns_as_df(), showtoolbar=False, showstatusbar=True)
+            self.excl_table = Table(self.excl_table_holder, dataframe=load_excluded_columns_as_df(), showtoolbar=False,
+                                    showstatusbar=True)
         if self.auto_table:
             self.auto_table.destroy()
-            self.auto_table = Table(self.auto_table_holder, dataframe=self.controller.auto_correct_df, showtoolbar=False, showstatusbar=True)
+            self.auto_table = Table(self.auto_table_holder, dataframe=self.controller.auto_correct_df,
+                                    showtoolbar=False, showstatusbar=True)
 
         self.auto_table.show()
         self.excl_table.show()
         self.auto_table_holder.place(anchor=tk.N, relx=0.5, y=50, width=1200)
         self.excl_table_holder.place(anchor=tk.N, relx=0.5, y=380, width=1200)
-
 
     def close_table_and_save(self, controller, table_holders):
         """
@@ -215,7 +222,7 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = pipeline.archive.pathology_pipeline.pathology_pipeline.processing.columns.load_excluded_columns_as_list()
+            cols = load_excluded_columns_as_list()
             cols.append((original, corrected))
             save_excluded_columns(cols)
             df = load_excluded_columns_as_df()
@@ -238,7 +245,7 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = pipeline.archive.pathology_pipeline.pathology_pipeline.processing.columns.load_excluded_columns_as_list()
+            cols = load_excluded_columns_as_list()
             if (original, corrected) in cols:
                 cols.remove((original, corrected))
                 save_excluded_columns(cols)
@@ -301,13 +308,11 @@ class PageAutocorrect(tk.Frame):
 
         # back button
         button = ttk.Button(self, text="Save and Back",
-                           command=lambda: self.close_table_and_save(controller, [self.auto_table_holder, self.excl_table_holder]))
+                            command=lambda: self.close_table_and_save(controller,
+                                                                      [self.auto_table_holder, self.excl_table_holder]))
         button.place(anchor=tk.N, relx=0.5, y=700, width=120)
 
 
 app = SampleApp()
 app.geometry("1280x740")
 app.mainloop()
-
-
-

@@ -135,4 +135,4 @@ def run_pathology_pipeline(start,
     return stats, autocorrect_df
 
 
-run_pathology_pipeline(start=101, end=156)
+# run_pathology_pipeline(start=101, end=156)
