@@ -3,6 +3,7 @@ import pandas as pd
 from collections import defaultdict
 from nltk.metrics.distance import edit_distance
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
+from pipeline.processing.clean_text import table
 from pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.utils import utils
 
@@ -32,14 +33,12 @@ def process_synoptics_and_ids(unfiltered_reports, column_mappings, path_to_stage
 
     # split the synoptic report into multiple sub-sections using ALL-CAPITALIZED headings as delimiter
     for report in unfiltered_reports:
-        columns_and_values = process_synoptic_section(report.text, report.report_id, column_mappings, df,
+        report.extractions = process_synoptic_section(report.text, report.report_id, column_mappings, df,
                                                       print_debug=print_debug,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost,
-                                                      path_to_stages=path_to_stages,
                                                       pickle_path=pickle_path)
-        report.extractions = columns_and_values
         result.append(report)
 
     # sort DataFrame by study ID
@@ -49,11 +48,14 @@ def process_synoptics_and_ids(unfiltered_reports, column_mappings, path_to_stage
         s = "Auto-correct Information:\n" + df.to_string()
         print(s)
 
-    return [report for report in result if report.extractions], df
+    reports = [report for report in result if report.extractions]
+    for report in reports:
+        report.extractions = {" ".join(k.translate(table).lower().strip().split()): v for k, v in
+                              report.extractions.items()}
+    return reports, df
 
 
-def process_synoptic_section(synoptic_report, study_id, column_mappings, df, path_to_stages, pickle_path,
-                             print_debug=True,
+def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pickle_path, print_debug=True,
                              max_edit_distance_missing=5, max_edit_distance_autocorrect=5, substitution_cost=2,
                              skip_threshold=0.95):
     """
@@ -117,38 +119,24 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
                 else:
                     result[clean_column] = clean_value
         except KeyError:
-            print("oopsie!")
+            pass
     # iterate through pre-programmed targeted matches that were skipped in the for-loop above
     for pair in filtered_pairs:
         if "specimen" in pair:
             result["specimen"] = cleanse_value(pair["specimen"])
-            print(pair)
-            print("specimen")
         elif "margins" in pair:
             # intentional no-space in "dcismargins", this ensures exact match with be given priority
             result["dcismargins"] = cleanse_value(pair["margins"])
-            print(pair)
-            print("dcismargins")
         elif "parts_involved" in pair:
             result["part(s) involved"] = cleanse_value(pair["parts_involved"])
-            print(pair)
-            print("parts_involved")
         elif "lymph_node_extent" in pair:
             result["lymph_node_extent"] = cleanse_value(pair["lymph_node_extent"])
-            print(pair)
-            print("lymph_node_extent")
         elif "treatment_effect" in pair:
             result["treatment effect"] = cleanse_value(pair["treatment_effect"])
-            print(pair)
-            print("treatment_effect")
         elif "pathologic_stage" in pair:
             result["pathologic stage"] = find_pathologic_stage(pair["pathologic_stage"])
-            print(pair)
-            print("pathologic_stage")
         elif "comments" in pair:
             result["comments"] = cleanse_value(pair["comments"])
-            print(pair)
-            print("comments")
     # calculate the proportion of missing columns, if it's above skip_threshold, then return None immediately
     correct_col_names = [pdf_col for (pdf_col, excel_col) in column_mappings]
     # if too many columns are missing, we probably isolated a section with unexpected template, so return nothing and exclude from result
@@ -163,7 +151,7 @@ def process_synoptic_section(synoptic_report, study_id, column_mappings, df, pat
                 print(s)
             return None
     except:
-        None
+        pass
 
     # auto-correct the matches by using a predefined list of correct column names in "column_mappings"
     result = autocorrect_columns(correct_col_names, result, study_id, df,

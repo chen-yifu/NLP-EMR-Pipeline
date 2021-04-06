@@ -6,25 +6,25 @@ from pipeline.archive.pathology_pipeline.preprocessing.isolate_sections import i
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.archive.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.archive.pathology_pipeline.processing.process_synoptic import process_synoptics_and_ids
-from pipeline.utils.import_tools import import_pdf_human_cols_tuples, get_input_paths
+from pipeline.processing.turn_to_values import turn_reports_extractions_to_values
+from pipeline.utils.import_tools import get_input_paths, import_columns, import_pdf_human_cols_tuples
 from pipeline.utils.utils import get_full_path, get_current_time, find_all_vocabulary
 
 
 def run_pathology_pipeline(start,
                            end,
-                           skip,
                            print_debug=True,
                            max_edit_distance_missing=5,
                            max_edit_distance_autocorrect=5,
                            substitution_cost=2,
                            resolve_ocr=True,
-                           path_to_output_csv=get_full_path("data/output/pathology_results/csv_files/"),
-                           path_to_output_excel=get_full_path("data/output/pathology_results/excel_files/"),
-                           path_to_baselines=get_full_path("data/baselines/"),
-                           path_to_mappings=get_full_path("data/utils/pathology_column_mappings.csv"),
-                           path_to_reports=get_full_path("data/input/pathology_reports/"),
-                           path_to_stages=get_full_path("data/utils/stages.csv"),
-                           pickle_path=get_full_path("data/utils/excluded_autocorrect_column_pairs.data")):
+                           path_to_output_csv=get_full_path("../../data/output/pathology_results/csv_files/"),
+                           path_to_output_excel=get_full_path("../../data/output/pathology_results/excel_files/"),
+                           path_to_baselines=get_full_path("../../data/baselines/"),
+                           path_to_mappings=get_full_path("../../data/utils/pathology_column_mappings.csv"),
+                           path_to_reports=get_full_path("../../data/input/pathology_reports/"),
+                           path_to_stages=get_full_path("../../data/utils/stages.csv"),
+                           pickle_path=get_full_path("../../data/utils/excluded_autocorrect_column_pairs.data")):
     """
     REQUIRES: the pdf document must be converted to searchable format by Adobe OCR in advance
 
@@ -37,7 +37,6 @@ def run_pathology_pipeline(start,
     :param path_to_baselines:
     :param start:
     :param end:
-    :param skip:
     :param print_debug:                   boolean;          print debug statements in Terminal if True
     :param max_edit_distance_autocorrect: int;              the maximum edit distance for autocorrecting extracted pairs
     :param max_edit_distance_missing:     int;              the maximum edit distance for searching for missing cell values
@@ -48,8 +47,7 @@ def run_pathology_pipeline(start,
     """
 
     # input pdf paths
-    input_pdf_paths = get_input_paths(start, end, skip=skip, path_to_reports=path_to_reports,
-                                      report_str="{} Path_Redacted.pdf")
+    input_pdf_paths = get_input_paths(start, end, path_to_reports=path_to_reports, report_str="{} Path_Redacted.pdf")
 
     # the path to save raw data
     timestamp = get_current_time()
@@ -68,10 +66,10 @@ def run_pathology_pipeline(start,
     # Sean's extracted encodings
     csv_path_baseline_SY = path_to_baselines + "data_collection_baseline_SY.csv"
 
-    column_mappings = import_pdf_human_cols_tuples(path_to_mappings)
+    column_mappings = import_columns(path_to_mappings)
 
     # convert pdf reports to a list of reports with report.text and report.report_id
-    reports_string_form = load_in_reports(start=start, end=end, skip=skip, paths_to_texts=input_pdf_paths)
+    reports_string_form = load_in_reports(start=start, end=end, paths_to_r=input_pdf_paths)
 
     medical_vocabulary = find_all_vocabulary([report.text for report in reports_string_form],
                                              print_debug=print_debug,
@@ -98,7 +96,9 @@ def run_pathology_pipeline(start,
             print(s)
 
     filtered_reports, autocorrect_df = process_synoptics_and_ids(synoptic_reports,
-                                                                 column_mappings, path_to_stages=path_to_stages,
+                                                                 import_pdf_human_cols_tuples(path_to_mappings,
+                                                                                              keep_punc=True),
+                                                                 path_to_stages=path_to_stages,
                                                                  print_debug=print_debug,
                                                                  max_edit_distance_missing=max_edit_distance_missing,
                                                                  max_edit_distance_autocorrect=max_edit_distance_autocorrect,
@@ -110,7 +110,10 @@ def run_pathology_pipeline(start,
     final_diagnosis_reports = []
 
     all_reports = filtered_reports + final_diagnosis_reports
-    df_raw = save_dictionaries_into_csv_raw(all_reports,
+
+    reports_with_values = turn_reports_extractions_to_values(all_reports, column_mappings)
+
+    df_raw = save_dictionaries_into_csv_raw(reports_with_values,
                                             column_mappings,
                                             csv_path=csv_path_raw,
                                             print_debug=print_debug)
@@ -122,10 +125,14 @@ def run_pathology_pipeline(start,
     stats = highlight_csv_differences(csv_path_coded,
                                       csv_path_baseline_SY,  # this is comparing to SY's baseline
                                       excel_path_highlight_differences,
-                                      print_debug=print_debug)
+                                      print_debug=print_debug,
+                                      report_type="pathology")
 
     if print_debug:
         s = "\nPipeline process finished.\nStats:{}".format(stats)
         print(s)
 
     return stats, autocorrect_df
+
+
+run_pathology_pipeline(start=101, end=156)
