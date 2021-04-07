@@ -3,7 +3,7 @@ main file to invoke methods
 """
 from pipeline.emr_pipeline import EMRPipeline
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
-from pipeline.postprocessing.report_specific_encoding import nottingham_score, process_mm_val, archtectural_patterns, \
+from pipeline.processing.report_specific_encoding import nottingham_score, process_mm_val, archtectural_patterns, \
     tumour_site, number_of_foci, do_nothing
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.utils.report_type import ReportType

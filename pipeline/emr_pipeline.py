@@ -4,9 +4,8 @@
 
 from typing import Tuple, Any, List
 import pandas as pd
-from pipeline.archive.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, add_report_id, \
-    change_unfiltered_to_dict
-from pipeline.postprocessing.encode_extractions import encode_extractions
+from pipeline.archive.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, add_report_id
+from pipeline.processing.encode_extractions import encode_extractions
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
 from pipeline.preprocessing.scanned_pdf_to_text import load_reports_into_pipeline
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences

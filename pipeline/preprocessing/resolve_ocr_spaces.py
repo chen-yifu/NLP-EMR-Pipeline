@@ -145,7 +145,7 @@ def find_pathologic_stage(stage: str, encodings_so_far: Dict[str, str] = {}) -> 
     :return edited_stage: str
     """
     stage = stage.replace("\n", " ").strip()
-    categories_dict = categories(get_full_path("../../data/utils/stages.csv"))
+    categories_dict = categories(get_full_path("data/utils/stages.csv"))
     # categories("stages.csv")
     edited_stage = ""
     to_skip = 0
