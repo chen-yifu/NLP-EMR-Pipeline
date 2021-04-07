@@ -122,7 +122,6 @@ def tumour_site(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
                 value = ""
     else:
         value = value_copy
-
     return value
 
 
