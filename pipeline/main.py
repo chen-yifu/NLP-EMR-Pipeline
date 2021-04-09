@@ -4,7 +4,7 @@ main file to invoke methods
 from pipeline.emr_pipeline import EMRPipeline
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.processing.report_specific_encoding import nottingham_score, process_mm_val, archtectural_patterns, \
-    tumour_site, number_of_foci, do_nothing
+    tumour_site, number_of_foci, do_nothing, immediate_reconstruction_mentioned
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import get_full_path
@@ -53,7 +53,8 @@ def main():
                                               "localization"],
                               other_paths={
                                   "path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv")},
-                              baseline_versions=["operative_VZ.csv", "operative_SY.csv"])
+                              baseline_versions=["operative_VZ.csv", "operative_SY.csv"],
+                              tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned})
 
     # difference between the two human baselines
     stats_human_baselines_p = highlight_csv_differences(csv_path_coded="../data/baselines/pathology_SY.csv",

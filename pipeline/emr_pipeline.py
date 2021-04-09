@@ -30,7 +30,7 @@ class EMRPipeline:
                      multi_line_cols: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
                      no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True,
                      max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect: int = 5,
-                     sep_list: list = [], substitution_cost: int = 2, resolve_ocr=True) -> Tuple[Any, pd.DataFrame]:
+                     sep_list: list = [], substitution_cost: int = 2, resolve_ocr=True) -> pd.DataFrame:
         """
         The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into the
         pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly alphabetical do not
@@ -123,8 +123,6 @@ class EMRPipeline:
                 s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
                 print(s)
 
-        print(synoptic_regex)
-
         filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
                                                                      column_mappings,
                                                                      synoptic_regex,
@@ -146,14 +144,14 @@ class EMRPipeline:
 
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],
                                                  type_of_report="coded", function=add_report_id)
-        # split starts here
+
+        # this is just for now: to compare to the old encoding
         if report_type is ReportType.NUMERICAL:
             # https://regex101.com/r/RBWwBE/1
             # https://regex101.com/r/Gk4xv9/1
 
             dataframe_coded_old = encode_extractions_to_dataframe(df_raw, print_debug=print_debug)
 
-            # this is just for now: to compare to the old encoding
             dataframe_coded_old.to_csv("../data/output/pathology_results/csv_files/old_encoding.csv", index=False)
 
             for baseline_version in baseline_versions:
@@ -190,4 +188,4 @@ class EMRPipeline:
                 print("\nNew encoding code 🧬 with {} -> Pipeline process finished.\nStats:{}".format(baseline_version,
                                                                                                       stats))
 
-        return stats, autocorrect_df
+        return autocorrect_df

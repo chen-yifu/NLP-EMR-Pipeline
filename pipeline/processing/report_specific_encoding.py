@@ -16,7 +16,6 @@ def do_nothing(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
 
 def nottingham_score(encodings_so_far: Dict[str, str] = {}) -> str:
     """
-
     :param encodings_so_far:
     :return:
     """
@@ -127,6 +126,7 @@ def tumour_site(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
 
 def archtectural_patterns(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
     """
+    :param encodings_so_far:
     :param value:      unprocessed data
     """
     value = str(value)
@@ -136,3 +136,8 @@ def archtectural_patterns(value: str, encodings_so_far: Dict[str, str] = {}) -> 
         return value
     else:
         return ""
+
+
+def immediate_reconstruction_mentioned(encodings_so_far: Dict[str, str] = {}) -> str:
+    val_depends_on = encodings_so_far["Immediate Reconstruction Type"]
+    return "0" if val_depends_on == "0" or val_depends_on == "" else "1"
