@@ -51,7 +51,7 @@ def main():
                               contained_capture_list=["breast incision type", "immediate reconstruction type"],
                               no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
                                               "localization"],
-                              other_paths={
+                              other_paths = {
                                   "path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv")},
                               baseline_versions=["operative_VZ.csv", "operative_SY.csv"],
                               tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned})
