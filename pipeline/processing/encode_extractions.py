@@ -3,15 +3,39 @@ Encodes the extractions to numbers in code book.
 """
 
 from typing import Dict, List, Union, Tuple
+
+import pandas as pd
 import spacy
 import torch
 from scipy import spatial
 from spacy.tokens import Span
+from spacy.tokens.doc import Doc
+
 from pipeline.bert.biobert import tokenizer, bert_model
+from pipeline.processing.clean_text import table
 from pipeline.processing.report_specific_encoding import do_nothing
 from pipeline.utils.encoding import Encoding
 from pipeline.utils.report import Report
 from pipeline.utils.value import Value
+
+
+def try_clean(val) -> Union[float, str]:
+    if pd.isna(val):
+        return ""
+    cleaned_val = val.lower().strip()
+    try:
+        return float(cleaned_val)
+    except:
+        cleaned_val = " ".join(cleaned_val.translate(table).strip().split())
+        return cleaned_val
+
+
+def remove_stop_words(doc: Doc) -> str:
+    clean_token = []
+    for token in doc:
+        if not token.is_stop:
+            clean_token.append(token.text)
+    return " ".join(clean_token)
 
 
 def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], tools: dict = {},
@@ -45,6 +69,7 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
 
     def try_encoding_biobert(val_to_encode, encodings: List[Encoding], threshold: int = 0.15) -> Tuple[bool, str, int]:
         """
+               :param encodings:
                :param val_to_encode:
                :param threshold:
                :return:
@@ -73,9 +98,10 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
         else:
             return found, pipeline_val_str_to_return, alpha
 
-    def try_encoding_scispacy(val_to_encode: List[Span], encodings: List[Encoding], threshold: int = 0.6) -> \
-            Tuple[bool, str, int]:
+    def try_encoding_scispacy(val_to_encode: List[Span], encodings: List[Encoding],
+                              threshold: int = 0.6) -> Tuple[bool, str, int]:
         """
+        :param encodings:
         :param val_to_encode:
         :param threshold:
         :return:
@@ -158,14 +184,17 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
             # try to find the highest number, if its one then we return that numyes
             if not done_encoding:
                 try:
-                    primary_value = get_entities(extractions[human_col].primary_value)
+                    primary_val = extractions[human_col].primary_value
                     alternative_val_list = extractions[human_col].alternative_value
                     has_alternative_value = alternative_val_list != []
-                    alternative_value = get_entities(alternative_val_list[0]) if has_alternative_value else ""
-                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(primary_value,
+                    primary_val = try_clean(primary_val)
+                    alternative_val = try_clean(alternative_val_list[0]) if has_alternative_value else ""
+                    cleaned_primary_val = get_entities(primary_val)
+                    cleaned_alternative_val = get_entities(alternative_val)
+                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(cleaned_primary_val,
                                                                                                 encodings)
                     found_alternative, alternative_encoded_value, alternative_alpha = try_encoding_scispacy(
-                        alternative_value, encodings)
+                        cleaned_alternative_val, encodings)
                     # found_primary, primary_encoded_value, primary_alpha = try_encoding_biobert(primary_value,
                     #                                                                            encodings)
                     # found_alternative, alternative_encoded_value, alternative_alpha = try_encoding_biobert(
