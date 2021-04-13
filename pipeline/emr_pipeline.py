@@ -1,9 +1,9 @@
 """
 🧬 file that contains the function that runs the emr pipeline
 """
-
 from typing import List
 
+import os
 import pandas as pd
 
 from pipeline.archive.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, add_report_id
@@ -20,6 +20,7 @@ from pipeline.processing.turn_to_values import turn_reports_extractions_to_value
 from pipeline.utils.import_tools import get_input_paths, import_code_book, import_columns
 from pipeline.utils.paths import get_paths
 from pipeline.utils.regex_tools import synoptic_capture_regex
+from pipeline.utils.report import Report
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import find_all_vocabulary, get_current_time
 
@@ -56,14 +57,15 @@ class EMRPipeline:
         self.paths_to_reports_to_read_in = get_input_paths(start, end, path_to_reports=self.paths["path to reports"],
                                                            report_str="{} " + report_ending)
 
-    def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = [], separator: str = ":",
-                     use_separator_to_capture: bool = False, add_anchor: bool = False, multi_line_cols: list = [],
-                     cols_to_skip: list = [], contained_capture_list: list = [], no_anchor_list: list = [],
-                     anchor_list: list = [], print_debug: bool = True, max_edit_distance_missing: int = 5,
-                     tools: dict = {}, max_edit_distance_autocorrect: int = 5, sep_list: list = [],
+    def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = None,
+                     separator: str = ":",
+                     use_separator_to_capture: bool = False, add_anchor: bool = False, multi_line_cols: list = None,
+                     cols_to_skip: list = None, contained_capture_list: list = None, no_anchor_list: list = None,
+                     anchor_list: list = None, print_debug: bool = True, max_edit_distance_missing: int = 5,
+                     tools: dict = None, max_edit_distance_autocorrect: int = 5, sep_list: list = None,
                      substitution_cost: int = 2, resolve_ocr: bool = True, do_training: bool = False,
-                     start_threshold: float = .75, end_threshold: float = 1,
-                     threshold_interval: float = .05) -> pd.DataFrame:
+                     start_threshold: float = 0.75, end_threshold: float = 1,
+                     threshold_interval: float = 0.05) -> pd.DataFrame:
         """
         The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into the
         pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly alphabetical do not
@@ -93,6 +95,13 @@ class EMRPipeline:
         :param resolve_ocr:                        resolve ocr white space if true
         :return:
         """
+        tools = tools if tools is not None else {}
+        contained_capture_list = contained_capture_list if contained_capture_list is not None else []
+        anchor_list = anchor_list if anchor_list is not None else []
+        sep_list = sep_list if sep_list is not None else []
+        no_anchor_list = no_anchor_list if no_anchor_list is not None else []
+        multi_line_cols = multi_line_cols if multi_line_cols is not None else []
+        single_line_list = single_line_list if single_line_list is not None else []
         timestamp = get_current_time()
 
         # try to read in the reports. if there is exception this is because the pdfs have to be turned into text
@@ -137,17 +146,18 @@ class EMRPipeline:
                 s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
                 print(s)
 
-        filtered_reports, autocorrect_df = process_synoptics_and_ids(cleaned_emr,
-                                                                     self.column_mappings,
-                                                                     synoptic_regex,
-                                                                     r"(?P<column>.*){}(?P<value>.*)".format(separator),
-                                                                     print_debug=print_debug,
-                                                                     max_edit_distance_missing=max_edit_distance_missing,
-                                                                     max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                                     substitution_cost=substitution_cost,
-                                                                     tools=tools,
-                                                                     regex_mappings=regex_variable_mappings,
-                                                                     pickle_path=self.pickle_path)
+        filtered_reports, autocorrect_df = process_synoptics_and_ids(
+            cleaned_emr,
+            self.column_mappings,
+            synoptic_regex,
+            r"(?P<column>.*){}(?P<value>.*)".format(separator),
+            print_debug=print_debug,
+            max_edit_distance_missing=max_edit_distance_missing,
+            max_edit_distance_autocorrect=max_edit_distance_autocorrect,
+            substitution_cost=substitution_cost,
+            tools=tools,
+            regex_mappings=regex_variable_mappings,
+            pickle_path=self.pickle_path)
 
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings)
 
@@ -156,8 +166,9 @@ class EMRPipeline:
                                                 print_debug=print_debug)
 
         if do_training:
-            self.train_pipeline(baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
-                                start_threshold, threshold_interval, timestamp, tools)
+            training_df = self.train_pipeline(
+                baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
+                start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"])
 
         encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book, tools=tools,
                                              threshold=start_threshold)
@@ -198,13 +209,13 @@ class EMRPipeline:
 
             output_excel_path = self.paths["path to output excel"] + compare_file_path
 
-            stats, column_accuracies = highlight_csv_differences(csv_path_coded=self.paths["csv path coded"],
-                                                                 csv_path_human=self.paths[
-                                                                                    "path to baselines"] + baseline_version,
-                                                                 report_type=self.report_name[
-                                                                                 0].upper() + self.report_name[1:],
-                                                                 output_excel_path=output_excel_path,
-                                                                 print_debug=print_debug)
+            stats, column_accuracies = highlight_csv_differences(
+                csv_path_coded=self.paths["csv path coded"],
+                csv_path_human=self.paths["path to baselines"] + baseline_version,
+                report_type=self.report_name[
+                                0].upper() + self.report_name[1:],
+                output_excel_path=output_excel_path,
+                print_debug=print_debug)
 
             if print_debug:
                 print("\nUsing spacy, and {} with upper threshold of {} -> Stats: {}".format(baseline_version,
@@ -213,9 +224,11 @@ class EMRPipeline:
 
         return autocorrect_df
 
-    def train_pipeline(self, baseline_versions, end_threshold, print_debug, report_name,
-                       reports_with_values, start_threshold, threshold_interval, timestamp, tools):
+    def train_pipeline(self, baseline_versions: List[str], end_threshold: float, print_debug: bool, report_name: str,
+                       reports_with_values: List[Report], start_threshold: float, threshold_interval: float,
+                       timestamp: str, tools: dict, output_path: str) -> pd.DataFrame:
         """
+        :param output_path:
         :param baseline_versions:
         :param end_threshold:
         :param print_debug:
@@ -226,6 +239,9 @@ class EMRPipeline:
         :param timestamp:
         :param tools:
         """
+        training = []
+        best_thresholds = dict(
+            (k, {"column": k, "threshold": start_threshold, "same": 0, "extra": 0}) for k in self.code_book.keys())
         threshold = start_threshold
         while threshold < end_threshold:
             for baseline_version in baseline_versions:
@@ -244,15 +260,58 @@ class EMRPipeline:
 
                 output_excel_path = self.paths["path to output excel"] + compare_file_path
 
-                stats, column_accuracies = highlight_csv_differences(csv_path_coded=self.paths["csv path coded"],
-                                                                     csv_path_human=self.paths[
-                                                                                        "path to baselines"] + baseline_version,
-                                                                     report_type=report_name[0].upper() + report_name[
-                                                                                                          1:],
-                                                                     output_excel_path=output_excel_path,
-                                                                     print_debug=print_debug)
+                stats, column_accuracies = highlight_csv_differences(
+                    csv_path_coded=self.paths["csv path coded"],
+                    csv_path_human=self.paths["path to baselines"] + baseline_version,
+                    report_type=report_name[0].upper() + report_name[1:],
+                    output_excel_path=output_excel_path,
+                    print_debug=print_debug)
 
                 if print_debug:
                     debug = "\nUsing spacy, and {} with upper threshold of {} -> Stats: {}"
                     print(debug.format(baseline_version, threshold, stats))
+                col_acc = column_accuracies.items()
+
+                num_same = {"num": "num_same", "threshold": threshold}
+                num_same.update({k: acc["num_same"] for k, acc in col_acc if len(acc.keys()) == 4})
+
+                num_different = {"num": "num_different", "threshold": threshold}
+                num_different.update({k: acc["num_different"] for k, acc in col_acc if len(acc.keys()) == 4})
+
+                num_missing = {"num": "num_missing", "threshold": threshold}
+                num_missing.update({k: acc["num_missing"] for k, acc in col_acc if len(acc.keys()) == 4})
+
+                num_extra = {"num": "num_extra", "threshold": threshold}
+                num_extra.update({k: acc["num_extra"] for k, acc in col_acc if len(acc.keys()) == 4})
+
+                num_acc = {"num": "(same + empty) / (all except extra)", "threshold": threshold}
+                num_acc.update(
+                    {k: acc["num_same"] / (acc["num_same"] + acc["num_different"] + acc["num_missing"]) for k, acc in
+                     col_acc if len(acc.keys()) == 4})
+
+                training.append(num_same)
+                training.append(num_different)
+                training.append(num_missing)
+                training.append(num_extra)
+                training.append(num_acc)
+
+                for k, acc in column_accuracies.items():
+                    if len(acc.keys()) == 4:
+                        best = best_thresholds[k] if k in best_thresholds else None
+                        if best and best["same"] <= acc["num_same"] and best["extra"] >= acc["num_extra"]:
+                            best["threshold"] = threshold
+                            best["same"] = acc["num_same"]
+                            best["extra"] = acc["num_extra"]
+
             threshold += threshold_interval
+            threshold = round(threshold, 3)
+
+        if not os.path.exists(output_path + "training/"):
+            os.makedirs(output_path + "training/")
+
+        best_thresholds_df = pd.DataFrame(list(best_thresholds.values()))
+        best_thresholds_df.to_excel(
+            output_path + "training/best_training_{}_{}.xlsx".format(self.report_name, timestamp))
+        training_df = pd.DataFrame(training)
+        training_df.to_excel(output_path + "training/all_training_{}_{}.xlsx".format(self.report_name, timestamp))
+        return training_df

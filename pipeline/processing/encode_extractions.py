@@ -44,7 +44,7 @@ def get_entities(val: str) -> List[Union[Span, str]]:
 
 
 def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], threshold: float, tools: dict = {},
-                       model: str = "en_core_sci_lg") -> List[Report]:
+                       model: str = "en_core_sci_lg", print_debug: bool = True) -> List[Report]:
     """
     :param reports:
     :param code_book:
@@ -62,6 +62,8 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
         encoded_extractions_dict = {}
         for human_col, encodings in code_book.items():
             done_encoding = False
+            if human_col == "Tumour Focality" or human_col == "Insitu Type":
+                print("lmfao")
 
             def try_encoding_scispacy(val_to_encode: List[Span], print_debug: bool = False) -> Tuple[bool, str, int]:
                 """
@@ -147,5 +149,8 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
         return encoded_extractions_dict
 
     for report in reports:
+        print_debug = True
+        if print_debug:
+            print(report.report_id)
         report.encoded = encode_extraction_for_single_report(report.extractions)
     return reports

@@ -59,15 +59,12 @@ def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_e
     }
 
     # use this format to highlight the differences in the two csv files
-    no_highlight = workbook.add_format({
-        'text_wrap': True,
-    })
+    no_highlight = workbook.add_format({'text_wrap': True})
 
     highlight_coded_cell_extra = workbook.add_format({
         'bold': True,
         'text_wrap': True,
-        'fg_color': color_palette["light green"]
-    })
+        'fg_color': color_palette["light green"]})
 
     highlight_coded_cell_missing = workbook.add_format({
         'bold': True,
@@ -87,9 +84,7 @@ def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_e
         'fg_color': color_palette["light blue"]
     })
 
-    highlight_empty_and_empty_cells = workbook.add_format({
-        'fg_color': color_palette["gray"]
-    })
+    highlight_empty_and_empty_cells = workbook.add_format({'fg_color': color_palette["gray"]})
 
     # write headers
     for col_index, col_name in enumerate(df_coded.columns):
