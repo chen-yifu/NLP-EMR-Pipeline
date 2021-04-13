@@ -30,7 +30,9 @@ class EMRPipeline:
                      multi_line_cols: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
                      no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True,
                      max_edit_distance_missing: int = 5, tools: dict = {}, max_edit_distance_autocorrect: int = 5,
-                     sep_list: list = [], substitution_cost: int = 2, resolve_ocr=True) -> pd.DataFrame:
+                     sep_list: list = [], substitution_cost: int = 2, resolve_ocr: bool = True,
+                     do_training: bool = False, start_threshold: float = .75, end_threshold: float = 1,
+                     threshold_interval: float = .05) -> pd.DataFrame:
         """
         The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into the
         pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly alphabetical do not
@@ -140,7 +142,41 @@ class EMRPipeline:
         df_raw = save_dictionaries_into_csv_raw(reports_with_values, column_mappings, csv_path=paths["csv path raw"],
                                                 print_debug=print_debug)
 
-        encoded_reports = encode_extractions(reports=reports_with_values, code_book=code_book, tools=tools)
+        if do_training:
+            threshold = start_threshold
+            while threshold < end_threshold:
+                for baseline_version in baseline_versions:
+                    print("Starting to encode with threshold of {}".format(threshold))
+                    encoded_reports = encode_extractions(reports=reports_with_values, code_book=code_book, tools=tools,
+                                                         threshold=threshold)
+
+                    dataframe_coded = reports_to_spreadsheet(reports=encoded_reports,
+                                                             path_to_output=paths["path to output"],
+                                                             type_of_report="coded", function=add_report_id)
+
+                    dataframe_coded.to_csv(paths["csv path coded"], index=False)
+
+                    compare_file_path = "compare_{}_threshold_{}_{}.xlsx".format(baseline_version[-6:-4],
+                                                                                 threshold, timestamp)
+
+                    excel_path_highlight_differences = paths["path to output excel"] + compare_file_path
+
+                    stats = highlight_csv_differences(csv_path_coded=paths["csv path coded"],
+                                                      csv_path_human=paths["path to baselines"] + baseline_version,
+                                                      report_type=report_name[0].upper() + report_name[1:],
+                                                      output_excel_path=excel_path_highlight_differences,
+                                                      print_debug=print_debug)
+
+                    if print_debug:
+                        print(
+                            "\nNew encoding code 🧬 with {} with upper threshold of {} -> Pipeline process finished.\nStats:{}".format(
+                                baseline_version,
+                                threshold,
+                                stats))
+                threshold += threshold_interval
+
+        encoded_reports = encode_extractions(reports=reports_with_values, code_book=code_book, tools=tools,
+                                             threshold=start_threshold)
 
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=paths["path to output"],
                                                  type_of_report="coded", function=add_report_id)

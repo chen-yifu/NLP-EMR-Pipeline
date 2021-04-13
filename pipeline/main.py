@@ -18,26 +18,6 @@ multi_line_cols = ["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage"
 def main():
     """ Main method to run the pipeline"""
     emr_pipeline = EMRPipeline()
-    # pathology pipeline
-    emr_pipeline.run_pipeline(start=101, end=156,
-                              report_type=ReportType.NUMERICAL,
-                              cols_to_skip=cols_to_skip,
-                              multi_line_cols=multi_line_cols,
-                              report_name="pathology",
-                              add_anchor=True,
-                              sep_list=["invasive carcinoma"],
-                              report_ending="Path_Redacted.pdf",
-                              baseline_versions=["pathology_VZ.csv", "data_collection_baseline_SY.csv"],
-                              anchor=r"^ *-* *",
-                              other_paths={
-                                  "pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data")},
-                              tools={"pathologic stage": find_pathologic_stage,
-                                     "nottingham_score": nottingham_score,
-                                     "process_mm_val": process_mm_val,
-                                     "number_of_foci": number_of_foci,
-                                     "tumour_site": tumour_site,
-                                     "do_nothing": do_nothing,
-                                     "archtectural_patterns": archtectural_patterns})
 
     # operative pipeline
     emr_pipeline.run_pipeline(start=1, end=50,
@@ -53,8 +33,31 @@ def main():
                                               "localization"],
                               other_paths={
                                   "path to weights": get_full_path("data/utils/training_metrics/params/tuning.csv")},
-                              baseline_versions=["operative_VZ.csv", "operative_SY.csv"],
-                              tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned})
+                              baseline_versions=["operative_VZ.csv"],
+                              tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
+                              do_training=True)
+
+    # pathology pipeline
+    emr_pipeline.run_pipeline(start=101, end=156,
+                              report_type=ReportType.NUMERICAL,
+                              cols_to_skip=cols_to_skip,
+                              multi_line_cols=multi_line_cols,
+                              report_name="pathology",
+                              add_anchor=True,
+                              sep_list=["invasive carcinoma"],
+                              report_ending="Path_Redacted.pdf",
+                              baseline_versions=["pathology_VZ.csv"],
+                              anchor=r"^ *-* *",
+                              other_paths={
+                                  "pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data")},
+                              tools={"pathologic stage": find_pathologic_stage,
+                                     "nottingham_score": nottingham_score,
+                                     "process_mm_val": process_mm_val,
+                                     "number_of_foci": number_of_foci,
+                                     "tumour_site": tumour_site,
+                                     "do_nothing": do_nothing,
+                                     "archtectural_patterns": archtectural_patterns},
+                              do_training=True)
 
     # difference between the two human baselines
     stats_human_baselines_p = highlight_csv_differences(csv_path_coded="../data/baselines/pathology_SY.csv",
