@@ -1,4 +1,6 @@
 from collections import defaultdict
+from typing import Tuple, Dict
+
 import pandas as pd
 from pipeline.processing import columns
 
@@ -6,7 +8,7 @@ zero_empty_columns = columns.get_zero_empty_columns()
 
 
 def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_excel_path: str, report_type: str,
-                              print_debug=True, id_col: str = "Study #"):
+                              print_debug=True, id_col: str = "Study #") -> Tuple[tuple, Dict[str, Dict[str, int]]]:
     """
     given two csv files to compare, merge the data into a xlsx file, while highlighting the cells that are different
 
@@ -189,7 +191,7 @@ By comparing the extracted annotations by human and this converter, we found:\n
         print(s)
 
     stats = (num_same, num_different, num_missing, num_extra)  # , num_empty_zeros, num_empty_empty)
-    return stats
+    return stats, column_accuracies
 
 
 def are_different(val1, val2):
@@ -217,9 +219,14 @@ def are_different(val1, val2):
             return True
 
 
-def calculate_statistics(df_coded, df_human, id_col: str = "Study #"):
+def calculate_statistics(df_coded: pd.DataFrame, df_human: pd.DataFrame,
+                         id_col: str = "Study #") -> Tuple[tuple, Dict[str, Dict[str, int]]]:
     """
     calculate the overall accuracy, as well as accuracy for each column
+
+    :param df_coded:
+    :param df_human:
+    :param id_col:
     :return: int, int, int, int, int, int;  num_same, num_different, num_missing, num_extra, num_empty_zeros, num_empty
     dict of {column: accuracy_dict}; each accuracy_dict represents the accuracy statistics for one column (6 ints)
     """
