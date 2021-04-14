@@ -15,8 +15,9 @@ def get_paths(report_type: str, other_paths=None) -> dict:
     if other_paths is None:
         other_paths = {}
     paths = {}
+    path_to_utils = get_full_path("data/utils/")
     path_to_input = get_full_path("data/input/{}_reports/".format(report_type))
-    path_to_code_book = get_full_path("data/utils/{}_code_book.ods".format(report_type))
+    path_to_code_book = path_to_utils + "{}_code_book.ods".format(report_type)
     path_to_output = get_full_path("data/output/{}_results/".format(report_type))
     path_to_reports = get_full_path("data/input/{}_reports/".format(report_type))
     path_to_baselines = get_full_path("data/baselines/")
@@ -24,12 +25,12 @@ def get_paths(report_type: str, other_paths=None) -> dict:
     csv_path_raw = path_to_output_csv + "raw_{}.csv".format(timestamp)
     csv_path_coded = path_to_output_csv + "coded_{}.csv".format(timestamp)
     path_to_output_excel = get_full_path("data/output/{}_results/excel_files/".format(report_type))
-    path_to_mappings = get_full_path("data/utils/{}_column_mappings.csv".format(report_type))
+    path_to_mappings = path_to_utils + "{}_column_mappings.csv".format(report_type)
     paths.update(other_paths)
     paths.update(
         {"path to output": path_to_output, "path to reports": path_to_reports, "path to baselines": path_to_baselines,
          "path to output csv": path_to_output_csv, "path to output excel": path_to_output_excel,
-         "path to mappings": path_to_mappings, "csv path raw": csv_path_raw,
+         "path to mappings": path_to_mappings, "csv path raw": csv_path_raw, "path to utils": path_to_utils,
          "csv path coded": csv_path_coded, "path to code book": path_to_code_book, "path to input": path_to_input})
     for path_name, actual_path in paths.items():
         if not os.path.exists(actual_path) and path_name not in ["csv path raw", "csv path coded"]:

@@ -37,9 +37,7 @@ def main():
                                     do_training=False)
 
     operative_pipeline = EMRPipeline(start=1, end=50, report_name="operative", report_ending="OR_Redacted.pdf",
-                                     report_type=ReportType.ALPHA,
-                                     other_paths={"path to weights": get_full_path(
-                                         "data/utils/training_metrics/params/tuning.csv")})
+                                     report_type=ReportType.ALPHA)
 
     # operative pipeline
     operative_pipeline.run_pipeline(baseline_versions=["operative_VZ.csv"], anchor=r"^\d*\.* *",
@@ -53,6 +51,7 @@ def main():
                                                     "localization"],
                                     tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
                                     sep_list=["surgical indication", "immediate reconstruction type"],
+                                    perform_autocorrect=True,
                                     do_training=False)
 
     # difference between the two human baselines

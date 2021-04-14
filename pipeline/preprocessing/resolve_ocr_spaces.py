@@ -25,6 +25,7 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
     def resolve_ocr(raw_string, medical_vocabulary=[]):
         """
         resolve extra white space in raw string by merging two fragments
+        :param medical_vocabulary:
         :param raw_string:          str;        raw string
         :return:                    str;        resolved string
         """

@@ -282,8 +282,9 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
 def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings: Dict[str, Column], specific_regex: str,
                               general_regex: str, regex_mappings: Dict[str, List[str]], pickle_path, tools: dict = {},
                               print_debug=True, max_edit_distance_missing: int = 5,
-                              max_edit_distance_autocorrect: int = 5,
-                              substitution_cost: int = 2) -> Tuple[List[Report], pd.DataFrame]:
+                              max_edit_distance_autocorrect: int = 5, substitution_cost: int = 2,
+                              medical_vocabulary: List[str] = [], perform_autocorrect: bool = False) -> Tuple[
+    List[Report], pd.DataFrame]:
     """
     process and extract data from a list of synoptic reports by using regular expression
 
@@ -303,6 +304,30 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     :return:                               the auto-correct information to be shown
     """
 
+    def autocorrect(val: str) -> str:
+        """
+        :param val:
+        :return:
+        """
+        if val is None:
+            return val
+        words = [v.lower().strip() for v in val.split()]
+        autocorrect_words = []
+        for w1 in words:
+            found = False
+            for w2 in medical_vocabulary:
+                if w1 == w2:
+                    autocorrect_words.append(w1)
+                    found = True
+                    break
+                if edit_distance(w1, w2) < 2:
+                    autocorrect_words.append(w2)
+                    found = True
+                    break
+            if not found:
+                autocorrect_words.append(w1)
+        return " ".join(autocorrect_words)
+
     result = []
     if print_debug:
         s = "\nProcessing synoptic report sections..."
@@ -319,9 +344,12 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost)
 
+        if report.report_id == '8' or report.report_id == 8:
+            print("eyeet")
         report.extractions.update({"laterality": report.laterality})
-        report.extractions = {" ".join(k.translate(table).lower().strip().split()): v for k, v in
-                              report.extractions.items()}
+        report.extractions = {" ".join(k.translate(table).lower().strip().split()): autocorrect(v) for k, v in
+                              report.extractions.items()} if perform_autocorrect else {
+            " ".join(k.translate(table).lower().strip().split()): v for k, v in report.extractions.items()}
         result.append(report)
         print(report.report_id)
         print(report.extractions)

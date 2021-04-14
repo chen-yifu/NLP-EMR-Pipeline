@@ -14,19 +14,9 @@ from pipeline.utils.value import Value
 nlp = spacy.load("en_core_sci_lg")
 
 
-def remove_stop_words(val: str) -> str:
-    if pd.isna(val):
-        val = ""
-    doc = nlp(val)
-    clean_token = []
-    for token in doc:
-        if not token.is_stop:
-            clean_token.append(token.text)
-    return " ".join(clean_token)
-
-
-def get_entities(val: str) -> List[Union[Span, str]]:
+def get_entities(val: str, remove_stop_words: bool = True) -> List[Union[Span, str]]:
     """
+    :param remove_stop_words:
     :param val:
     :return:
     """
@@ -34,18 +24,24 @@ def get_entities(val: str) -> List[Union[Span, str]]:
         return [""]
     if type(val) is float or pd.isna(val):
         val = ""
-    doc = nlp(val)
-    clean_token = []
-    for token in doc:
-        if not token.is_stop:
-            clean_token.append(token.text)
+    if remove_stop_words:
+        doc = nlp(val)
+        clean_token = []
+        for token in doc:
+            if not token.is_stop:
+                clean_token.append(token.text)
+        val = " ".join(clean_token)
     entities = list(nlp(val).ents) if len(val.split()) > 5 else [val]
     return entities if len(entities) > 0 else [val]
 
 
 def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], threshold: float, tools: dict = {},
-                       model: str = "en_core_sci_lg", print_debug: bool = True) -> List[Report]:
+                       model: str = "en_core_sci_lg", print_debug: bool = True,
+                       remove_stop_words: bool = False) -> List[Report]:
     """
+    :param remove_stop_words:
+    :param threshold:
+    :param print_debug:
     :param reports:
     :param code_book:
     :param tools:
@@ -62,12 +58,21 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
         encoded_extractions_dict = {}
         for human_col, encodings in code_book.items():
             done_encoding = False
-            if human_col == "Tumour Focality" or human_col == "Insitu Type":
-                print("lmfao")
 
-            def try_encoding_scispacy(val_to_encode: List[Span], print_debug: bool = False) -> Tuple[bool, str, int]:
+            def is_val_medical(val_to_encode: List[Span], least_neg: float = .65) -> bool:
+                negations = ["not applicable", "n/a", "na", "no"]
+                for negation in negations:
+                    n_doc = nlp(negation)
+                    for pipeline_val in val_to_encode:
+                        pipeline_val_str = pipeline_val.text if isinstance(pipeline_val, Span) else pipeline_val
+                        pipeline_doc = nlp(pipeline_val_str.lower())
+                        sim = pipeline_doc.similarity(n_doc)
+                        if sim > least_neg:
+                            return False
+                return True
+
+            def try_encoding_scispacy(val_to_encode: List[Span]) -> Tuple[bool, str, int]:
                 """
-                :param print_debug:
                 :param val_to_encode:
                 :return:
                 """
@@ -125,32 +130,38 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
             if not done_encoding:
                 try:
                     primary_val = extractions[human_col].primary_value
-                    alternative_val = extractions[human_col].alternative_value[0] if extractions[
-                                                                                         human_col].alternative_value != [] else ""
-                    cleaned_primary_val = get_entities(primary_val)
-                    cleaned_alternative_val = get_entities(alternative_val)
-                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(cleaned_primary_val,
-                                                                                                encodings)
-                    found_alternative, alternative_encoded_value, alternative_alpha = try_encoding_scispacy(
-                        cleaned_alternative_val, encodings)
+                    alt_val = extractions[human_col].alternative_value[0] if extractions[
+                                                                                 human_col].alternative_value != [] else ""
+                    primary_entities = get_entities(primary_val, remove_stop_words)
+                    alt_entities = get_entities(alt_val, remove_stop_words)
+                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(primary_entities)
+                    found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(alt_entities)
                     if primary_alpha == 1 and found_primary:
                         encoded_extractions_dict[human_col] = primary_encoded_value
-                    elif alternative_alpha == 1 and found_alternative:
-                        encoded_extractions_dict[human_col] = alternative_encoded_value
-                    elif primary_alpha > alternative_alpha and found_primary:
+                    elif alt_alpha == 1 and found_alt:
+                        encoded_extractions_dict[human_col] = alt_encoded_value
+                    elif primary_alpha > alt_alpha and found_primary:
                         encoded_extractions_dict[human_col] = primary_encoded_value
-                    elif alternative_alpha > primary_alpha and found_alternative:
-                        encoded_extractions_dict[human_col] = alternative_encoded_value
+                    elif alt_alpha > primary_alpha and found_alt:
+                        encoded_extractions_dict[human_col] = alt_encoded_value
                     else:
-                        encoded_extractions_dict[human_col] = ""
+                        should_return_val = is_val_medical(primary_entities)
+                        encoded_extractions_dict[human_col] = primary_val if should_return_val else ""
                 except KeyError:
                     print("This should of not occurred.")
 
         return encoded_extractions_dict
 
-    for report in reports:
-        print_debug = True
+    for index, report in enumerate(reports):
+        q25 = int(len(reports) / 4)
+        q50 = q25 * 2
+        q75 = q25 * 3
         if print_debug:
-            print(report.report_id)
+            if index == q25:
+                print("Done encoding 25% of the reports. Current report: {}".format(report.report_id))
+            elif index == q50:
+                print("Done encoding 50% of the reports. Current report: {}".format(report.report_id))
+            elif index == q75:
+                print("Done encoding 75% of the reports. Current report: {}".format(report.report_id))
         report.encoded = encode_extraction_for_single_report(report.extractions)
     return reports

@@ -31,7 +31,7 @@ class EMRPipeline:
     """
 
     def __init__(self, start: int, end: int, report_name: str, report_ending: str, report_type: ReportType,
-                 other_paths: dict = {}):
+                 other_paths=None):
         """
         :param other_paths:
         :param report_ending:                      the file endings of the reports, all must be same
@@ -40,6 +40,7 @@ class EMRPipeline:
         :param end:                                the last report id
         :param report_type:                        the type of report being analyzed, is an Enum
         """
+        self.other_paths = other_paths if other_paths is None else {}
         self.start = start
         self.end = end
         self.report_name = report_name
@@ -58,42 +59,43 @@ class EMRPipeline:
                                                            report_str="{} " + report_ending)
 
     def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = None,
-                     separator: str = ":",
-                     use_separator_to_capture: bool = False, add_anchor: bool = False, multi_line_cols: list = None,
-                     cols_to_skip: list = None, contained_capture_list: list = None, no_anchor_list: list = None,
-                     anchor_list: list = None, print_debug: bool = True, max_edit_distance_missing: int = 5,
-                     tools: dict = None, max_edit_distance_autocorrect: int = 5, sep_list: list = None,
-                     substitution_cost: int = 2, resolve_ocr: bool = True, do_training: bool = False,
-                     start_threshold: float = 0.75, end_threshold: float = 1,
-                     threshold_interval: float = 0.05) -> pd.DataFrame:
+                     separator: str = ":", use_separator_to_capture: bool = False, add_anchor: bool = False,
+                     multi_line_cols: list = None, cols_to_skip: list = None, contained_capture_list: list = None,
+                     no_anchor_list: list = None, anchor_list: list = None, print_debug: bool = True,
+                     max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
+                     sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
+                     perform_autocorrect: bool = False,
+                     do_training: bool = False, start_threshold: float = 0.75, end_threshold: float = 1,
+                     threshold_interval: float = 0.05, remove_stop_words: bool = False) -> pd.DataFrame:
         """
-        The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into the
-        pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly alphabetical do not
-        need to be preprocessed, as the pytesseract library will turn them into .txt files.
+        The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into
+        the pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly
+        alphabetical do not need to be preprocessed, as the pytesseract library will turn them into .txt files.
 
+        :param remove_stop_words:
         :param threshold_interval:
         :param do_training:
         :param end_threshold:
         :param start_threshold:
-        :param single_line_list:                   columns that have their values on the same line as the column (single line)
-        :param use_separator_to_capture:           whether or not you want to use the separator for the regular pattern
-        :param sep_list:                           columns that you want to use the separator to capture the value
-        :param anchor_list:                        columns to add anchor to. use if add_anchor is False
-        :param no_anchor_list:                     columns to not add anchor to. use if add_anchor is True
-        :param anchor:                             the anchor that the regular pattern will look for to anchor to the start of page
-        :param contained_capture_list:             columns that you want to use contained capture on
-        :param add_anchor:                         whether or not you want to add anchor, default is False
-        :param separator:                          what is used to separate the column and value, ex -> invasive carcinoma : negative
-        :param tools:                              functions that other columns need for cleansing
-        :param baseline_versions:                  the baseline version to compare to
-        :param cols_to_skip:                       which columns to not put in the regex
-        :param multi_line_cols:                    the columns in the report that span two lines
-        :param print_debug:                        print debug statements in Terminal if True
-        :param max_edit_distance_missing:          the maximum edit distance for searching for missing cell values
-        :param max_edit_distance_autocorrect:      the maximum edit distance for autocorrecting extracted pairs for pathology
-        :param substitution_cost:                  the substitution cost for edit distance for pathology
-        :param resolve_ocr:                        resolve ocr white space if true
-        :return:
+        :param single_line_list:               columns that have their values on the same line as the column (same line)
+        :param use_separator_to_capture:       whether or not you want to use the separator for the regular pattern
+        :param sep_list:                       columns that you want to use the separator to capture the value
+        :param anchor_list:                    columns to add anchor to. use if add_anchor is False
+        :param no_anchor_list:                 columns to not add anchor to. use if add_anchor is True
+        :param anchor:                         the anchor that the regex will look for to anchor to the start of page
+        :param contained_capture_list:         columns that you want to use contained capture on
+        :param add_anchor:                     whether or not you want to add anchor, default is False
+        :param separator:                      what separates the column and value, ex -> invasive carcinoma : negative
+        :param tools:                          functions that other columns need for cleansing
+        :param baseline_versions:              the baseline version to compare to
+        :param cols_to_skip:                   which columns to not put in the regex
+        :param multi_line_cols:                the columns in the report that span two lines
+        :param print_debug:                    print debug statements in Terminal if True
+        :param max_edit_distance_missing:      the maximum edit distance for searching for missing cell values
+        :param max_edit_distance_autocorrect:  the maximum edit distance for autocorrecting extracted pairs
+        :param substitution_cost:              the substitution cost for edit distance
+        :param resolve_ocr:                    resolve ocr white space if true
+        :return:                               autocorrect results
         """
         tools = tools if tools is not None else {}
         contained_capture_list = contained_capture_list if contained_capture_list is not None else []
@@ -111,7 +113,10 @@ class EMRPipeline:
                                                            self.paths_to_reports_to_read_in, self.start)
 
         medical_vocabulary = find_all_vocabulary([report.text for report in reports_loaded_in_str],
-                                                 print_debug=print_debug, min_freq=40)
+                                                 print_debug=print_debug, min_freq=int((self.end - self.start) / 2) - 1)
+
+        pd.DataFrame(medical_vocabulary).to_csv(
+            self.paths["path to utils"] + "medical_vocabulary_{}_{}".format(self.report_name, timestamp))
 
         if resolve_ocr:
             reports_loaded_in_str = preprocess_resolve_ocr_spaces(reports_loaded_in_str, print_debug=print_debug,
@@ -157,7 +162,9 @@ class EMRPipeline:
             substitution_cost=substitution_cost,
             tools=tools,
             regex_mappings=regex_variable_mappings,
-            pickle_path=self.pickle_path)
+            pickle_path=self.pickle_path,
+            medical_vocabulary=medical_vocabulary,
+            perform_autocorrect=perform_autocorrect)
 
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings)
 
@@ -169,9 +176,11 @@ class EMRPipeline:
             training_df = self.train_pipeline(
                 baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
                 start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"])
+            if print_debug:
+                print(training_df)
 
         encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book, tools=tools,
-                                             threshold=start_threshold)
+                                             threshold=start_threshold, remove_stop_words=remove_stop_words)
 
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=self.paths["path to output"],
                                                  type_of_report="coded", function=add_report_id)
@@ -212,8 +221,7 @@ class EMRPipeline:
             stats, column_accuracies = highlight_csv_differences(
                 csv_path_coded=self.paths["csv path coded"],
                 csv_path_human=self.paths["path to baselines"] + baseline_version,
-                report_type=self.report_name[
-                                0].upper() + self.report_name[1:],
+                report_type=self.report_name[0].upper() + self.report_name[1:],
                 output_excel_path=output_excel_path,
                 print_debug=print_debug)
 
@@ -241,67 +249,81 @@ class EMRPipeline:
         """
         training = []
         best_thresholds = dict(
-            (k, {"column": k, "threshold": start_threshold, "same": 0, "extra": 0}) for k in self.code_book.keys())
+            (k, {"column": k, "threshold": start_threshold, "same": -1, "extra": -1, "remove_stopwords": "False"}) for k
+            in self.code_book.keys())
+
         threshold = start_threshold
         while threshold < end_threshold:
             for baseline_version in baseline_versions:
-                print("Starting to encode with threshold of {}".format(threshold))
-                encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book, tools=tools,
-                                                     threshold=threshold)
+                for remove_stopwords in [True, False]:
+                    stopwords_print_debug = "removing stopwords" if remove_stopwords else "keeping stopwords"
+                    print("Starting to encode with threshold of {} and {}".format(threshold, stopwords_print_debug))
 
-                dataframe_coded = reports_to_spreadsheet(reports=encoded_reports,
-                                                         path_to_output=self.paths["path to output"],
-                                                         type_of_report="coded", function=add_report_id)
+                    encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book,
+                                                         tools=tools,
+                                                         threshold=threshold, remove_stop_words=remove_stopwords)
 
-                dataframe_coded.to_csv(self.paths["csv path coded"], index=False)
+                    dataframe_coded = reports_to_spreadsheet(reports=encoded_reports,
+                                                             path_to_output=self.paths["path to output"],
+                                                             type_of_report="coded", function=add_report_id)
 
-                compare_file_path = "compare_{}_threshold_{}_{}.xlsx".format(baseline_version[-6:-4],
-                                                                             threshold, timestamp)
+                    dataframe_coded.to_csv(self.paths["csv path coded"], index=False)
 
-                output_excel_path = self.paths["path to output excel"] + compare_file_path
+                    compare_file_path = "compare_{}_threshold_{}_stopwords_{}_{}.xlsx".format(baseline_version[-6:-4],
+                                                                                              threshold,
+                                                                                              remove_stopwords,
+                                                                                              timestamp)
 
-                stats, column_accuracies = highlight_csv_differences(
-                    csv_path_coded=self.paths["csv path coded"],
-                    csv_path_human=self.paths["path to baselines"] + baseline_version,
-                    report_type=report_name[0].upper() + report_name[1:],
-                    output_excel_path=output_excel_path,
-                    print_debug=print_debug)
+                    output_excel_path = self.paths["path to output excel"] + compare_file_path
 
-                if print_debug:
-                    debug = "\nUsing spacy, and {} with upper threshold of {} -> Stats: {}"
-                    print(debug.format(baseline_version, threshold, stats))
-                col_acc = column_accuracies.items()
+                    stats, column_accuracies = highlight_csv_differences(
+                        csv_path_coded=self.paths["csv path coded"],
+                        csv_path_human=self.paths["path to baselines"] + baseline_version,
+                        report_type=report_name[0].upper() + report_name[1:],
+                        output_excel_path=output_excel_path,
+                        print_debug=print_debug)
 
-                num_same = {"num": "num_same", "threshold": threshold}
-                num_same.update({k: acc["num_same"] for k, acc in col_acc if len(acc.keys()) == 4})
+                    if print_debug:
+                        debug = "\nUsing spacy, and {} with upper threshold of {} and {} -> Stats: {}"
+                        print(debug.format(baseline_version, threshold, stopwords_print_debug, stats))
 
-                num_different = {"num": "num_different", "threshold": threshold}
-                num_different.update({k: acc["num_different"] for k, acc in col_acc if len(acc.keys()) == 4})
+                    col_acc = column_accuracies.items()
 
-                num_missing = {"num": "num_missing", "threshold": threshold}
-                num_missing.update({k: acc["num_missing"] for k, acc in col_acc if len(acc.keys()) == 4})
+                    num_same = {"num": "num_same", "threshold": threshold}
+                    num_same.update({k: acc["num_same"] for k, acc in col_acc if len(acc.keys()) == 4})
 
-                num_extra = {"num": "num_extra", "threshold": threshold}
-                num_extra.update({k: acc["num_extra"] for k, acc in col_acc if len(acc.keys()) == 4})
+                    num_different = {"num": "num_different", "threshold": threshold,
+                                     "remove_stopwords": str(remove_stopwords)}
+                    num_different.update({k: acc["num_different"] for k, acc in col_acc if len(acc.keys()) == 4})
 
-                num_acc = {"num": "(same + empty) / (all except extra)", "threshold": threshold}
-                num_acc.update(
-                    {k: acc["num_same"] / (acc["num_same"] + acc["num_different"] + acc["num_missing"]) for k, acc in
-                     col_acc if len(acc.keys()) == 4})
+                    num_missing = {"num": "num_missing", "threshold": threshold,
+                                   "remove_stopwords": str(remove_stopwords)}
+                    num_missing.update({k: acc["num_missing"] for k, acc in col_acc if len(acc.keys()) == 4})
 
-                training.append(num_same)
-                training.append(num_different)
-                training.append(num_missing)
-                training.append(num_extra)
-                training.append(num_acc)
+                    num_extra = {"num": "num_extra", "threshold": threshold, "remove_stopwords": str(remove_stopwords)}
+                    num_extra.update({k: acc["num_extra"] for k, acc in col_acc if len(acc.keys()) == 4})
 
-                for k, acc in column_accuracies.items():
-                    if len(acc.keys()) == 4:
-                        best = best_thresholds[k] if k in best_thresholds else None
-                        if best and best["same"] <= acc["num_same"] and best["extra"] >= acc["num_extra"]:
-                            best["threshold"] = threshold
-                            best["same"] = acc["num_same"]
-                            best["extra"] = acc["num_extra"]
+                    num_acc = {"num": "(same + empty) / (all except extra)", "threshold": threshold,
+                               "remove_stopwords": str(remove_stopwords)}
+                    num_acc.update(
+                        {k: acc["num_same"] / (acc["num_same"] + acc["num_different"] + acc["num_missing"]) for k, acc
+                         in
+                         col_acc if len(acc.keys()) == 4})
+
+                    training.append(num_same)
+                    training.append(num_different)
+                    training.append(num_missing)
+                    training.append(num_extra)
+                    training.append(num_acc)
+
+                    for k, acc in column_accuracies.items():
+                        if len(acc.keys()) == 4:
+                            best = best_thresholds[k] if k in best_thresholds else None
+                            if best and best["same"] <= acc["num_same"] and best["extra"] >= acc["num_extra"]:
+                                best["threshold"] = threshold
+                                best["same"] = acc["num_same"]
+                                best["extra"] = acc["num_extra"]
+                                best.update({"remove_stopwords": str(remove_stopwords)})
 
             threshold += threshold_interval
             threshold = round(threshold, 3)
@@ -310,8 +332,7 @@ class EMRPipeline:
             os.makedirs(output_path + "training/")
 
         best_thresholds_df = pd.DataFrame(list(best_thresholds.values()))
-        best_thresholds_df.to_excel(
-            output_path + "training/best_training_{}_{}.xlsx".format(self.report_name, timestamp))
+        best_thresholds_df.to_excel(output_path + "training/best_training.xlsx")
         training_df = pd.DataFrame(training)
         training_df.to_excel(output_path + "training/all_training_{}_{}.xlsx".format(self.report_name, timestamp))
-        return training_df
+        return best_thresholds_df
