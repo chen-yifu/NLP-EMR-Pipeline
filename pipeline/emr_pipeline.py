@@ -27,13 +27,13 @@ from pipeline.utils.utils import find_all_vocabulary, get_current_time
 
 class EMRPipeline:
     """
-    class representing a pipeline that can parse information from synoptic report
+    class representing a pipeline that can parse information from synoptic report.
     """
 
     def __init__(self, start: int, end: int, report_name: str, report_ending: str, report_type: ReportType,
                  other_paths=None):
         """
-        :param other_paths:
+        :param other_paths:                        any other paths the pipeline requires that is not in the paths func
         :param report_ending:                      the file endings of the reports, all must be same
         :param report_name:                        what is the type of the report? pathology, surgical, operative
         :param start:                              the first report id
@@ -48,7 +48,7 @@ class EMRPipeline:
         self.other_paths = other_paths
         self.paths = get_paths(report_name, other_paths)
         self.code_book = import_code_book(self.paths["path to code book"])
-        self.column_mappings = import_columns(self.paths["path to mappings"])
+        self.column_mappings = import_columns(self.paths["path to mappings"], self.paths["path to thresholds"])
         self.pickle_path = self.paths["pickle path"] if "pickle path" in self.paths else None
         self.paths_to_pdfs = get_input_paths(start, end, path_to_reports=self.paths["path to reports"],
                                              report_str="{} " + report_ending)
@@ -64,19 +64,19 @@ class EMRPipeline:
                      no_anchor_list: list = None, anchor_list: list = None, print_debug: bool = True,
                      max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
                      sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
-                     perform_autocorrect: bool = False,
-                     do_training: bool = False, start_threshold: float = 0.75, end_threshold: float = 1,
-                     threshold_interval: float = 0.05, remove_stop_words: bool = False) -> pd.DataFrame:
+                     perform_autocorrect: bool = False, do_training: bool = False,
+                     start_threshold: float = 0.75, end_threshold: float = 1,
+                     threshold_interval: float = 0.05) -> pd.DataFrame:
         """
         The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into
         the pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly
         alphabetical do not need to be preprocessed, as the pytesseract library will turn them into .txt files.
 
-        :param remove_stop_words:
-        :param threshold_interval:
-        :param do_training:
-        :param end_threshold:
-        :param start_threshold:
+        :param perform_autocorrect:            whether or not pipeline perform autocorrect on values based on medical vocab
+        :param threshold_interval:             what interval the pipeline should increment by in training
+        :param do_training:                    whether or not you want pipeline to do training
+        :param end_threshold:                  where to stop training
+        :param start_threshold:                base threshold for training
         :param single_line_list:               columns that have their values on the same line as the column (same line)
         :param use_separator_to_capture:       whether or not you want to use the separator for the regular pattern
         :param sep_list:                       columns that you want to use the separator to capture the value
@@ -180,32 +180,33 @@ class EMRPipeline:
                 print(training_df)
 
         encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book, tools=tools,
-                                             threshold=start_threshold, remove_stop_words=remove_stop_words)
+                                             input_threshold=start_threshold, training=do_training,
+                                             columns=self.column_mappings)
 
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=self.paths["path to output"],
                                                  type_of_report="coded", function=add_report_id)
 
         # this is just for now: to compare to the old encoding
-        if self.report_type is ReportType.NUMERICAL:
-            # https://regex101.com/r/RBWwBE/1
-            # https://regex101.com/r/Gk4xv9/1
-
-            dataframe_coded_old = encode_extractions_to_dataframe(df_raw, print_debug=print_debug)
-
-            dataframe_coded_old.to_csv("../data/output/pathology_results/csv_files/old_encoding.csv", index=False)
-
-            for baseline_version in baseline_versions:
-                stats = highlight_csv_differences(
-                    csv_path_coded="../data/output/pathology_results/csv_files/old_encoding.csv",
-                    csv_path_human=self.paths["path to baselines"] + baseline_version,
-                    output_excel_path="../data/output/pathology_results/excel_files/old_encoding_w_{}_{}.xlsx".format(
-                        baseline_version[-6:-4],
-                        timestamp),
-                    report_type="Pathology", print_debug=print_debug)
-
-                if print_debug:
-                    print("\nOld encoding code 🧬 compared to {} -> Pipeline process finished.\nStats:{}".format(
-                        baseline_version, stats))
+        # if self.report_type is ReportType.NUMERICAL:
+        #     # https://regex101.com/r/RBWwBE/1
+        #     # https://regex101.com/r/Gk4xv9/1
+        #
+        #     dataframe_coded_old = encode_extractions_to_dataframe(df_raw, print_debug=print_debug)
+        #
+        #     dataframe_coded_old.to_csv("../data/output/pathology_results/csv_files/old_encoding.csv", index=False)
+        #
+        #     for baseline_version in baseline_versions:
+        #         stats = highlight_csv_differences(
+        #             csv_path_coded="../data/output/pathology_results/csv_files/old_encoding.csv",
+        #             csv_path_human=self.paths["path to baselines"] + baseline_version,
+        #             output_excel_path="../data/output/pathology_results/excel_files/old_encoding_w_{}_{}.xlsx".format(
+        #                 baseline_version[-6:-4],
+        #                 timestamp),
+        #             report_type="Pathology", print_debug=print_debug)
+        #
+        #         if print_debug:
+        #             print("\nOld encoding code 🧬 compared to {} -> Pipeline process finished.\nStats:{}".format(
+        #                 baseline_version, stats))
 
         dataframe_coded.to_csv(self.paths["csv path coded"], index=False)
 
@@ -226,9 +227,7 @@ class EMRPipeline:
                 print_debug=print_debug)
 
             if print_debug:
-                print("\nUsing spacy, and {} with upper threshold of {} -> Stats: {}".format(baseline_version,
-                                                                                             start_threshold,
-                                                                                             stats))
+                print("\nUsing spacy, and compared with {} results are -> Stats: {}".format(baseline_version, stats))
 
         return autocorrect_df
 
@@ -249,7 +248,8 @@ class EMRPipeline:
         """
         training = []
         best_thresholds = dict(
-            (k, {"column": k, "threshold": start_threshold, "same": -1, "extra": -1, "remove_stopwords": "False"}) for k
+            (k, {"column": k, "threshold": start_threshold, "same": float("-inf"), "extra": float("+inf"),
+                 "remove_stopwords": "False"}) for k
             in self.code_book.keys())
 
         threshold = start_threshold
@@ -260,8 +260,9 @@ class EMRPipeline:
                     print("Starting to encode with threshold of {} and {}".format(threshold, stopwords_print_debug))
 
                     encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book,
-                                                         tools=tools,
-                                                         threshold=threshold, remove_stop_words=remove_stopwords)
+                                                         tools=tools, training=True,
+                                                         columns=self.column_mappings,
+                                                         input_threshold=threshold)
 
                     dataframe_coded = reports_to_spreadsheet(reports=encoded_reports,
                                                              path_to_output=self.paths["path to output"],

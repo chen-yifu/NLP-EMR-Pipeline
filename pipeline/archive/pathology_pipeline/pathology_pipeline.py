@@ -66,7 +66,7 @@ def run_pathology_pipeline(start,
     # Sean's extracted encodings
     csv_path_baseline_SY = path_to_baselines + "data_collection_baseline_SY.csv"
 
-    column_mappings = import_columns(path_to_mappings)
+    column_mappings = import_columns(path_to_mappings, "")
 
     # convert pdf reports to a list of reports with report.text and report.report_id
     reports_string_form = load_in_reports(start=start, end=end, paths_to_r=input_pdf_paths)
@@ -133,6 +133,5 @@ def run_pathology_pipeline(start,
         print(s)
 
     return stats, autocorrect_df
-
 
 # run_pathology_pipeline(start=101, end=156)

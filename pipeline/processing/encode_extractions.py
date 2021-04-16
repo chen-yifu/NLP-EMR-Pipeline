@@ -3,10 +3,13 @@ Encodes the extractions to numbers in code book.
 """
 
 from typing import Dict, List, Union, Tuple
+
 import pandas as pd
 import spacy
 from spacy.tokens import Span
+
 from pipeline.processing.report_specific_encoding import do_nothing
+from pipeline.utils.column import Column
 from pipeline.utils.encoding import Encoding
 from pipeline.utils.report import Report
 from pipeline.utils.value import Value
@@ -35,12 +38,13 @@ def get_entities(val: str, remove_stop_words: bool = True) -> List[Union[Span, s
     return entities if len(entities) > 0 else [val]
 
 
-def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], threshold: float, tools: dict = {},
-                       model: str = "en_core_sci_lg", print_debug: bool = True,
-                       remove_stop_words: bool = False) -> List[Report]:
+def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], input_threshold: float,
+                       columns: Dict[str, Column], tools: dict = {}, model: str = "en_core_sci_lg",
+                       training: bool = False, print_debug: bool = True) -> List[Report]:
     """
-    :param remove_stop_words:
-    :param threshold:
+    :param input_threshold:
+    :param training:
+    :param columns:
     :param print_debug:
     :param reports:
     :param code_book:
@@ -58,8 +62,16 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
         encoded_extractions_dict = {}
         for human_col, encodings in code_book.items():
             done_encoding = False
+            column_info = columns[human_col] if human_col in columns else None
+            col_threshold = column_info.spacy_threshold if human_col in columns else .75
+            remove_stop_words = column_info.remove_stopwords if human_col in columns else False
 
             def is_val_medical(val_to_encode: List[Span], least_neg: float = .65) -> bool:
+                """
+                :param val_to_encode:
+                :param least_neg:
+                :return:
+                """
                 negations = ["not applicable", "n/a", "na", "no"]
                 for negation in negations:
                     n_doc = nlp(negation)
@@ -79,21 +91,24 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                 num = ""
                 found = False
                 pipeline_val_str_to_return = ""
+                threshold = input_threshold if training else col_threshold
                 # init this to very low number
                 alpha = float("-inf")
                 for encoding in encodings:
                     for encoding_val in encoding.val:
                         code_book_doc = nlp(encoding_val)
                         for pipeline_val in val_to_encode:
-                            pipeline_val_str = pipeline_val.text if isinstance(pipeline_val, Span) else pipeline_val
+                            pipeline_val_str = pipeline_val.text.lower() if isinstance(pipeline_val,
+                                                                                       Span) else pipeline_val.lower()
                             pipeline_doc = nlp(pipeline_val_str.lower())
                             sim = pipeline_doc.similarity(code_book_doc)
                             if sim > alpha and sim > threshold:
                                 alpha = sim
                                 num = str(encoding.num)
                                 found = True
-                                pipeline_val_str_to_return = pipeline_val_str
-                            if alpha == 1 or encoding_val.lower() in pipeline_val_str:
+                                pipeline_val_str_to_return = pipeline_val_str.lower()
+                            if alpha == 1 or encoding_val.lower() in pipeline_val_str.lower():
+                                # and sim > threshold
                                 return True, str(encoding.num), 1
                 if found:
                     return found, num, alpha
