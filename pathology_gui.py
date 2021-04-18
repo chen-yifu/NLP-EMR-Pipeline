@@ -4,9 +4,13 @@ from tkinter import ttk
 from pandastable import Table
 
 # fonts
-from pipeline.archive.pathology_pipeline.pathology_pipeline import run_pathology_pipeline
+from pipeline.emr_pipeline import EMRPipeline
+from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.processing.columns import load_excluded_columns_as_df, load_excluded_columns_as_list, \
     save_excluded_columns
+from pipeline.processing.report_specific_encoding import *
+from pipeline.utils.report_type import ReportType
+from pipeline.utils.utils import get_full_path
 
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
@@ -29,7 +33,7 @@ substitution_cost = 1
 resolve_ocr = True
 
 
-class SampleApp(tk.Tk):
+class PathologyEMRApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
 
@@ -39,7 +43,7 @@ class SampleApp(tk.Tk):
 
         # set color theme
         style = ttk.Style(self)
-        style.theme_use('aqua')
+        # style.theme_use('aqua')
 
         # the container is where we'll stack a bunch of frames
         # on top of each other, then the one we want visible
@@ -117,12 +121,42 @@ class StartPage(tk.Frame):
                 widget.destroy()
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
-        controller.stats, controller.auto_correct_df = run_pathology_pipeline(start=101, end=156,
-                                                                              print_debug=print_debug,
-                                                                              max_edit_distance_missing=max_edit_distance_missing,
-                                                                              max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                                              substitution_cost=substitution_cost,
-                                                                              resolve_ocr=resolve_ocr)
+        pathology_pipeline = EMRPipeline(
+            start=101, end=156, report_name="pathology", report_ending="Path_Redacted.pdf",
+            report_type=ReportType.NUMERICAL,
+            other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data"),
+                         "path to stages": get_full_path("data/utils/stages.csv")})
+
+        controller.stats, controller.auto_correct_df = pathology_pipeline.run_pipeline(
+            sep_list=["invasive carcinoma"],
+            baseline_versions=[
+                "pathology_VZ.csv"],
+            anchor=r"^ *-* *",
+            add_anchor=True,
+            multi_line_cols=["SPECIMEN",
+                             "Treatment Effect",
+                             "Margins",
+                             "pathologic stage",
+                             "comment(s)",
+                             "Part(s) Involved:"],
+            cols_to_skip=["study #",
+                          "specimen",
+                          "treatment effect",
+                          "margins",
+                          "pathologic stage",
+                          "comment(s)",
+                          "part(s) involved",
+                          "nottingham score"],
+            tools={
+                "pathologic stage": find_pathologic_stage,
+                "nottingham_score": nottingham_score,
+                "process_mm_val": process_mm_val,
+                "number_of_foci": number_of_foci,
+                "tumour_site": tumour_site,
+                "do_nothing": do_nothing,
+                "archtectural_patterns": archtectural_patterns},
+            do_training=False)
+
         controller.auto_correct_df = controller.auto_correct_df.sort_values(
             ["Edit Distance", "Original Column", "Corrected Column"], ascending=[False, True, True])
 
@@ -311,8 +345,3 @@ class PageAutocorrect(tk.Frame):
                             command=lambda: self.close_table_and_save(controller,
                                                                       [self.auto_table_holder, self.excl_table_holder]))
         button.place(anchor=tk.N, relx=0.5, y=700, width=120)
-
-
-app = SampleApp()
-app.geometry("1280x740")
-app.mainloop()

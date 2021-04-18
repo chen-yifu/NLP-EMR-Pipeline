@@ -1,14 +1,13 @@
 """
 🧬 file that contains the function that runs the emr pipeline
 """
-from typing import List
+from typing import List, Any, Tuple
 
 import os
 import pandas as pd
 
 from pipeline.archive.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, add_report_id
 from pipeline.archive.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
-from pipeline.archive.pathology_pipeline.processing.encode_extractions import encode_extractions_to_dataframe
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
@@ -65,8 +64,8 @@ class EMRPipeline:
                      max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
                      sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
                      perform_autocorrect: bool = False, do_training: bool = False,
-                     start_threshold: float = 0.75, end_threshold: float = 1,
-                     threshold_interval: float = 0.05) -> pd.DataFrame:
+                     start_threshold: float = 0.7, end_threshold: float = 1,
+                     threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
         """
         The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into
         the pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly
@@ -186,28 +185,6 @@ class EMRPipeline:
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=self.paths["path to output"],
                                                  type_of_report="coded", function=add_report_id)
 
-        # this is just for now: to compare to the old encoding
-        # if self.report_type is ReportType.NUMERICAL:
-        #     # https://regex101.com/r/RBWwBE/1
-        #     # https://regex101.com/r/Gk4xv9/1
-        #
-        #     dataframe_coded_old = encode_extractions_to_dataframe(df_raw, print_debug=print_debug)
-        #
-        #     dataframe_coded_old.to_csv("../data/output/pathology_results/csv_files/old_encoding.csv", index=False)
-        #
-        #     for baseline_version in baseline_versions:
-        #         stats = highlight_csv_differences(
-        #             csv_path_coded="../data/output/pathology_results/csv_files/old_encoding.csv",
-        #             csv_path_human=self.paths["path to baselines"] + baseline_version,
-        #             output_excel_path="../data/output/pathology_results/excel_files/old_encoding_w_{}_{}.xlsx".format(
-        #                 baseline_version[-6:-4],
-        #                 timestamp),
-        #             report_type="Pathology", print_debug=print_debug)
-        #
-        #         if print_debug:
-        #             print("\nOld encoding code 🧬 compared to {} -> Pipeline process finished.\nStats:{}".format(
-        #                 baseline_version, stats))
-
         dataframe_coded.to_csv(self.paths["csv path coded"], index=False)
 
         for baseline_version in baseline_versions:
@@ -229,7 +206,7 @@ class EMRPipeline:
             if print_debug:
                 print("\nUsing spacy, and compared with {} results are -> Stats: {}".format(baseline_version, stats))
 
-        return autocorrect_df
+        return stats, autocorrect_df
 
     def train_pipeline(self, baseline_versions: List[str], end_threshold: float, print_debug: bool, report_name: str,
                        reports_with_values: List[Report], start_threshold: float, threshold_interval: float,
@@ -248,14 +225,17 @@ class EMRPipeline:
         """
         training = []
         best_thresholds = dict(
-            (k, {"column": k, "threshold": start_threshold, "same": float("-inf"), "extra": float("+inf"),
-                 "remove_stopwords": "False"}) for k
-            in self.code_book.keys())
+            (k, {"column": k,
+                 "lowest best threshold": start_threshold,
+                 "highest best threshold": start_threshold,
+                 "threshold": start_threshold,
+                 "same": float("-inf"), "extra": float("+inf"),
+                 "remove_stopwords": "False"}) for k in self.code_book.keys())
 
         threshold = start_threshold
         while threshold < end_threshold:
             for baseline_version in baseline_versions:
-                for remove_stopwords in [True, False]:
+                for remove_stopwords in [False]:
                     stopwords_print_debug = "removing stopwords" if remove_stopwords else "keeping stopwords"
                     print("Starting to encode with threshold of {} and {}".format(threshold, stopwords_print_debug))
 
@@ -321,10 +301,20 @@ class EMRPipeline:
                         if len(acc.keys()) == 4:
                             best = best_thresholds[k] if k in best_thresholds else None
                             if best and best["same"] <= acc["num_same"] and best["extra"] >= acc["num_extra"]:
-                                best["threshold"] = threshold
-                                best["same"] = acc["num_same"]
-                                best["extra"] = acc["num_extra"]
-                                best.update({"remove_stopwords": str(remove_stopwords)})
+                                # if the same is the same
+                                if best["same"] == acc["num_same"] and best["extra"] == acc["num_extra"]:
+                                    best["highest best threshold"] = threshold
+                                    best["threshold"] = round(((best["highest best threshold"] + best[
+                                        "lowest best threshold"]) / 2), 2)
+                                    best.update({"remove_stopwords": str(remove_stopwords)})
+                                # if same has increased
+                                elif best["same"] < acc["num_same"] and best["extra"] > acc["num_extra"]:
+                                    best["same"] = acc["num_same"]
+                                    best["extra"] = acc["num_extra"]
+                                    best["highest best threshold"] = threshold
+                                    best["lowest best threshold"] = threshold
+                                    best["threshold"] = threshold
+                                    best.update({"remove_stopwords": str(remove_stopwords)})
 
             threshold += threshold_interval
             threshold = round(threshold, 3)

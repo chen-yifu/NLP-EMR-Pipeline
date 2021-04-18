@@ -62,8 +62,7 @@ def load_excluded_columns_as_list(pickle_path: str = "data/utils/excluded_autoco
     return excl_list
 
 
-def save_excluded_columns(list_of_cols,
-                          path="pathology_pipeline/processing/excluded_autocorrect_column_pairs.data"):
+def save_excluded_columns(list_of_cols, path="data/utils/excluded_autocorrect_column_pairs.data"):
     """
     Given a list of columns, save the excluded columns to a pickle file locally
     :param list_of_cols:        list of str;        list of columns to be excluded

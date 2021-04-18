@@ -89,4 +89,4 @@ def get_project_root():
 
 def get_full_path(path):
     full_path = os.path.join(get_project_root(), path)
-    return "../" + path
+    return path

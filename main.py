@@ -1,10 +1,12 @@
 """
 main file to invoke methods
 """
+
+from operative_gui import OperativeEMRApp
+from pathology_gui import PathologyEMRApp
 from pipeline.emr_pipeline import EMRPipeline
-from pipeline.processing.report_specific_encoding import nottingham_score, process_mm_val, archtectural_patterns, \
-    tumour_site, number_of_foci, do_nothing, immediate_reconstruction_mentioned
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
+from pipeline.processing.report_specific_encoding import *
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import get_full_path
 
@@ -42,16 +44,32 @@ def main():
     operative_pipeline = EMRPipeline(start=1, end=50, report_name="operative", report_ending="OR_Redacted.pdf",
                                      report_type=ReportType.ALPHA)
 
-    operative_pipeline.run_pipeline(baseline_versions=["operative_VZ.csv"], anchor=r"^\d*\.* *",
-                                    single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
-                                    use_separator_to_capture=True,
-                                    add_anchor=True,
-                                    cols_to_skip=["immediate reconstruction mentioned", "laterality",
-                                                  "reconstruction mentioned"],
-                                    contained_capture_list=["breast incision type", "immediate reconstruction type"],
-                                    no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
-                                                    "localization"],
-                                    tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
-                                    sep_list=["surgical indication", "immediate reconstruction type"],
-                                    perform_autocorrect=True,
-                                    do_training=False)
+    operative_pipeline.run_pipeline(
+        baseline_versions=["operative_VZ.csv"], anchor=r"^\d*\.* *",
+        single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
+        use_separator_to_capture=True,
+        add_anchor=True,
+        cols_to_skip=["immediate reconstruction mentioned", "laterality",
+                      "reconstruction mentioned"],
+        contained_capture_list=["breast incision type", "immediate reconstruction type"],
+        no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
+                        "localization"],
+        tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
+        sep_list=["surgical indication", "immediate reconstruction type"],
+        perform_autocorrect=True,
+        do_training=False)
+
+
+def pathology_gui():
+    pathology_app = PathologyEMRApp()
+    pathology_app.geometry("1280x740")
+    pathology_app.mainloop()
+
+
+pathology_gui()
+
+
+def operative_gui():
+    operative_app = OperativeEMRApp()
+    operative_app.geometry("1280x740")
+    operative_app.mainloop()

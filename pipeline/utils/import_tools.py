@@ -75,13 +75,12 @@ def import_pdf_human_cols_tuples(pdf_human_csv: str, keep_punc: bool = False) ->
     pdf_cols_human_cols_list = []
     pdf_cols_human_cols = pd.read_csv(pdf_human_csv)
     for index, row in pdf_cols_human_cols.iterrows():
-        pdf_cols = row[0]
-        human_col = row[2]
-        pdf_cols_list = pdf_cols.split(",")
+        pdf_cols = str(row[0])
+        human_col = row[1]
         if keep_punc:
-            cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
+            cleaned_pdf_col_list = pdf_cols.strip()
         else:
-            cleaned_pdf_col_list = [p.translate(table).strip() for p in pdf_cols_list]
+            cleaned_pdf_col_list = pdf_cols.translate(table).strip()
         for pdf_col in cleaned_pdf_col_list:
             pdf_cols_human_cols_list.append((pdf_col, human_col))
     return pdf_cols_human_cols_list
@@ -116,12 +115,11 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, skip=None, p
         else:
             primary_pdf_cols_list = extract_cols(row[primary_row_index])
             alternative_pdf_col_list = extract_cols(row[alternative_row_index])
-            pdf_cols_human_cols_dict_w_column[human_col] = Column(
-                human_col=human_col,
-                primary_report_col=primary_pdf_cols_list,
-                alternative_report_col=alternative_pdf_col_list,
-                threshold=column_thresholds.iloc[[index_t]]["threshold"][index_t] if index_t != -1 else .75,
-                remove_stopwords=column_thresholds.iloc[[index_t]]["remove_stopwords"][
-                    index_t] if index_t != -1 else False)
+            pdf_cols_human_cols_dict_w_column[human_col] = Column(human_col=human_col,
+                                                                  primary_report_col=primary_pdf_cols_list,
+                                                                  alternative_report_col=alternative_pdf_col_list,
+                                                                  threshold=
+                                                                  column_thresholds.iloc[[index_t]]["threshold"][
+                                                                      index_t] if index_t != -1 else .75)
 
     return pdf_cols_human_cols_dict_w_column
