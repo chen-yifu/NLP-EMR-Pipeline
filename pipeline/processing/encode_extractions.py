@@ -9,12 +9,24 @@ import spacy
 from spacy.tokens import Span
 
 from pipeline.processing.report_specific_encoding import do_nothing
-from pipeline.utils.column import Column
+from pipeline.utils.column import Column, table
 from pipeline.utils.encoding import Encoding
 from pipeline.utils.report import Report
 from pipeline.utils.value import Value
 
 nlp = spacy.load("en_core_sci_lg")
+
+
+def clean_txt(val: str) -> str:
+    if type(val) is float or pd.isna(val) or val is None:
+        return ""
+    is_num = any([True for l in val if l.isnumeric()])
+    if is_num:
+        return val
+    else:
+        no_punc = val.translate(table).strip()
+        remove_letters = " ".join([w for w in no_punc.split() if len(w) > 1])
+        return remove_letters
 
 
 def get_entities(val: str, remove_stop_words: bool = True) -> List[Union[Span, str]]:
@@ -23,10 +35,9 @@ def get_entities(val: str, remove_stop_words: bool = True) -> List[Union[Span, s
     :param val:
     :return:
     """
-    if val is None or pd.isna(val):
+    # val = clean_txt(val)
+    if type(val) is float or pd.isna(val) or val is None:
         return [""]
-    if type(val) is float or pd.isna(val):
-        val = ""
     if remove_stop_words:
         doc = nlp(val)
         clean_token = []

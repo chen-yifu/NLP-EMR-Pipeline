@@ -66,10 +66,10 @@ def pathology_gui():
     pathology_app.mainloop()
 
 
-pathology_gui()
-
-
 def operative_gui():
     operative_app = OperativeEMRApp()
     operative_app.geometry("1280x740")
     operative_app.mainloop()
+
+
+operative_gui()

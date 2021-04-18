@@ -56,7 +56,9 @@ def nottingham_score(encodings_so_far: Dict[str, str] = {}) -> str:
         else:
             mitotic = 0
 
-    return str(glandular + nuclear_p + mitotic)
+    score = glandular + nuclear_p + mitotic
+
+    return str(score) if score > 0 else ""
 
 
 def process_mm_val(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
