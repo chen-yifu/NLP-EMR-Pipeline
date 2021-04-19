@@ -8,7 +8,7 @@ import pandas as pd
 import spacy
 from spacy.tokens import Span
 
-from pipeline.processing.report_specific_encoding import do_nothing
+from pipeline.processing.specific_functions import *
 from pipeline.utils.column import Column, table
 from pipeline.utils.encoding import Encoding
 from pipeline.utils.report import Report
@@ -50,9 +50,10 @@ def get_entities(val: str, remove_stop_words: bool = True) -> List[Union[Span, s
 
 
 def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], input_threshold: float,
-                       columns: Dict[str, Column], tools: dict = {}, model: str = "en_core_sci_lg",
-                       training: bool = False, print_debug: bool = True) -> List[Report]:
+                       columns: Dict[str, Column], filter_values: bool, tools: dict = {}, model: str = "en_core_sci_lg",
+                       training: bool = False, print_debug: bool = True, ) -> List[Report]:
     """
+    :param filter_values:
     :param input_threshold:
     :param training:
     :param columns:
@@ -171,7 +172,7 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     elif alt_alpha > primary_alpha and found_alt:
                         encoded_extractions_dict[human_col] = alt_encoded_value
                     else:
-                        should_return_val = is_val_medical(primary_entities)
+                        should_return_val = is_val_medical(primary_entities) if filter_values else True
                         encoded_extractions_dict[human_col] = primary_val if should_return_val else ""
                 except KeyError:
                     print("This should of not occurred.")

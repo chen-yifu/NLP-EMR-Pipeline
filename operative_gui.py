@@ -7,7 +7,7 @@ from pandastable import Table
 from pipeline.emr_pipeline import EMRPipeline
 from pipeline.processing.columns import load_excluded_columns_as_df, load_excluded_columns_as_list, \
     save_excluded_columns
-from pipeline.processing.report_specific_encoding import immediate_reconstruction_mentioned
+from pipeline.processing.specific_functions import immediate_reconstruction_mentioned
 from pipeline.utils.report_type import ReportType
 
 EXTRA_SMALL_FONT = ("Helvetica", 15)

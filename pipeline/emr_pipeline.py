@@ -63,7 +63,7 @@ class EMRPipeline:
                      no_anchor_list: list = None, anchor_list: list = None, print_debug: bool = True,
                      max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
                      sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
-                     perform_autocorrect: bool = False, do_training: bool = False,
+                     perform_autocorrect: bool = False, do_training: bool = False, filter_values: bool = False,
                      start_threshold: float = 0.7, end_threshold: float = 1,
                      threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
         """
@@ -136,6 +136,8 @@ class EMRPipeline:
             anchor_list=anchor_list,
             is_anchor=add_anchor)
 
+        print(synoptic_regex)
+
         # this is the str of PDFs that do not contain any Synoptic Report section
         without_synoptics_strs_and_ids = [report for report in cleaned_emr if report.report_id in ids_without_synoptic]
 
@@ -174,18 +176,20 @@ class EMRPipeline:
         if do_training:
             training_df = self.train_pipeline(
                 baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
-                start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"])
+                start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"], filter_values)
             if print_debug:
                 print(training_df)
 
         encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book, tools=tools,
                                              input_threshold=start_threshold, training=do_training,
-                                             columns=self.column_mappings)
+                                             columns=self.column_mappings, filter_values=filter_values)
 
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=self.paths["path to output"],
                                                  type_of_report="coded", function=add_report_id)
 
         dataframe_coded.to_csv(self.paths["csv path coded"], index=False)
+
+        stats = None
 
         for baseline_version in baseline_versions:
             compare_file_path = "compare_{}_{}_corD{}_misD{}_subC{}.xlsx".format(baseline_version[-6:-4],
@@ -210,7 +214,7 @@ class EMRPipeline:
 
     def train_pipeline(self, baseline_versions: List[str], end_threshold: float, print_debug: bool, report_name: str,
                        reports_with_values: List[Report], start_threshold: float, threshold_interval: float,
-                       timestamp: str, tools: dict, output_path: str) -> pd.DataFrame:
+                       timestamp: str, tools: dict, output_path: str, filter_values: bool) -> pd.DataFrame:
         """
         :param output_path:
         :param baseline_versions:
@@ -242,7 +246,8 @@ class EMRPipeline:
                     encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book,
                                                          tools=tools, training=True,
                                                          columns=self.column_mappings,
-                                                         input_threshold=threshold)
+                                                         input_threshold=threshold,
+                                                         filter_values=filter_values)
 
                     dataframe_coded = reports_to_spreadsheet(reports=encoded_reports,
                                                              path_to_output=self.paths["path to output"],
