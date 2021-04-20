@@ -200,7 +200,7 @@ class EMRPipeline:
 
         if not baseline_versions:
             print("Reports have finished encoding.")
-            return
+            return "Reports have finished encoding, no stats.", autocorrect_df
 
         for baseline_version in baseline_versions:
             compare_file_path = "compare_{}_{}_corD{}_misD{}_subC{}.xlsx".format(baseline_version[-6:-4],

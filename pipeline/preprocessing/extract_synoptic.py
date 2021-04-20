@@ -73,18 +73,26 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
 
     def split_report_find_left_right_operative() -> List[Report]:
         left_breast = extract_section(left_operative_report, uncleaned_txt)
+        left_text = left_breast[0] if len(left_breast) > 0 else ""
+        left_text = left_text[0] if isinstance(left_text, tuple) else left_text
         right_breast = extract_section(right_operative_report, uncleaned_txt)
+        right_text = right_breast[0] if len(right_breast) > 0 else ""
+        right_text = right_text[0] if isinstance(right_text, tuple) else right_text
 
-        return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
-                                       report_id=report_id, lat="L",
-                                       is_bilateral=True, list_of_regex=list_of_regex,
-                                       report_type=report_type) + extract_synoptic_report(
-            right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="R", is_bilateral=True,
-            list_of_regex=list_of_regex,
-            report_type=report_type)
+        return [Report(text=left_text, report_id=report_id + "L", laterality="left", report_type=report_type),
+                Report(text=right_text, report_id=report_id + "R", laterality="right", report_type=report_type)]
+
+        # return extract_synoptic_report(left_breast[0] if len(left_breast) > 0 else "",
+        #                                report_id=report_id, lat="L",
+        #                                is_bilateral=True, list_of_regex=list_of_regex,
+        #                                report_type=report_type) + extract_synoptic_report(
+        #     right_breast[0] if len(right_breast) > 0 else "", report_id=report_id, lat="R", is_bilateral=True,
+        #     list_of_regex=list_of_regex,
+        #     report_type=report_type)
 
     extracted_sections = []
     for regex in list_of_regex:
+        uncleaned_txt = uncleaned_txt if isinstance(uncleaned_txt, str) else uncleaned_txt[0]
         extracted_sections.append(extract_section(regex, uncleaned_txt))
 
     if all(len(single_section) == 0 for single_section in extracted_sections):
@@ -101,6 +109,7 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
             return [Report(text=merged_extractions[0], report_type=report_type, report_id=report_id)]
 
     elif any(len(single_section) > 1 for single_section in extracted_sections):
+        print(report_id)
         if report_type is ReportType.ALPHA:
             return split_report_find_left_right_operative()
         elif report_type is ReportType.NUMERICAL:
