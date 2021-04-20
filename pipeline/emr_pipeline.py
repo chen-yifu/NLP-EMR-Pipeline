@@ -64,7 +64,7 @@ class EMRPipeline:
                      max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
                      sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
                      perform_autocorrect: bool = False, do_training: bool = False, filter_values: bool = False,
-                     start_threshold: float = 0.7, end_threshold: float = 1,
+                     start_threshold: float = 0.7, end_threshold: float = 1, extraction_tools: list = None,
                      threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
         """
         The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into
@@ -103,6 +103,7 @@ class EMRPipeline:
         no_anchor_list = no_anchor_list if no_anchor_list is not None else []
         multi_line_cols = multi_line_cols if multi_line_cols is not None else []
         single_line_list = single_line_list if single_line_list is not None else []
+        extraction_tools = extraction_tools if extraction_tools is not None else []
         timestamp = get_current_time()
 
         # try to read in the reports. if there is exception this is because the pdfs have to be turned into text
@@ -165,7 +166,8 @@ class EMRPipeline:
             regex_mappings=regex_variable_mappings,
             pickle_path=self.pickle_path,
             medical_vocabulary=medical_vocabulary,
-            perform_autocorrect=perform_autocorrect)
+            perform_autocorrect=perform_autocorrect,
+            extraction_tools=extraction_tools)
 
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings)
 
@@ -216,6 +218,7 @@ class EMRPipeline:
                        reports_with_values: List[Report], start_threshold: float, threshold_interval: float,
                        timestamp: str, tools: dict, output_path: str, filter_values: bool) -> pd.DataFrame:
         """
+        :param filter_values:
         :param output_path:
         :param baseline_versions:
         :param end_threshold:

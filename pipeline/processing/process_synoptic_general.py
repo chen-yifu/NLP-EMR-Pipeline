@@ -172,8 +172,9 @@ def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of
 def process_synoptic_section(synoptic_report_str: str, report_id: str, report_type: ReportType, pickle_path: str,
                              column_mappings: Dict[str, Column], list_of_dict_with_stats: List[dict],
                              regex_mappings: Dict[str, List[str]], specific_regex: str, general_regex: str,
-                             tools: dict = {}, print_debug: bool = True, max_edit_distance_missing=5,
-                             max_edit_distance_autocorrect=5, substitution_cost=2, skip_threshold=0.95) -> dict:
+                             tools: dict = {}, print_debug: bool = True, extraction_tools: list = [],
+                             max_edit_distance_missing=5, max_edit_distance_autocorrect=5,
+                             substitution_cost=2, skip_threshold=0.95) -> dict:
     """
     :param pickle_path:                        path to pickled data via GUI
     :param column_mappings:                    human columns and report columns where that inforamtion can be found
@@ -244,7 +245,7 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
 
     generic_pairs = get_generic_extraction_regex(synoptic_report_str, general_regex, is_text)
 
-    for func in [no_lymph_node, negative_for_dcis]:
+    for func in extraction_tools:
         func(synoptic_report_str, result, generic_pairs)
 
     # if too many columns are missing, we probably isolated a section with unexpected template,
@@ -281,10 +282,11 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
 
 
 def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings: Dict[str, Column], specific_regex: str,
-                              general_regex: str, regex_mappings: Dict[str, List[str]], pickle_path, tools: dict = {},
-                              print_debug=True, max_edit_distance_missing: int = 5,
+                              general_regex: str, regex_mappings: Dict[str, List[str]], pickle_path,
+                              tools: dict = {}, print_debug=True, max_edit_distance_missing: int = 5,
                               max_edit_distance_autocorrect: int = 5, substitution_cost: int = 2,
-                              medical_vocabulary: List[str] = [], perform_autocorrect: bool = False) -> Tuple[
+                              extraction_tools: list = [], medical_vocabulary: List[str] = [],
+                              perform_autocorrect: bool = False) -> Tuple[
     List[Report], pd.DataFrame]:
     """
     process and extract data from a list of synoptic reports by using regular expression
@@ -339,12 +341,19 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     for report in unfiltered_reports:
         cleaned_text = report.text.strip().replace(" is ", ":")
 
-        report.extractions = process_synoptic_section(cleaned_text, report.report_id, report.report_type, pickle_path,
-                                                      column_mappings, list_of_dict_with_stats,
-                                                      regex_mappings, specific_regex, general_regex, tools,
+        report.extractions = process_synoptic_section(cleaned_text, report.report_id, report.report_type,
+                                                      pickle_path=pickle_path,
+                                                      column_mappings=column_mappings,
+                                                      list_of_dict_with_stats=list_of_dict_with_stats,
+                                                      regex_mappings=regex_mappings,
+                                                      specific_regex=specific_regex,
+                                                      general_regex=general_regex,
+                                                      tools=tools,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                      substitution_cost=substitution_cost)
+                                                      substitution_cost=substitution_cost,
+                                                      extraction_tools=extraction_tools)
+
         report.extractions.update({"laterality": report.laterality})
         report.extractions = {" ".join(k.translate(table).lower().strip().split()): autocorrect(v) for k, v in
                               report.extractions.items()} if perform_autocorrect else {
