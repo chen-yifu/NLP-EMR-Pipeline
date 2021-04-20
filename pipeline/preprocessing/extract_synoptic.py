@@ -124,6 +124,9 @@ def clean_up_reports(emr_text: List[Report]) -> Tuple[List[Report], List[str]]:
         if isinstance(extracted_reports, str):
             ids_without_synoptic.append(extracted_reports)
         else:
-            for cleaned_report in extracted_reports:
-                report_and_id.append(cleaned_report)
+            if extracted_reports:
+                for cleaned_report in extracted_reports:
+                    report_and_id.append(cleaned_report)
+            else:
+                report_and_id.append(Report(text=text, report_id=report.report_id, report_type=report.report_type))
     return report_and_id, ids_without_synoptic

@@ -50,12 +50,12 @@ class EMRPipeline:
         self.column_mappings = import_columns(self.paths["path to mappings"], self.paths["path to thresholds"])
         self.pickle_path = self.paths["pickle path"] if "pickle path" in self.paths else None
         self.paths_to_pdfs = get_input_paths(start, end, path_to_reports=self.paths["path to reports"],
-                                             report_str="{} " + report_ending)
+                                             report_str="{}" + report_ending)
         self.report_type = report_type
         if report_type is ReportType.ALPHA:
             report_ending = report_ending[:-3] + "txt"
         self.paths_to_reports_to_read_in = get_input_paths(start, end, path_to_reports=self.paths["path to reports"],
-                                                           report_str="{} " + report_ending)
+                                                           report_str="{}" + report_ending)
 
     def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = None,
                      separator: str = ":", use_separator_to_capture: bool = False, add_anchor: bool = False,
@@ -115,8 +115,13 @@ class EMRPipeline:
         medical_vocabulary = find_all_vocabulary([report.text for report in reports_loaded_in_str],
                                                  print_debug=print_debug, min_freq=int((self.end - self.start) / 2) - 1)
 
+        try:
+            medical_vocabulary.remove("ths")
+        except:
+            pass
+
         pd.DataFrame(medical_vocabulary).to_csv(
-            self.paths["path to utils"] + "medical_vocabulary_{}_{}".format(self.report_name, timestamp))
+            self.paths["path to utils"] + "medical_vocabulary_{}".format(self.report_name))
 
         if resolve_ocr:
             reports_loaded_in_str = preprocess_resolve_ocr_spaces(reports_loaded_in_str, print_debug=print_debug,
@@ -192,6 +197,10 @@ class EMRPipeline:
         dataframe_coded.to_csv(self.paths["csv path coded"], index=False)
 
         stats = None
+
+        if not baseline_versions:
+            print("Reports have finished encoding.")
+            return
 
         for baseline_version in baseline_versions:
             compare_file_path = "compare_{}_{}_corD{}_misD{}_subC{}.xlsx".format(baseline_version[-6:-4],

@@ -24,3 +24,4 @@ data/output/pathology_results/old
 data/output/operative_results/old
 data/output/operative_results/training
 data/output/pathology_results/training
+data/input/validation

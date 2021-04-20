@@ -49,6 +49,26 @@ def get_entities(val: str, remove_stop_words: bool = True) -> List[Union[Span, s
     return entities if len(entities) > 0 else [val]
 
 
+def contains_word(encoding_val: str, pipeline_val_str: str, alpha: float, threshold: float) -> bool:
+    if encoding_val in pipeline_val_str:
+        if encoding_val == pipeline_val_str:
+            return True
+        if alpha < threshold:
+            start_i = pipeline_val_str.find(encoding_val)
+            end_i = start_i + len(encoding_val) - 1
+            if start_i != 0 and end_i != len(pipeline_val_str) - 1:
+                if not pipeline_val_str[start_i - 1].isalpha() and not pipeline_val_str[end_i + 1].isalpha():
+                    return True
+            else:
+                if start_i == 0:
+                    if pipeline_val_str[end_i + 1] == " ":
+                        return True
+                if end_i == len(pipeline_val_str) - 1:
+                    if pipeline_val_str[start_i - 1] == " ":
+                        return True
+    return False
+
+
 def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], input_threshold: float,
                        columns: Dict[str, Column], filter_values: bool, tools: dict = {}, model: str = "en_core_sci_lg",
                        training: bool = False, print_debug: bool = True, ) -> List[Report]:
@@ -104,6 +124,7 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                 found = False
                 pipeline_val_str_to_return = ""
                 threshold = input_threshold if training else col_threshold
+                total = 1
                 # init this to very low number
                 alpha = float("-inf")
                 for encoding in encodings:
@@ -119,7 +140,9 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                                 num = str(encoding.num)
                                 found = True
                                 pipeline_val_str_to_return = pipeline_val_str.lower()
-                            if alpha == 1 or encoding_val.lower() in pipeline_val_str.lower():
+                            if alpha == 1 or contains_word(encoding_val.lower().strip(),
+                                                           pipeline_val_str.lower().strip(), alpha,
+                                                           threshold):
                                 # and sim > threshold
                                 return True, str(encoding.num), 1
                 if found:
