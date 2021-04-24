@@ -240,8 +240,13 @@ def calculate_statistics(df_coded: pd.DataFrame, df_human: pd.DataFrame,
 
     # get reports that exist in baseline but not in pipeline
     report_ids_missing_from_pipeline = list(baseline_report_ids - pipeline_report_ids)
-    report_ids_missing_from_pipeline_no_laterality = ["".join([l for l in list(report_id) if not l.isalpha()]) for
-                                                      report_id in report_ids_missing_from_pipeline]
+    report_ids_missing_from_pipeline_no_laterality = []
+    for report_id in report_ids_missing_from_pipeline:
+        report_id = str(report_id)
+        report_id = "".join([l for l in list(report_id) if not l.isalpha()])
+        report_ids_missing_from_pipeline_no_laterality.append(report_id)
+    # report_ids_missing_from_pipeline_no_laterality = ["".join([l for l in list(report_id) if not l.isalpha()]) for
+    #                                                   report_id in report_ids_missing_from_pipeline]
     print("Reports missing from baseline", report_ids_missing_from_baseline, "\n")
     print("Reports missing from pipeline", report_ids_missing_from_pipeline, "\n")
 

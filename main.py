@@ -5,6 +5,7 @@ main file to invoke methods
 from operative_gui import OperativeEMRApp
 from pathology_gui import PathologyEMRApp
 from pipeline.emr_pipeline import EMRPipeline
+from pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.processing.specific_functions import *
 from pipeline.utils.report_type import ReportType
@@ -24,7 +25,7 @@ def pathology_pipeline_main():
     pathology_pipeline.run_pipeline(
         sep_list=["invasive carcinoma", "in situ component", "in situ component type", "insitu component",
                   "insitu type"],
-        baseline_versions=[],
+        baseline_versions=["pathology_validation_D.csv", "pathology_validation_VZ.csv"],
         anchor=r"^ *-* *",
         add_anchor=True,
         multi_line_cols=["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage",
@@ -52,7 +53,7 @@ def operative_pipeline_main():
                                      report_type=ReportType.ALPHA)
 
     operative_pipeline.run_pipeline(
-        baseline_versions=[], anchor=r"^\d*\.* *",
+        baseline_versions=["operative_validation_D.csv", "operative_validation_VZ.csv"], anchor=r"^\d*\.* *",
         single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
         use_separator_to_capture=True,
         add_anchor=True,
@@ -80,5 +81,4 @@ def operative_gui():
     operative_app.mainloop()
 
 
-pathology_pipeline_main()
-operative_pipeline_main()
+pathology_gui()

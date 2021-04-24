@@ -2,8 +2,7 @@
 main file to invoke methods
 """
 from pipeline.emr_pipeline import EMRPipeline
-from pipeline.processing.report_specific_encoding import nottingham_score, process_mm_val, archtectural_patterns, \
-    tumour_site, number_of_foci, do_nothing, immediate_reconstruction_mentioned
+from pipeline.processing.specific_functions import *
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import get_full_path

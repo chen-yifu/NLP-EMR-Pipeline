@@ -119,11 +119,13 @@ class StartPage(tk.Frame):
                 widget.destroy()
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
-        operative_pipeline = EMRPipeline(start=1, end=50, report_name="operative", report_ending="OR_Redacted.pdf",
+        operative_pipeline = EMRPipeline(start=1, end=50, report_name="operative", report_ending="V.pdf",
                                          report_type=ReportType.ALPHA)
 
+
+
         controller.stats, controller.auto_correct_df = operative_pipeline.run_pipeline(
-            baseline_versions=["operative_VZ.csv"], anchor=r"^\d*\.* *",
+            baseline_versions=["operative_validation_D.csv", "operative_validation_VZ.csv"], anchor=r"^\d*\.* *",
             single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
             use_separator_to_capture=True,
             add_anchor=True,
@@ -135,7 +137,8 @@ class StartPage(tk.Frame):
             tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
             sep_list=["surgical indication", "immediate reconstruction type"],
             perform_autocorrect=True,
-            do_training=False)
+            do_training=False,
+            filter_values=True)
 
         controller.auto_correct_df = controller.auto_correct_df.sort_values(
             ["Edit Distance", "Original Column", "Corrected Column"], ascending=[False, True, True])

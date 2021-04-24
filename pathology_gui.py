@@ -122,40 +122,34 @@ class StartPage(tk.Frame):
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
         pathology_pipeline = EMRPipeline(
-            start=101, end=156, report_name="pathology", report_ending="Path_Redacted.pdf",
+            start=101, end=150, report_name="pathology", report_ending="V.pdf",
             report_type=ReportType.NUMERICAL,
             other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data"),
                          "path to stages": get_full_path("data/utils/stages.csv")})
 
         controller.stats, controller.auto_correct_df = pathology_pipeline.run_pipeline(
-            sep_list=["invasive carcinoma"],
-            baseline_versions=[
-                "pathology_VZ.csv"],
+            sep_list=["invasive carcinoma", "in situ component", "in situ component type", "insitu component",
+                      "insitu type"],
+            baseline_versions=["pathology_validation_D.csv", "pathology_validation_VZ.csv"],
             anchor=r"^ *-* *",
             add_anchor=True,
-            multi_line_cols=["SPECIMEN",
-                             "Treatment Effect",
-                             "Margins",
-                             "pathologic stage",
+            multi_line_cols=["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage",
                              "comment(s)",
                              "Part(s) Involved:"],
-            cols_to_skip=["study #",
-                          "specimen",
-                          "treatment effect",
-                          "margins",
-                          "pathologic stage",
-                          "comment(s)",
-                          "part(s) involved",
-                          "nottingham score"],
-            tools={
-                "pathologic stage": find_pathologic_stage,
-                "nottingham_score": nottingham_score,
-                "process_mm_val": process_mm_val,
-                "number_of_foci": number_of_foci,
-                "tumour_site": tumour_site,
-                "do_nothing": do_nothing,
-                "archtectural_patterns": archtectural_patterns},
-            do_training=False)
+            cols_to_skip=["study #", "specimen", "treatment effect", "margins",
+                          "pathologic stage", "comment(s)",
+                          "part(s) involved", "nottingham score", "closest margin",
+                          "closest margin1"],
+            tools={"pathologic stage": find_pathologic_stage,
+                   "nottingham_score": nottingham_score,
+                   "process_mm_val": process_mm_val,
+                   "number_of_foci": number_of_foci,
+                   "tumour_site": tumour_site,
+                   "do_nothing": do_nothing,
+                   "archtectural_patterns": archtectural_patterns},
+            extraction_tools=[no_lymph_node, negative_for_dcis],
+            do_training=False,
+            filter_values=False)
 
         controller.auto_correct_df = controller.auto_correct_df.sort_values(
             ["Edit Distance", "Original Column", "Corrected Column"], ascending=[False, True, True])
