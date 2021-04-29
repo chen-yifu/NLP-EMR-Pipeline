@@ -4,9 +4,11 @@ from tkinter import ttk
 from pandastable import Table
 
 # fonts
-from pipeline.archive.pathology_pipeline.pathology_pipeline import run_pathology_pipeline
+from pipeline.emr_pipeline import EMRPipeline
 from pipeline.processing.columns import load_excluded_columns_as_df, load_excluded_columns_as_list, \
     save_excluded_columns
+from pipeline.processing.specific_functions import immediate_reconstruction_mentioned
+from pipeline.utils.report_type import ReportType
 
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
@@ -29,7 +31,7 @@ substitution_cost = 1
 resolve_ocr = True
 
 
-class SampleApp(tk.Tk):
+class OperativeEMRApp(tk.Tk):
 
     def __init__(self, *args, **kwargs):
 
@@ -39,7 +41,7 @@ class SampleApp(tk.Tk):
 
         # set color theme
         style = ttk.Style(self)
-        style.theme_use('aqua')
+        # style.theme_use('aqua')
 
         # the container is where we'll stack a bunch of frames
         # on top of each other, then the one we want visible
@@ -117,12 +119,27 @@ class StartPage(tk.Frame):
                 widget.destroy()
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
-        controller.stats, controller.auto_correct_df = run_pathology_pipeline(start=101, end=156,
-                                                                              print_debug=print_debug,
-                                                                              max_edit_distance_missing=max_edit_distance_missing,
-                                                                              max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                                              substitution_cost=substitution_cost,
-                                                                              resolve_ocr=resolve_ocr)
+        operative_pipeline = EMRPipeline(start=1, end=50, report_name="operative", report_ending="V.pdf",
+                                         report_type=ReportType.ALPHA)
+
+
+
+        controller.stats, controller.auto_correct_df = operative_pipeline.run_pipeline(
+            baseline_versions=["operative_validation_D.csv", "operative_validation_VZ.csv"], anchor=r"^\d*\.* *",
+            single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
+            use_separator_to_capture=True,
+            add_anchor=True,
+            cols_to_skip=["immediate reconstruction mentioned", "laterality",
+                          "reconstruction mentioned"],
+            contained_capture_list=["breast incision type", "immediate reconstruction type"],
+            no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
+                            "localization"],
+            tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
+            sep_list=["surgical indication", "immediate reconstruction type"],
+            perform_autocorrect=True,
+            do_training=False,
+            filter_values=True)
+
         controller.auto_correct_df = controller.auto_correct_df.sort_values(
             ["Edit Distance", "Original Column", "Corrected Column"], ascending=[False, True, True])
 
@@ -311,8 +328,3 @@ class PageAutocorrect(tk.Frame):
                             command=lambda: self.close_table_and_save(controller,
                                                                       [self.auto_table_holder, self.excl_table_holder]))
         button.place(anchor=tk.N, relx=0.5, y=700, width=120)
-
-
-app = SampleApp()
-app.geometry("1280x740")
-app.mainloop()

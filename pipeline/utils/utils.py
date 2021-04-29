@@ -61,7 +61,7 @@ def find_all_vocabulary(list_of_strings, print_debug=True, min_freq=2):
                                                                         min_freq,
                                                                         non_english_words)
         print(s)
-    return result
+    return non_english_words
 
 
 def get_english_dictionary_as_list():
@@ -89,4 +89,4 @@ def get_project_root():
 
 def get_full_path(path):
     full_path = os.path.join(get_project_root(), path)
-    return "../" + path
+    return path

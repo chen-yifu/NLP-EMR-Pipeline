@@ -45,6 +45,6 @@ def save_dictionaries_into_csv_raw(reports: List[Report], column_mapping: Dict[s
     if print_debug:
         s = df.loc[:].to_string()
         print(s)
-        s = "\nDone saving the results to {}\n".format(csv_path)
+        print("\nDone saving the results to {}\n".format(csv_path))
 
     return df

@@ -25,6 +25,7 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
     def resolve_ocr(raw_string, medical_vocabulary=[]):
         """
         resolve extra white space in raw string by merging two fragments
+        :param medical_vocabulary:
         :param raw_string:          str;        raw string
         :return:                    str;        resolved string
         """
@@ -139,14 +140,14 @@ def find_category(index: int, category_dict: list, stage: str) -> (str, int):
     return stage[index], 0
 
 
-def find_pathologic_stage(stage: str, encodings_so_far: Dict[str, str] = {}) -> str:
+def find_pathologic_stage(stage: str, encodings_so_far: Dict[str, str] = {},
+                          path_to_stages: str = "data/utils/stages.csv") -> str:
     """
     :param stage: str
     :return edited_stage: str
     """
     stage = stage.replace("\n", " ").strip()
-    categories_dict = categories(get_full_path("data/utils/stages.csv"))
-    # categories("stages.csv")
+    categories_dict = categories(path_to_stages)  # todo: fix this
     edited_stage = ""
     to_skip = 0
     for index, letter in enumerate(stage):

@@ -9,6 +9,7 @@ from nltk import edit_distance
 from nltk.corpus import stopwords
 from pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.processing.clean_text import cleanse_column, cleanse_value
+from pipeline.processing.specific_functions import negative_for_dcis, no_lymph_node
 from pipeline.utils.column import Column
 from pipeline.utils.report import Report
 import pandas as pd
@@ -48,10 +49,16 @@ def get_generic_extraction_regex(unfiltered_str: str, regex: str, is_text: bool 
     matches = re.finditer(regex, unfiltered_str, re.MULTILINE)
     generic_pairs = {}
     for m in matches:
-        cleaned_column = cleanse_column(m["column"], is_text)
+        cleaned_column, to_append = cleanse_column(m["column"], is_text)
         func = tools[cleaned_column] if cleaned_column in tools.keys() else None
-        cleaned_value = cleanse_value(m["value"], is_text, func)
-        generic_pairs[cleaned_column] = cleaned_value
+        cleaned_value = cleanse_value(to_append + " " + m["value"], is_text, func)
+        if cleaned_column in generic_pairs:
+            for num in range(1, 10):
+                if cleaned_column + str(num) not in generic_pairs:
+                    generic_pairs[cleaned_column + str(num)] = cleaned_value
+                    break
+        else:
+            generic_pairs[cleaned_column] = cleaned_value
     return generic_pairs
 
 
@@ -78,7 +85,7 @@ def find_nearest_alternative(original_col, possible_candidates: List[str], study
     all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path) if pickle_path else []
     excluded_columns = [tupl[1] for tupl in all_excluded_columns if tupl[0] == original_col]
     possible_candidates = list(set(possible_candidates) - set(excluded_columns))
-    original_col = cleanse_column(original_col, is_text)
+    original_col, misc = cleanse_column(original_col, is_text)
     min_dist = float("inf")
     res = None
     for c in possible_candidates:
@@ -165,8 +172,9 @@ def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of
 def process_synoptic_section(synoptic_report_str: str, report_id: str, report_type: ReportType, pickle_path: str,
                              column_mappings: Dict[str, Column], list_of_dict_with_stats: List[dict],
                              regex_mappings: Dict[str, List[str]], specific_regex: str, general_regex: str,
-                             tools: dict = {}, print_debug: bool = True, max_edit_distance_missing=5,
-                             max_edit_distance_autocorrect=5, substitution_cost=2, skip_threshold=0.95) -> dict:
+                             tools: dict = {}, print_debug: bool = True, extraction_tools: list = [],
+                             max_edit_distance_missing=5, max_edit_distance_autocorrect=5,
+                             substitution_cost=2, skip_threshold=0.95) -> dict:
     """
     :param pickle_path:                        path to pickled data via GUI
     :param column_mappings:                    human columns and report columns where that inforamtion can be found
@@ -190,7 +198,7 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     is_text = True if report_type is ReportType.ALPHA else False
 
     # todo
-    def missing_columns(correct_cols: List[str], cols_so_far: List[str]):
+    def missing_columns(correct_cols: List[str], cols_so_far: List[str]) -> List[str]:
         """
         :param correct_cols:
         :param cols_so_far:
@@ -230,6 +238,16 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     for pdf_cols in column_mappings.values():
         correct_col_names += pdf_cols.cleaned_primary_report_col
 
+    # auto-correct the matches by using a predefined list of correct column names in "column_mappings"
+    result = autocorrect_columns(correct_col_names, result, report_id, list_of_dict_with_stats, is_text=is_text,
+                                 max_edit_distance=max_edit_distance_autocorrect,
+                                 substitution_cost=substitution_cost, pickle_path=pickle_path, tools=tools)
+
+    generic_pairs = get_generic_extraction_regex(synoptic_report_str, general_regex, is_text)
+
+    for func in extraction_tools:
+        func(synoptic_report_str, result, generic_pairs)
+
     # if too many columns are missing, we probably isolated a section with unexpected template,
     # so return nothing and exclude from result
     columns_found = [k.lower().translate(table) for k in result.keys() if k and result[k] != ""]
@@ -243,13 +261,6 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
                       " (does not have a synoptic report or its synoptic report isn't normal)".format(report_id))
     except ZeroDivisionError or Exception:
         pass
-
-    # auto-correct the matches by using a predefined list of correct column names in "column_mappings"
-    result = autocorrect_columns(correct_col_names, result, report_id, list_of_dict_with_stats, is_text=is_text,
-                                 max_edit_distance=max_edit_distance_autocorrect,
-                                 substitution_cost=substitution_cost, pickle_path=pickle_path, tools=tools)
-
-    generic_pairs = get_generic_extraction_regex(synoptic_report_str, general_regex, is_text)
 
     # resolve redundant spaces caused by OCR
     for col, val in generic_pairs.items():
@@ -267,23 +278,16 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
         elif nearest_column:
             raise ValueError("Should never reached this branch. Nearest column is among possible candidates")
 
-    spaceless_synoptic_report = synoptic_report_str.replace(" ", "")
-    if "Nolymphnodespresent" in spaceless_synoptic_report:
-        result["number of lymph nodes examined (sentinel and nonsentinel)"] = "0"
-        result["number of sentinel nodes examined"] = "0"
-        result["micro / macro metastasis"] = None
-        result["number of lymph nodes with micrometastases"] = None
-        result["number of lymph nodes with macrometastases"] = None
-        result["size of largest metastatic deposit"] = None
-
     return result
 
 
 def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings: Dict[str, Column], specific_regex: str,
-                              general_regex: str, regex_mappings: Dict[str, List[str]], pickle_path, tools: dict = {},
-                              print_debug=True, max_edit_distance_missing: int = 5,
-                              max_edit_distance_autocorrect: int = 5,
-                              substitution_cost: int = 2) -> Tuple[List[Report], pd.DataFrame]:
+                              general_regex: str, regex_mappings: Dict[str, List[str]], pickle_path,
+                              tools: dict = {}, print_debug=True, max_edit_distance_missing: int = 5,
+                              max_edit_distance_autocorrect: int = 5, substitution_cost: int = 2,
+                              extraction_tools: list = [], medical_vocabulary: List[str] = [],
+                              perform_autocorrect: bool = False) -> Tuple[
+    List[Report], pd.DataFrame]:
     """
     process and extract data from a list of synoptic reports by using regular expression
 
@@ -303,6 +307,30 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     :return:                               the auto-correct information to be shown
     """
 
+    def autocorrect(val: str) -> str:
+        """
+        :param val:
+        :return:
+        """
+        if val is None:
+            return val
+        words = [v.lower().strip() for v in val.split()]
+        autocorrect_words = []
+        for w1 in words:
+            found = False
+            for w2 in medical_vocabulary:
+                if w1 == w2:
+                    autocorrect_words.append(w1)
+                    found = True
+                    break
+                if edit_distance(w1, w2) < 2:
+                    autocorrect_words.append(w2)
+                    found = True
+                    break
+            if not found:
+                autocorrect_words.append(w1)
+        return " ".join(autocorrect_words)
+
     result = []
     if print_debug:
         s = "\nProcessing synoptic report sections..."
@@ -312,16 +340,27 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
 
     for report in unfiltered_reports:
         cleaned_text = report.text.strip().replace(" is ", ":")
-        report.extractions = process_synoptic_section(cleaned_text, report.report_id, report.report_type, pickle_path,
-                                                      column_mappings, list_of_dict_with_stats,
-                                                      regex_mappings, specific_regex, general_regex, tools,
+        if report.report_id == "9R" or report.report_id == "48R":
+            print("yeet")
+        report.extractions = process_synoptic_section(cleaned_text, report.report_id, report.report_type,
+                                                      pickle_path=pickle_path,
+                                                      column_mappings=column_mappings,
+                                                      list_of_dict_with_stats=list_of_dict_with_stats,
+                                                      regex_mappings=regex_mappings,
+                                                      specific_regex=specific_regex,
+                                                      general_regex=general_regex,
+                                                      tools=tools,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
-                                                      substitution_cost=substitution_cost)
+                                                      substitution_cost=substitution_cost,
+                                                      extraction_tools=extraction_tools)
+        old_id = report.report_id
+        report.report_id = old_id + "V" if old_id[-1].isnumeric() else old_id[:-1] + "V" + old_id[-1]
 
         report.extractions.update({"laterality": report.laterality})
-        report.extractions = {" ".join(k.translate(table).lower().strip().split()): v for k, v in
-                              report.extractions.items()}
+        report.extractions = {" ".join(k.translate(table).lower().strip().split()): autocorrect(v) for k, v in
+                              report.extractions.items()} if perform_autocorrect else {
+            " ".join(k.translate(table).lower().strip().split()): v for k, v in report.extractions.items()}
         result.append(report)
         print(report.report_id)
         print(report.extractions)

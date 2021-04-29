@@ -1,11 +1,12 @@
 import re
 import string
+from typing import Tuple
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
 
 
 # todo: be able to clean colons
-def cleanse_column(col: str, is_text: bool = False) -> str:
+def cleanse_column(col: str, is_text: bool = False) -> Tuple[str, str]:
     """
     cleanse the column by removing "-" and ":"
 
@@ -15,9 +16,12 @@ def cleanse_column(col: str, is_text: bool = False) -> str:
     """
     col = re.sub(r"^\s*-\s*", "", col)  # remove "-"
     col = re.sub(r":\s*$", "", col)  # remove ":"
+    colon_i = col.find(":")
+    col = col[:colon_i] if colon_i != -1 else col
+    val = col[colon_i + 1:] if colon_i != -1 else ""
     if is_text:
-        return " ".join([w for w in col.split() if w.isalpha()]).lower().strip()
-    return col.strip().lower()
+        return " ".join([w for w in col.split() if w.isalpha()]).lower().strip(), val
+    return col.strip().lower(), val
 
 
 def remove_new_line_if_colon_present(s: str):
@@ -70,7 +74,7 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     """
     if is_text:
         cleaned_val = remove_new_line_if_colon_present(val)
-        cleaned_val = cleaned_val.strip().lower().replace("-", " ").replace(".","")
+        cleaned_val = cleaned_val.strip().lower().replace("-", " ").replace(".", "")
         return " ".join([w for w in cleaned_val.split() if len(w) > 1])
     colon_index = val.find(":")
     if colon_index != -1:
