@@ -15,6 +15,7 @@ from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spa
 from pipeline.preprocessing.scanned_pdf_to_text import load_reports_into_pipeline
 from pipeline.processing.encode_extractions import encode_extractions
 from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
+from pipeline.processing.specific_functions import filter_report
 from pipeline.processing.turn_to_values import turn_reports_extractions_to_values
 from pipeline.utils.import_tools import get_input_paths, import_code_book, import_columns
 from pipeline.utils.paths import get_paths
@@ -60,9 +61,10 @@ class EMRPipeline:
     def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = None,
                      separator: str = ":", use_separator_to_capture: bool = False, add_anchor: bool = False,
                      multi_line_cols: list = None, cols_to_skip: list = None, contained_capture_list: list = None,
-                     no_anchor_list: list = None, anchor_list: list = None, print_debug: bool = True,
+                     no_anchor_list: list = None, anchor_list: list = None, print_debug: bool = True, filter_func=None,
                      max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
                      sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
+                     filter_func_args: Tuple = None,
                      perform_autocorrect: bool = False, do_training: bool = False, filter_values: bool = False,
                      start_threshold: float = 0.7, end_threshold: float = 1, extraction_tools: list = None,
                      threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
@@ -142,8 +144,6 @@ class EMRPipeline:
             anchor_list=anchor_list,
             is_anchor=add_anchor)
 
-        print(synoptic_regex)
-
         # this is the str of PDFs that do not contain any Synoptic Report section
         without_synoptics_strs_and_ids = [report for report in cleaned_emr if report.report_id in ids_without_synoptic]
 
@@ -173,6 +173,10 @@ class EMRPipeline:
             medical_vocabulary=medical_vocabulary,
             perform_autocorrect=perform_autocorrect,
             extraction_tools=extraction_tools)
+
+        if filter_func:
+            filtered_reports = filter_func(filtered_reports, filter_func_args[0], filter_func_args[1],
+                                           self.report_ending)
 
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings)
 

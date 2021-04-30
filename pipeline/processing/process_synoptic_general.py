@@ -340,8 +340,6 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
 
     for report in unfiltered_reports:
         cleaned_text = report.text.strip().replace(" is ", ":")
-        if report.report_id == "9R" or report.report_id == "48R":
-            print("yeet")
         report.extractions = process_synoptic_section(cleaned_text, report.report_id, report.report_type,
                                                       pickle_path=pickle_path,
                                                       column_mappings=column_mappings,

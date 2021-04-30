@@ -1,7 +1,38 @@
 import re
-from typing import Dict
+from typing import Dict, List
 
-from pipeline.processing.clean_text import table
+from pipeline.utils.report import Report
+
+
+def filter_report(reports: List[Report], column: str, value: List[str], report_ending: str) -> List[Report]:
+    cleaned_reports = []
+    skip = False
+    for index, report in enumerate(reports):
+        extractions = report.extractions
+        if column in extractions.keys() and not skip:
+            if extractions[column] == "prophylactic":
+                print("yeet")
+            if extractions[column] not in value:
+                cleaned_reports.append(report)
+            elif extractions[column] in value:
+                prev_index = index - 1 if index - 1 > 0 else False
+                next_index = index + 1 if index + 1 < len(reports) else False
+                prev_report_id = "".join(
+                    [l for l in list(reports[prev_index].report_id) if not l.isalpha()]) if prev_index else -1
+                next_report_id = "".join(
+                    [l for l in list(reports[next_index].report_id) if not l.isalpha()]) if prev_index else -1
+                curr_id = "".join([l for l in list(report.report_id) if not l.isalpha()])
+                if curr_id == prev_report_id:
+                    prev_report = reports[prev_index]
+                    prev_report.report_id = curr_id + report_ending[:-4]
+                elif curr_id == next_report_id:
+                    next_report = reports[next_index]
+                    next_report.report_id = curr_id + report_ending[:-4]
+                    cleaned_reports.append(next_report)
+                    skip = True
+        else:
+            skip = False
+    return cleaned_reports
 
 
 def no_lymph_node(report: str, result: dict, generic_pairs: dict):
@@ -13,6 +44,14 @@ def no_lymph_node(report: str, result: dict, generic_pairs: dict):
         result["number of lymph nodes with micrometastases"] = None
         result["number of lymph nodes with macrometastases"] = None
         result["size of largest metastatic deposit"] = None
+
+
+def no_dcis_extent(report: str, result: dict, generic_pairs: dict):
+    if "dcis extent" not in result.keys() and "dcis extent" not in generic_pairs.keys():
+        try:
+            result["dcis extent"] = generic_pairs["dcis estimated size"]
+        except:
+            pass
 
 
 def negative_for_dcis(report: str, result: dict, generic_pairs: dict):

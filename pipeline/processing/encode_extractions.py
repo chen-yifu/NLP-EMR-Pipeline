@@ -13,8 +13,11 @@ from pipeline.utils.column import Column, table
 from pipeline.utils.encoding import Encoding
 from pipeline.utils.report import Report
 from pipeline.utils.value import Value
+import os
 
+# stored here /home/lhao03/.cache/pip/wheels/58/9b/c9/2fbc7482d341370d9897926e8bb8c6774422cbfa511d15d5de
 nlp = spacy.load("en_core_sci_lg")
+
 
 
 def clean_txt(val: str) -> str:

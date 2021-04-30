@@ -2,10 +2,7 @@
 main file to invoke methods
 """
 
-from operative_gui import OperativeEMRApp
-from pathology_gui import PathologyEMRApp
 from pipeline.emr_pipeline import EMRPipeline
-from pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.processing.specific_functions import *
 from pipeline.utils.report_type import ReportType
@@ -42,7 +39,7 @@ def pathology_pipeline_main():
                "tumour_site": tumour_site,
                "do_nothing": do_nothing,
                "archtectural_patterns": archtectural_patterns},
-        extraction_tools=[no_lymph_node, negative_for_dcis],
+        extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent],
         do_training=False,
         filter_values=False)
 
@@ -66,19 +63,22 @@ def operative_pipeline_main():
         sep_list=["surgical indication", "immediate reconstruction type"],
         perform_autocorrect=True,
         do_training=False,
-        filter_values=True)
+        filter_values=True,
+        filter_func=filter_report,
+        filter_func_args=("indication", ["prophylaxis", "prophylactic"]))
 
 
-def pathology_gui():
-    pathology_app = PathologyEMRApp()
-    pathology_app.geometry("1280x740")
-    pathology_app.mainloop()
+# def pathology_gui():
+#     pathology_app = PathologyEMRApp()
+#     pathology_app.geometry("1280x740")
+#     pathology_app.mainloop()
+#
+#
+# def operative_gui():
+#     operative_app = OperativeEMRApp()
+#     operative_app.geometry("1280x740")
+#     operative_app.mainloop()
 
+pathology_pipeline_main()
 
-def operative_gui():
-    operative_app = OperativeEMRApp()
-    operative_app.geometry("1280x740")
-    operative_app.mainloop()
-
-
-pathology_gui()
+operative_pipeline_main()
