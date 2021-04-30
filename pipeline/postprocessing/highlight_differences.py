@@ -262,11 +262,11 @@ def calculate_statistics(df_coded: pd.DataFrame, df_human: pd.DataFrame,
             # check if the report is missing from the baseline.
             # check if there is a version (R or L) in reports missing from pipeline, but not missing in baseline
             # and use that baseline version to check accuracy
-            if coded_id in report_ids_missing_from_baseline:
-                coded_id_no_lat = "".join([l for l in list(coded_id) if not l.isalpha()])
-                for index, report_id in enumerate(report_ids_missing_from_pipeline_no_laterality):
-                    if coded_id_no_lat == report_id:
-                        coded_id = report_ids_missing_from_pipeline[index]
+            # if coded_id in report_ids_missing_from_baseline:
+            #     coded_id_no_lat = "".join([l for l in list(coded_id) if not l.isalpha()])
+            #     for index, report_id in enumerate(report_ids_missing_from_pipeline_no_laterality):
+            #         if coded_id_no_lat == report_id:
+            #             coded_id = report_ids_missing_from_pipeline[index]
 
             coded_val = str(df_coded[col_name][row_index])
             try:
