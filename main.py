@@ -39,7 +39,9 @@ def pathology_pipeline_main():
                "tumour_site": tumour_site,
                "do_nothing": do_nothing,
                "archtectural_patterns": archtectural_patterns},
-        extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent],
+        extraction_tools=[no_lymph_node, negative_for_dcis,
+                          # no_dcis_extent
+                          ],
         do_training=False,
         filter_values=False)
 
