@@ -15,9 +15,7 @@ from pipeline.utils.report import Report
 from pipeline.utils.value import Value
 import os
 
-# stored here /home/lhao03/.cache/pip/wheels/58/9b/c9/2fbc7482d341370d9897926e8bb8c6774422cbfa511d15d5de
 nlp = spacy.load("en_core_sci_lg")
-
 
 
 def clean_txt(val: str) -> str:
@@ -32,7 +30,7 @@ def clean_txt(val: str) -> str:
         return remove_letters
 
 
-def get_entities(val: str, remove_stop_words: bool = True) -> List[Union[Span, str]]:
+def get_entities(val: str, remove_stop_words: bool = True):
     """
     :param remove_stop_words:
     :param val:
@@ -49,6 +47,7 @@ def get_entities(val: str, remove_stop_words: bool = True) -> List[Union[Span, s
                 clean_token.append(token.text)
         val = " ".join(clean_token)
     entities = list(nlp(val).ents) if len(val.split()) > 5 else [val]
+    # return " ".join([ent.text for ent in entities if isinstance(ent, Span)]), [val]
     return entities if len(entities) > 0 else [val]
 
 
@@ -118,7 +117,7 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                             return False
                 return True
 
-            def try_encoding_scispacy(val_to_encode: List[Span]) -> Tuple[bool, str, int]:
+            def try_encoding_scispacy(val_to_encode: List[Span], orginal_val: str = "") -> Tuple[bool, str, int]:
                 """
                 :param val_to_encode:
                 :return:
@@ -185,7 +184,9 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     primary_val = extractions[human_col].primary_value
                     alt_val = extractions[human_col].alternative_value[0] if extractions[
                                                                                  human_col].alternative_value != [] else ""
+                    # orig_p
                     primary_entities = get_entities(primary_val, remove_stop_words)
+                    # orig_alt
                     alt_entities = get_entities(alt_val, remove_stop_words)
                     found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(primary_entities)
                     found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(alt_entities)
