@@ -10,8 +10,8 @@ class Column:
     """ Dataclass used to represent a column in a report and its relationship with the excel file
     """
 
-    def __init__(self, human_col: str, primary_report_col: List[str], alternative_report_col: List[str],
-                 threshold: float, remove_stopwords: bool = False):
+    def __init__(self, human_col: str, primary_report_col: List[str], alternative_report_col: List[str] = [],
+                 threshold: float = 0.75, remove_stopwords: bool = False):
         """
         :param human_col:              The column that the individual wants the extracted information to be under
         :param primary_report_col:     The most likely column in the report in which we can find the information

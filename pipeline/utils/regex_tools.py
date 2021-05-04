@@ -156,7 +156,7 @@ def make_punc_regex_literal(str_with_punc: str) -> str:
 
 def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True, anchor_list: List[str] = [],
                            capture_till_end_of_val_list=[], stop_capture_at_end_of_value: bool = True, anchor: str = "",
-                           is_anchor: bool = False, use_seperater_for_contained_capture: bool = False,
+                           is_anchor: bool = False, use_seperater_for_contained_capture: bool = True,
                            multi_line_cols_list: List[str] = [], no_anchor_list: List[str] = [],
                            contained_capture_list: List[str] = [], separator: str = ":", no_sep_list: List[str] = [],
                            add_sep: bool = False, sep_list: List[str] = []) -> Tuple[str, Dict[str, List[str]]]:
@@ -278,8 +278,14 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
 
     last_one = make_punc_regex_literal("|".join(last_col))
     last_one_variable, seen = to_camel_or_underscore(last_one, seen)
-    template_regex += r"{last_one}(?P<{last_no_space}>.+)".format(last_one=last_one,
-                                                                  last_no_space=last_one_variable)
+    if use_seperater_for_contained_capture:
+        end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=separator)
+    else:
+        end_cap = r".+)"
+    template_regex += r"{last_one}(?P<{last_no_space}>{end_cap}".format(last_one=last_one,
+                                                                        last_no_space=last_one_variable,
+                                                                        end_cap=end_cap)
+
     mappings_to_regex_vals[last_one_variable] = columns[last_col_key].primary_report_col
 
     # this is for any columns that have the column on the first line and value on the second line
