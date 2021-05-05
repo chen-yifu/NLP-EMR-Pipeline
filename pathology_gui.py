@@ -157,7 +157,7 @@ class StartPage(tk.Frame):
                    "tumour_site": tumour_site,
                    "do_nothing": do_nothing,
                    "archtectural_patterns": archtectural_patterns},
-            extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, find_number_of_foci],
+            extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ],
             do_training=False,
             filter_values=False)
 

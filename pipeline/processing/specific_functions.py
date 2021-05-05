@@ -4,7 +4,18 @@ from typing import Dict, List
 from pipeline.utils.report import Report
 
 
-def find_number_of_foci(report: str, result: dict, generic_pairs: dict):
+def duplicate_lymph_nodes(report: str, result: dict, generic_pairs: dict):
+    if (result["number of lymph nodes examined"] != ""):
+        result["number of lymph nodes examined (sentinel and nonsentinel)"] = result["number of lymph nodes examined"]
+        del result["number of lymph nodes examined"]
+
+
+def find_num_foci(report: str, result: dict, generic_pairs: dict):
+    if result["number of foci"] == "":
+        result["number of foci"] = result["tumour focality"]
+
+
+def in_situ(report: str, result: dict, generic_pairs: dict):
     if result["histologic type"].lower() == "ductal carcinoma in situ":
         # if in situ type is not found, use histologic type
         if result["in situ component type"] == "":

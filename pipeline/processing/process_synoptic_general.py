@@ -147,25 +147,6 @@ def autocorrect_columns(correct_col_names, result_so_far, study_id, list_of_dict
                     result_so_far[col], is_text)
                 result_so_far[nearest_column] = cleansed_val
 
-    try:
-        # resolve column that have multiple aliases
-        # the column "Total LN Examined" could be either, but keep only one
-        if (result_so_far["number of lymph nodes examined"] != ""):
-            result_so_far["number of lymph nodes examined (sentinel and nonsentinel)"] = result_so_far[
-                "number of lymph nodes examined"]
-            del result_so_far["number of lymph nodes examined"]
-        # if number of foci isn't found, use tumour focality
-        if result_so_far["number of foci"] == "":
-            result_so_far["number of foci"] = result_so_far["tumour focality"]
-        # if result_so_far["histologic type"].lower() == "ductal carcinoma in situ":
-        #     # if in situ type is not found, use histologic type
-        #     if result_so_far["in situ component type"] == "":
-        #         result_so_far["in situ component type"] = result_so_far["histologic type"]
-        #     # if in situ component is not found, use histologic type
-        #     if result_so_far["in situ component"] == "":
-        #         result_so_far["in situ component"] = result_so_far["histologic type"]
-    except KeyError or Exception:
-        pass
     return result_so_far
 
 
@@ -277,7 +258,10 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
 
     # applying the specific functions
     for func in extraction_tools:
-        func(synoptic_report_str, result, generic_pairs)
+        try:
+            func(synoptic_report_str, result, generic_pairs)
+        except Exception:
+            pass
 
     return result
 
