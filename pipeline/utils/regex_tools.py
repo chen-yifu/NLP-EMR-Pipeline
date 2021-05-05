@@ -366,14 +366,20 @@ operative_axilla_regex = [
 # laterality regex
 # https://regex101.com/r/AE3qZs/1
 # https://regex101.com/r/rdPUIj/1
-right_operative_report = [(capture_double_regex(["Right breast:"], ["Right breast:"]), ""),
+right_operative_report = [(r"(?i)Pertain.*to *.* right(?P<capture>((?!Pertain.*to *.* left\?*)[\s\S])*)", ""),
+                          (r"RIGHT BREAST(?P<capture>((?!LEFT BREAST\?*)[\s\S])*)", ""),
+                          (capture_double_regex(["Right breast:"], ["Right breast:"]), ""),
                           (capture_double_regex(["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY RIGHT BREAST"],
                                                 ["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"]),
                            "PREOPERATIVE RATIONALE FOR SURGERY")]
 
 # https://regex101.com/r/kT4aT7/1
 # https://regex101.com/r/l760jr/1
-left_operative_report = [(capture_double_regex(["Left breast:"], ["Right breast:"]), ""),
+left_operative_report = [(r"LEFT SIDE(?P<capture>((?!RIGHT BREAST\?*)[\s\S])*)", ""),
+                         (r"LEFT SIDE(?P<capture>((?!RIGHT SIDE\?*)[\s\S])*)", ""),
+                         (r"(?i)Pertain.*to *.* left(?P<capture>((?!Pertain.*to *.* right\?*)[\s\S])*)", ""),
+                         (r"LEFT BREAST(?P<capture>((?!FOLLOW UP\?*)[\s\S])*)", ""),
+                         (capture_double_regex(["Left breast:"], ["Right breast:"]), ""),
                          (capture_double_regex(["PREOPERATIVE EVALUATION", "RATIONALE FOR SURGERY LEFT BREAST"],
                                                ["PREOPERATIVE EVALUATION"], capture_last_line=True),
                           "PREOPERATIVE RATIONALE FOR SURGERY")]

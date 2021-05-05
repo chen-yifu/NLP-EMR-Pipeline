@@ -3,6 +3,8 @@ This file contains methods that import tools needed to run the pipeline
 """
 import string
 from typing import Dict, List, Tuple
+
+import os
 import pandas as pd
 from pipeline.utils.column import Column
 from pipeline.utils.encoding import Encoding
@@ -73,19 +75,18 @@ def import_pdf_human_cols_tuples(pdf_human_csv: str, keep_punc: bool = False) ->
     pdf_cols_human_cols_list = []
     pdf_cols_human_cols = pd.read_csv(pdf_human_csv)
     for index, row in pdf_cols_human_cols.iterrows():
-        pdf_cols = row[0]
-        human_col = row[2]
-        pdf_cols_list = pdf_cols.split(",")
+        pdf_cols = str(row[0])
+        human_col = row[1]
         if keep_punc:
-            cleaned_pdf_col_list = [p.strip() for p in pdf_cols_list]
+            cleaned_pdf_col_list = pdf_cols.strip()
         else:
-            cleaned_pdf_col_list = [p.translate(table).strip() for p in pdf_cols_list]
+            cleaned_pdf_col_list = pdf_cols.translate(table).strip()
         for pdf_col in cleaned_pdf_col_list:
             pdf_cols_human_cols_list.append((pdf_col, human_col))
     return pdf_cols_human_cols_list
 
 
-def import_columns(pdf_human_excel_sheet: str, skip=None, primary_row_index: int = 0,
+def import_columns(pdf_human_excel_sheet: str, threshold_path: str, skip=None, primary_row_index: int = 0,
                    alternative_row_index: int = 1, human_col_index: int = 2) -> Dict[str, Column]:
     """
     Imports the columns you want to find from a csv file as a dict of type Column.
@@ -101,8 +102,14 @@ def import_columns(pdf_human_excel_sheet: str, skip=None, primary_row_index: int
         skip = []
     pdf_cols_human_cols_dict_w_column = {}
     pdf_cols_human_cols = pd.read_csv(pdf_human_excel_sheet)
+    thresholds_exist = os.path.exists(threshold_path)
+    if not thresholds_exist:
+        print("No specialized thresholds exist, will use defaults of 0.75 and keeping stopwords.")
+    column_thresholds = pd.read_excel(threshold_path) if thresholds_exist else None
+    list_of_cols = list(column_thresholds["column"]) if thresholds_exist else []
     for index, row in pdf_cols_human_cols.iterrows():
         human_col = row[human_col_index]
+        index_t = list_of_cols.index(human_col) if human_col in list_of_cols else -1
         if human_col.lower() in skip:
             continue
         else:
@@ -110,5 +117,9 @@ def import_columns(pdf_human_excel_sheet: str, skip=None, primary_row_index: int
             alternative_pdf_col_list = extract_cols(row[alternative_row_index])
             pdf_cols_human_cols_dict_w_column[human_col] = Column(human_col=human_col,
                                                                   primary_report_col=primary_pdf_cols_list,
-                                                                  alternative_report_col=alternative_pdf_col_list)
+                                                                  alternative_report_col=alternative_pdf_col_list,
+                                                                  threshold=
+                                                                  column_thresholds.iloc[[index_t]]["threshold"][
+                                                                      index_t] if index_t != -1 else .75)
+
     return pdf_cols_human_cols_dict_w_column

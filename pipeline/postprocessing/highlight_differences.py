@@ -1,4 +1,6 @@
 from collections import defaultdict
+from typing import Tuple, Dict
+
 import pandas as pd
 from pipeline.processing import columns
 
@@ -6,7 +8,7 @@ zero_empty_columns = columns.get_zero_empty_columns()
 
 
 def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_excel_path: str, report_type: str,
-                              print_debug=True, id_col: str = "Study #"):
+                              print_debug=True, id_col: str = "Study #") -> Tuple[tuple, Dict[str, Dict[str, int]]]:
     """
     given two csv files to compare, merge the data into a xlsx file, while highlighting the cells that are different
 
@@ -57,15 +59,12 @@ def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_e
     }
 
     # use this format to highlight the differences in the two csv files
-    no_highlight = workbook.add_format({
-        'text_wrap': True,
-    })
+    no_highlight = workbook.add_format({'text_wrap': True})
 
     highlight_coded_cell_extra = workbook.add_format({
         'bold': True,
         'text_wrap': True,
-        'fg_color': color_palette["light green"]
-    })
+        'fg_color': color_palette["light green"]})
 
     highlight_coded_cell_missing = workbook.add_format({
         'bold': True,
@@ -85,9 +84,7 @@ def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_e
         'fg_color': color_palette["light blue"]
     })
 
-    highlight_empty_and_empty_cells = workbook.add_format({
-        'fg_color': color_palette["gray"]
-    })
+    highlight_empty_and_empty_cells = workbook.add_format({'fg_color': color_palette["gray"]})
 
     # write headers
     for col_index, col_name in enumerate(df_coded.columns):
@@ -189,7 +186,7 @@ By comparing the extracted annotations by human and this converter, we found:\n
         print(s)
 
     stats = (num_same, num_different, num_missing, num_extra)  # , num_empty_zeros, num_empty_empty)
-    return stats
+    return stats, column_accuracies
 
 
 def are_different(val1, val2):
@@ -217,9 +214,14 @@ def are_different(val1, val2):
             return True
 
 
-def calculate_statistics(df_coded, df_human, id_col: str = "Study #"):
+def calculate_statistics(df_coded: pd.DataFrame, df_human: pd.DataFrame,
+                         id_col: str = "Study #") -> Tuple[tuple, Dict[str, Dict[str, int]]]:
     """
     calculate the overall accuracy, as well as accuracy for each column
+
+    :param df_coded:
+    :param df_human:
+    :param id_col:
     :return: int, int, int, int, int, int;  num_same, num_different, num_missing, num_extra, num_empty_zeros, num_empty
     dict of {column: accuracy_dict}; each accuracy_dict represents the accuracy statistics for one column (6 ints)
     """
@@ -238,8 +240,13 @@ def calculate_statistics(df_coded, df_human, id_col: str = "Study #"):
 
     # get reports that exist in baseline but not in pipeline
     report_ids_missing_from_pipeline = list(baseline_report_ids - pipeline_report_ids)
-    report_ids_missing_from_pipeline_no_laterality = ["".join([l for l in list(report_id) if not l.isalpha()]) for
-                                                      report_id in report_ids_missing_from_pipeline]
+    report_ids_missing_from_pipeline_no_laterality = []
+    for report_id in report_ids_missing_from_pipeline:
+        report_id = str(report_id)
+        report_id = "".join([l for l in list(report_id) if not l.isalpha()])
+        report_ids_missing_from_pipeline_no_laterality.append(report_id)
+    # report_ids_missing_from_pipeline_no_laterality = ["".join([l for l in list(report_id) if not l.isalpha()]) for
+    #                                                   report_id in report_ids_missing_from_pipeline]
     print("Reports missing from baseline", report_ids_missing_from_baseline, "\n")
     print("Reports missing from pipeline", report_ids_missing_from_pipeline, "\n")
 

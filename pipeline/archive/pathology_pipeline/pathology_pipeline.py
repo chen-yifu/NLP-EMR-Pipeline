@@ -18,13 +18,13 @@ def run_pathology_pipeline(start,
                            max_edit_distance_autocorrect=5,
                            substitution_cost=2,
                            resolve_ocr=True,
-                           path_to_output_csv=get_full_path("../../data/output/pathology_results/csv_files/"),
-                           path_to_output_excel=get_full_path("../../data/output/pathology_results/excel_files/"),
-                           path_to_baselines=get_full_path("../../data/baselines/"),
-                           path_to_mappings=get_full_path("../../data/utils/pathology_column_mappings.csv"),
-                           path_to_reports=get_full_path("../../data/input/pathology_reports/"),
-                           path_to_stages=get_full_path("../../data/utils/stages.csv"),
-                           pickle_path=get_full_path("../../data/utils/excluded_autocorrect_column_pairs.data")):
+                           path_to_output_csv="data/output/pathology_results/csv_files/",
+                           path_to_output_excel="data/output/pathology_results/excel_files/",
+                           path_to_baselines="data/baselines/",
+                           path_to_mappings="data/utils/pathology_column_mappings_tuple.csv",
+                           path_to_reports="data/input/pathology_reports/",
+                           path_to_stages="data/utils/stages.csv",
+                           pickle_path="data/utils/excluded_autocorrect_column_pairs.data"):
     """
     REQUIRES: the pdf document must be converted to searchable format by Adobe OCR in advance
 
@@ -66,7 +66,7 @@ def run_pathology_pipeline(start,
     # Sean's extracted encodings
     csv_path_baseline_SY = path_to_baselines + "data_collection_baseline_SY.csv"
 
-    column_mappings = import_columns(path_to_mappings)
+    column_mappings = import_columns("data/utils/pathology_column_mappings.csv", "")
 
     # convert pdf reports to a list of reports with report.text and report.report_id
     reports_string_form = load_in_reports(start=start, end=end, paths_to_r=input_pdf_paths)
@@ -133,6 +133,5 @@ def run_pathology_pipeline(start,
         print(s)
 
     return stats, autocorrect_df
-
 
 # run_pathology_pipeline(start=101, end=156)
