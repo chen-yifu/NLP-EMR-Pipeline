@@ -109,7 +109,6 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
             return [Report(text=merged_extractions[0], report_type=report_type, report_id=report_id)]
 
     elif any(len(single_section) > 1 for single_section in extracted_sections):
-        print(report_id)
         if report_type is ReportType.ALPHA:
             return split_report_find_left_right_operative()
         elif report_type is ReportType.NUMERICAL:

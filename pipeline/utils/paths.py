@@ -28,7 +28,7 @@ def get_paths(report_type: str, other_paths=None) -> dict:
     path_to_mappings = path_to_utils + "{}_column_mappings.csv".format(report_type)
     path_to_training = path_to_output + "training/"
     path_to_thresholds = path_to_training + "best_training.xlsx"
-
+    path_to_autocorrect = path_to_utils + "{}_excluded_autocorrect_column_pairs.data".format(report_type)
     paths.update(other_paths)
 
     paths.update(
@@ -36,7 +36,8 @@ def get_paths(report_type: str, other_paths=None) -> dict:
          "path to output csv": path_to_output_csv, "path to output excel": path_to_output_excel,
          "path to thresholds": path_to_thresholds, "path to mappings": path_to_mappings, "csv path raw": csv_path_raw,
          "path to utils": path_to_utils, "csv path coded": csv_path_coded, "path to code book": path_to_code_book,
-         "path to input": path_to_input, "path to training folder": path_to_training})
+         "path to input": path_to_input, "path to training folder": path_to_training,
+         "path to autocorrect": path_to_autocorrect})
 
     for path_name, actual_path in paths.items():
         if not os.path.exists(actual_path) and path_name not in ["csv path raw", "csv path coded"]:

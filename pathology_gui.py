@@ -12,6 +12,19 @@ from pipeline.processing.specific_functions import *
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import get_full_path
 
+# put this in main.py to run
+
+# def pathology_gui():
+#     pathology_app = PathologyEMRApp()
+#     pathology_app.geometry("1280x740")
+#     pathology_app.mainloop()
+
+pathology_pipeline = EMRPipeline(
+    start=101, end=150, report_name="pathology", report_ending="V.pdf",
+    report_type=ReportType.NUMERICAL,
+    other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data"),
+                 "path to stages": get_full_path("data/utils/stages.csv")})
+
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
 MEDIUM_FONT = ("Helvetica", 24)
@@ -34,7 +47,6 @@ resolve_ocr = True
 
 
 class PathologyEMRApp(tk.Tk):
-
     def __init__(self, *args, **kwargs):
 
         # begin initializing GUI
@@ -67,7 +79,7 @@ class PathologyEMRApp(tk.Tk):
         self.show_frame("StartPage")
 
     def show_frame(self, page_name):
-        '''Show a frame for the given page name'''
+        """Show a frame for the given page name"""
         if page_name == "PageAutocorrect" and "PageAutocorrect" not in self.frames.keys():
             # initialize the auto-correct if it didn't exist
             frame = PageAutocorrect(parent=self.container, controller=self)
@@ -81,6 +93,9 @@ class PathologyEMRApp(tk.Tk):
 
 
 class StartPage(tk.Frame):
+    """
+
+    """
 
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
@@ -121,11 +136,6 @@ class StartPage(tk.Frame):
                 widget.destroy()
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
-        pathology_pipeline = EMRPipeline(
-            start=101, end=150, report_name="pathology", report_ending="V.pdf",
-            report_type=ReportType.NUMERICAL,
-            other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data"),
-                         "path to stages": get_full_path("data/utils/stages.csv")})
 
         controller.stats, controller.auto_correct_df = pathology_pipeline.run_pipeline(
             sep_list=["invasive carcinoma", "in situ component", "in situ component type", "insitu component",
@@ -147,7 +157,7 @@ class StartPage(tk.Frame):
                    "tumour_site": tumour_site,
                    "do_nothing": do_nothing,
                    "archtectural_patterns": archtectural_patterns},
-            extraction_tools=[no_lymph_node, negative_for_dcis],
+            extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, find_number_of_foci],
             do_training=False,
             filter_values=False)
 
@@ -215,7 +225,8 @@ class PageAutocorrect(tk.Frame):
         #     self.auto_table.destroy()
         if self.excl_table:
             self.excl_table.destroy()
-            self.excl_table = Table(self.excl_table_holder, dataframe=load_excluded_columns_as_df(), showtoolbar=False,
+            self.excl_table = Table(self.excl_table_holder, dataframe=load_excluded_columns_as_df(
+                pathology_pipeline.pickle_path), showtoolbar=False,
                                     showstatusbar=True)
         if self.auto_table:
             self.auto_table.destroy()
@@ -250,10 +261,10 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = load_excluded_columns_as_list()
+            cols = load_excluded_columns_as_list(pathology_pipeline.pickle_path)
             cols.append((original, corrected))
-            save_excluded_columns(cols)
-            df = load_excluded_columns_as_df()
+            save_excluded_columns(cols, pathology_pipeline.pickle_path)
+            df = load_excluded_columns_as_df(pathology_pipeline.pickle_path)
             self.excl_table_holder.place_forget()
             self.excl_table.destroy()
             self.excl_table = Table(self.excl_table_holder, dataframe=df, showtoolbar=False, showstatusbar=True)
@@ -273,11 +284,11 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = load_excluded_columns_as_list()
+            cols = load_excluded_columns_as_list(pathology_pipeline.pickle_path)
             if (original, corrected) in cols:
                 cols.remove((original, corrected))
-                save_excluded_columns(cols)
-                df = load_excluded_columns_as_df()
+                save_excluded_columns(cols, pathology_pipeline.pickle_path)
+                df = load_excluded_columns_as_df(pathology_pipeline.pickle_path)
                 self.excl_table_holder.place_forget()
                 self.excl_table.destroy()
                 self.excl_table = Table(self.excl_table_holder, dataframe=df, showtoolbar=False, showstatusbar=True)
@@ -309,7 +320,7 @@ class PageAutocorrect(tk.Frame):
         label = ttk.Label(self, text="Excluded Column Pairs from Auto-Correct", font=MEDIUM_FONT)
         label.place(anchor=tk.N, relx=0.5, y=350)
         self.excl_table_holder = tk.Frame(self, width=1200, height=300)
-        self.excluded_df = load_excluded_columns_as_df()
+        self.excluded_df = load_excluded_columns_as_df(pathology_pipeline.pickle_path)
         self.excl_table = Table(self.excl_table_holder, dataframe=self.excluded_df, showtoolbar=False,
                                 showstatusbar=True)
 
