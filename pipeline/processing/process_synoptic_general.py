@@ -9,7 +9,6 @@ from nltk import edit_distance
 from nltk.corpus import stopwords
 from pipeline.processing.columns import load_excluded_columns_as_list
 from pipeline.processing.clean_text import cleanse_column, cleanse_value
-from pipeline.processing.specific_functions import negative_for_dcis, no_lymph_node
 from pipeline.utils.column import Column
 from pipeline.utils.report import Report
 import pandas as pd
@@ -108,7 +107,7 @@ def find_nearest_alternative(original_col, possible_candidates: List[str], study
     return res
 
 
-def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of_dict_with_stats, pickle_path, is_text,
+def autocorrect_columns(correct_col_names, result_so_far, study_id, list_of_dict_with_stats, pickle_path, is_text,
                         tools: dict, max_edit_distance=5, substitution_cost=2):
     """
     using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
@@ -116,26 +115,26 @@ def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of
     :param tools:                        functions that some columns may use for cleaning
     :param pickle_path:                  path to pickled data from GUI
     :param correct_col_names:            a list of correct column names
-    :param extractions_so_far:           extracted generic key-value pairs from synoptic reports
+    :param result_so_far:           extracted generic key-value pairs from synoptic reports
     :param study_id:                     the study id of the dictionary
     :param list_of_dict_with_stats:      save the auto-correct activities to be shown on GUI
     :param max_edit_distance:            maximum distance allowed between source and candidate
     :param substitution_cost:            cost to substitute a character instead of inserting/removing
     :return:                             dict with auto-corrected column names
     """
-    columns = list(extractions_so_far.keys())
+    columns = list(result_so_far.keys())
     for col in columns:
         if col in correct_col_names:  # do nothing if key is correct
             continue
         else:
-            nearest_column = find_nearest_alternative(col, correct_col_names, study_id, extractions_so_far[col],
+            nearest_column = find_nearest_alternative(col, correct_col_names, study_id, result_so_far[col],
                                                       list_of_dict_with_stats, is_text=is_text,
                                                       max_edit_distance=max_edit_distance,
                                                       substitution_cost=substitution_cost, pickle_path=pickle_path)
             # if the nearest column is already extracted, find the next alternative
-            while nearest_column is not None and nearest_column in extractions_so_far.keys():
+            while nearest_column is not None and nearest_column in result_so_far.keys():
                 correct_col_names.remove(nearest_column)
-                nearest_column = find_nearest_alternative(col, correct_col_names, study_id, extractions_so_far[col],
+                nearest_column = find_nearest_alternative(col, correct_col_names, study_id, result_so_far[col],
                                                           list_of_dict_with_stats, is_text=is_text,
                                                           max_edit_distance=max_edit_distance,
                                                           substitution_cost=substitution_cost,
@@ -143,30 +142,31 @@ def autocorrect_columns(correct_col_names, extractions_so_far, study_id, list_of
             # copy the value from incorrect column name to correct column name
             if nearest_column:
                 in_tools = nearest_column.lower() in tools.keys()
-                cleansed_val = cleanse_value(extractions_so_far[col], is_text,
+                cleansed_val = cleanse_value(result_so_far[col], is_text,
                                              tools[nearest_column]) if in_tools else cleanse_value(
-                    extractions_so_far[col], is_text)
-                extractions_so_far[nearest_column] = cleansed_val
+                    result_so_far[col], is_text)
+                result_so_far[nearest_column] = cleansed_val
 
     try:
         # resolve column that have multiple aliases
         # the column "Total LN Examined" could be either, but keep only one
-        if (extractions_so_far["number of lymph nodes examined"] != ""):
-            extractions_so_far["number of lymph nodes examined (sentinel and nonsentinel)"] = extractions_so_far[
+        if (result_so_far["number of lymph nodes examined"] != ""):
+            result_so_far["number of lymph nodes examined (sentinel and nonsentinel)"] = result_so_far[
                 "number of lymph nodes examined"]
-            del extractions_so_far["number of lymph nodes examined"]
+            del result_so_far["number of lymph nodes examined"]
         # if number of foci isn't found, use tumour focality
-        if extractions_so_far["number of foci"] == "":
-            extractions_so_far["number of foci"] = extractions_so_far["tumour focality"]
-        # if in situ type is not found, use histologic type
-        if extractions_so_far["in situ component type"] == "":
-            extractions_so_far["in situ component type"] = extractions_so_far["histologic type"]
-        # if in situ component is not found, use histologic type
-        if extractions_so_far["in situ component"] == "":
-            extractions_so_far["in situ component"] = extractions_so_far["histologic type"]
+        if result_so_far["number of foci"] == "":
+            result_so_far["number of foci"] = result_so_far["tumour focality"]
+        # if result_so_far["histologic type"].lower() == "ductal carcinoma in situ":
+        #     # if in situ type is not found, use histologic type
+        #     if result_so_far["in situ component type"] == "":
+        #         result_so_far["in situ component type"] = result_so_far["histologic type"]
+        #     # if in situ component is not found, use histologic type
+        #     if result_so_far["in situ component"] == "":
+        #         result_so_far["in situ component"] = result_so_far["histologic type"]
     except KeyError or Exception:
         pass
-    return extractions_so_far
+    return result_so_far
 
 
 def process_synoptic_section(synoptic_report_str: str, report_id: str, report_type: ReportType, pickle_path: str,
@@ -245,9 +245,6 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
 
     generic_pairs = get_generic_extraction_regex(synoptic_report_str, general_regex, is_text)
 
-    for func in extraction_tools:
-        func(synoptic_report_str, result, generic_pairs)
-
     # if too many columns are missing, we probably isolated a section with unexpected template,
     # so return nothing and exclude from result
     columns_found = [k.lower().translate(table) for k in result.keys() if k and result[k] != ""]
@@ -277,6 +274,10 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
             result[nearest_column] = cleansed_val
         elif nearest_column:
             raise ValueError("Should never reached this branch. Nearest column is among possible candidates")
+
+    # applying the specific functions
+    for func in extraction_tools:
+        func(synoptic_report_str, result, generic_pairs)
 
     return result
 

@@ -15,7 +15,6 @@ from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spa
 from pipeline.preprocessing.scanned_pdf_to_text import load_reports_into_pipeline
 from pipeline.processing.encode_extractions import encode_extractions
 from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
-from pipeline.processing.specific_functions import filter_report
 from pipeline.processing.turn_to_values import turn_reports_extractions_to_values
 from pipeline.utils.import_tools import get_input_paths, import_code_book, import_columns
 from pipeline.utils.paths import get_paths
@@ -49,7 +48,7 @@ class EMRPipeline:
         self.paths = get_paths(report_name, other_paths)
         self.code_book = import_code_book(self.paths["path to code book"])
         self.column_mappings = import_columns(self.paths["path to mappings"], self.paths["path to thresholds"])
-        self.pickle_path = self.paths["pickle path"] if "pickle path" in self.paths else None
+        self.pickle_path = self.paths["path to autocorrect"] if "path to autocorrect" in self.paths else None
         self.paths_to_pdfs = get_input_paths(start, end, path_to_reports=self.paths["path to reports"],
                                              report_str="{}" + report_ending)
         self.report_type = report_type
@@ -117,14 +116,6 @@ class EMRPipeline:
         medical_vocabulary = find_all_vocabulary([report.text for report in reports_loaded_in_str],
                                                  print_debug=print_debug, min_freq=int((self.end - self.start) / 2) - 1)
 
-        try:
-            medical_vocabulary.remove("ths")
-        except:
-            pass
-
-        pd.DataFrame(medical_vocabulary).to_csv(
-            self.paths["path to utils"] + "medical_vocabulary_{}".format(self.report_name))
-
         if resolve_ocr:
             reports_loaded_in_str = preprocess_resolve_ocr_spaces(reports_loaded_in_str, print_debug=print_debug,
                                                                   medical_vocabulary=medical_vocabulary)
@@ -162,7 +153,7 @@ class EMRPipeline:
             cleaned_emr,
             self.column_mappings,
             synoptic_regex,
-            r"(?P<column>.*){}(?P<value>.*)".format(separator),
+            r"(?P<column>.*){}(?P<value>((?!.+({}|—)\?*)[\s\S])*)".format(separator, separator),
             print_debug=print_debug,
             max_edit_distance_missing=max_edit_distance_missing,
             max_edit_distance_autocorrect=max_edit_distance_autocorrect,
@@ -185,7 +176,7 @@ class EMRPipeline:
                                                 print_debug=print_debug)
 
         if do_training:
-            training_df = self.train_pipeline(
+            training_df = self.train_pipeline_encodings(
                 baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
                 start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"], filter_values)
             if print_debug:
@@ -220,16 +211,18 @@ class EMRPipeline:
                 csv_path_human=self.paths["path to baselines"] + baseline_version,
                 report_type=self.report_name[0].upper() + self.report_name[1:],
                 output_excel_path=output_excel_path,
-                print_debug=print_debug)
+                print_debug=print_debug,
+                column_mappings=list(self.column_mappings.values()))
 
             if print_debug:
                 print("\nUsing spacy, and compared with {} results are -> Stats: {}".format(baseline_version, stats))
 
         return stats, autocorrect_df
 
-    def train_pipeline(self, baseline_versions: List[str], end_threshold: float, print_debug: bool, report_name: str,
-                       reports_with_values: List[Report], start_threshold: float, threshold_interval: float,
-                       timestamp: str, tools: dict, output_path: str, filter_values: bool) -> pd.DataFrame:
+    def train_pipeline_encodings(self, baseline_versions: List[str], end_threshold: float, print_debug: bool,
+                                 report_name: str,
+                                 reports_with_values: List[Report], start_threshold: float, threshold_interval: float,
+                                 timestamp: str, tools: dict, output_path: str, filter_values: bool) -> pd.DataFrame:
         """
         :param filter_values:
         :param output_path:
@@ -283,7 +276,8 @@ class EMRPipeline:
                         csv_path_human=self.paths["path to baselines"] + baseline_version,
                         report_type=report_name[0].upper() + report_name[1:],
                         output_excel_path=output_excel_path,
-                        print_debug=print_debug)
+                        print_debug=print_debug,
+                        column_mappings=list(self.column_mappings.values()))
 
                     if print_debug:
                         debug = "\nUsing spacy, and {} with upper threshold of {} and {} -> Stats: {}"
@@ -348,3 +342,6 @@ class EMRPipeline:
         training_df = pd.DataFrame(training)
         training_df.to_excel(output_path + "training/all_training_{}_{}.xlsx".format(self.report_name, timestamp))
         return best_thresholds_df
+
+    def train_pipeline_regex(self):
+        print("dab")

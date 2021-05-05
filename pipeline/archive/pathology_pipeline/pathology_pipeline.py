@@ -24,7 +24,7 @@ def run_pathology_pipeline(start,
                            path_to_mappings="data/utils/pathology_column_mappings_tuple.csv",
                            path_to_reports="data/input/pathology_reports/",
                            path_to_stages="data/utils/stages.csv",
-                           pickle_path="data/utils/excluded_autocorrect_column_pairs.data"):
+                           pickle_path="data/utils/pathology_excluded_autocorrect_column_pairs.data"):
     """
     REQUIRES: the pdf document must be converted to searchable format by Adobe OCR in advance
 

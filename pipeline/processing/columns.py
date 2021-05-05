@@ -1,30 +1,22 @@
 import pickle
+from typing import List
+
 import pandas as pd
 
 from pipeline.utils import utils
+from pipeline.utils.column import Column
 
 
-def get_zero_empty_columns():
+def get_zero_empty_columns(columns: List[Column]) -> List[str]:
+    """
+    :param columns:
+    :return:
+    """
     # for these columns, "0" and "None" mean the same thing
-    zero_empty_columns = ['Tumour Size (mm)',
-                          'Closest Margin',
-                          'Distance of DCIS from Closest Margin (mm)',
-                          'Closest Margin DCIS',
-                          'Total LN Examined',
-                          '# Sentinel LN Examined',
-                          '# LN w/ Micrometastasis',
-                          '# LN w/ Macrometastasis',
-                          'Size of Largest Macrometastasis Deposit',
-                          'Extent (mm)',
-                          'InvasiveTumourSize (mm)',
-                          '# Sentinel Nodes Examined',
-                          '# Micrometastatic Nodes',
-                          '# Macrometastatic Nodes',
-                          "Tumour Site"]
-    return zero_empty_columns
+    return [c.human_col for c in columns if c.zero_empty]
 
 
-def load_excluded_columns_as_df(pickle_path: str = "data/utils/excluded_autocorrect_column_pairs.data"):
+def load_excluded_columns_as_df(pickle_path: str):
     """
     Load a list of excluded columns from pickle file
     :return:        pandas DataFrame;            columns to be excluded
@@ -44,7 +36,7 @@ def load_excluded_columns_as_df(pickle_path: str = "data/utils/excluded_autocorr
         return excl_df
 
 
-def load_excluded_columns_as_list(pickle_path: str = "data/utils/excluded_autocorrect_column_pairs.data"):
+def load_excluded_columns_as_list(pickle_path: str):
     """
     Load a list of excluded columns from pickle file
     :return:        list of str;            columns to be excluded
@@ -62,7 +54,7 @@ def load_excluded_columns_as_list(pickle_path: str = "data/utils/excluded_autoco
     return excl_list
 
 
-def save_excluded_columns(list_of_cols, path="data/utils/excluded_autocorrect_column_pairs.data"):
+def save_excluded_columns(list_of_cols: List[str], path: str):
     """
     Given a list of columns, save the excluded columns to a pickle file locally
     :param list_of_cols:        list of str;        list of columns to be excluded

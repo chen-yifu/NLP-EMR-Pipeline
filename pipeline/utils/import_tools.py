@@ -87,10 +87,12 @@ def import_pdf_human_cols_tuples(pdf_human_csv: str, keep_punc: bool = False) ->
 
 
 def import_columns(pdf_human_excel_sheet: str, threshold_path: str, skip=None, primary_row_index: int = 0,
-                   alternative_row_index: int = 1, human_col_index: int = 2) -> Dict[str, Column]:
+                   alternative_row_index: int = 1, human_col_index: int = 2,
+                   zero_empty_index: int = 3) -> Dict[str, Column]:
     """
     Imports the columns you want to find from a csv file as a dict of type Column.
 
+    :param threshold_path:
     :param alternative_row_index:       the index that corresponds to column that contains alternative columns
     :param primary_row_index:           the index that corresponds to column that contains primary columns
     :param human_col_index:             the index that corresponds to column that contains the human excel columns
@@ -120,6 +122,7 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, skip=None, p
                                                                   alternative_report_col=alternative_pdf_col_list,
                                                                   threshold=
                                                                   column_thresholds.iloc[[index_t]]["threshold"][
-                                                                      index_t] if index_t != -1 else .75)
+                                                                      index_t] if index_t != -1 else .75,
+                                                                  zero_empty=row[zero_empty_index])
 
     return pdf_cols_human_cols_dict_w_column

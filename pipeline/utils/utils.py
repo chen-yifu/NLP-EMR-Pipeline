@@ -55,6 +55,7 @@ def find_all_vocabulary(list_of_strings, print_debug=True, min_freq=2):
             result.append(word)
     english_words = [w.lower() for w in words.words() if len(w) > 1] + ["a", "i"]
     non_english_words = list(set([w.lower() for w in result]) - set(english_words))
+    non_english_words = [w for w in non_english_words if len(w) > 3]
     if print_debug:
         s = "Found these {} non-english words with" \
             "frequent occurrences in all PDFs (min_freq={}): {}".format(len(non_english_words),

@@ -10,6 +10,16 @@ from pipeline.processing.columns import load_excluded_columns_as_df, load_exclud
 from pipeline.processing.specific_functions import immediate_reconstruction_mentioned
 from pipeline.utils.report_type import ReportType
 
+# put this in main.py to run
+
+# def operative_gui():
+#     operative_app = OperativeEMRApp()
+#     operative_app.geometry("1280x740")
+#     operative_app.mainloop()
+
+operative_pipeline = EMRPipeline(start=1, end=50, report_name="operative", report_ending="V.pdf",
+                                 report_type=ReportType.ALPHA)
+
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
 MEDIUM_FONT = ("Helvetica", 24)
@@ -119,10 +129,6 @@ class StartPage(tk.Frame):
                 widget.destroy()
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
-        operative_pipeline = EMRPipeline(start=1, end=50, report_name="operative", report_ending="V.pdf",
-                                         report_type=ReportType.ALPHA)
-
-
 
         controller.stats, controller.auto_correct_df = operative_pipeline.run_pipeline(
             baseline_versions=["operative_validation_D.csv", "operative_validation_VZ.csv"], anchor=r"^\d*\.* *",
@@ -179,7 +185,6 @@ class PageOne(tk.Frame):
 
 
 class PageTwo(tk.Frame):
-
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
         self.controller = controller
@@ -204,7 +209,9 @@ class PageAutocorrect(tk.Frame):
         #     self.auto_table.destroy()
         if self.excl_table:
             self.excl_table.destroy()
-            self.excl_table = Table(self.excl_table_holder, dataframe=load_excluded_columns_as_df(), showtoolbar=False,
+            self.excl_table = Table(self.excl_table_holder,
+                                    dataframe=load_excluded_columns_as_df(operative_pipeline.pickle_path),
+                                    showtoolbar=False,
                                     showstatusbar=True)
         if self.auto_table:
             self.auto_table.destroy()
@@ -239,10 +246,10 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = load_excluded_columns_as_list()
+            cols = load_excluded_columns_as_list(operative_pipeline.pickle_path)
             cols.append((original, corrected))
-            save_excluded_columns(cols)
-            df = load_excluded_columns_as_df()
+            save_excluded_columns(cols, operative_pipeline.pickle_path)
+            df = load_excluded_columns_as_df(operative_pipeline.pickle_path)
             self.excl_table_holder.place_forget()
             self.excl_table.destroy()
             self.excl_table = Table(self.excl_table_holder, dataframe=df, showtoolbar=False, showstatusbar=True)
@@ -262,11 +269,11 @@ class PageAutocorrect(tk.Frame):
         original = self.original_entry.get()
         corrected = self.corrected_entry.get()
         if len(original) and len(corrected):
-            cols = load_excluded_columns_as_list()
+            cols = load_excluded_columns_as_list(operative_pipeline.pickle_path)
             if (original, corrected) in cols:
                 cols.remove((original, corrected))
-                save_excluded_columns(cols)
-                df = load_excluded_columns_as_df()
+                save_excluded_columns(cols, operative_pipeline.pickle_path)
+                df = load_excluded_columns_as_df(operative_pipeline.pickle_path)
                 self.excl_table_holder.place_forget()
                 self.excl_table.destroy()
                 self.excl_table = Table(self.excl_table_holder, dataframe=df, showtoolbar=False, showstatusbar=True)
@@ -298,7 +305,7 @@ class PageAutocorrect(tk.Frame):
         label = ttk.Label(self, text="Excluded Column Pairs from Auto-Correct", font=MEDIUM_FONT)
         label.place(anchor=tk.N, relx=0.5, y=350)
         self.excl_table_holder = tk.Frame(self, width=1200, height=300)
-        self.excluded_df = load_excluded_columns_as_df()
+        self.excluded_df = load_excluded_columns_as_df(operative_pipeline.pickle_path)
         self.excl_table = Table(self.excl_table_holder, dataframe=self.excluded_df, showtoolbar=False,
                                 showstatusbar=True)
 

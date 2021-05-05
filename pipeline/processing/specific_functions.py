@@ -4,14 +4,22 @@ from typing import Dict, List
 from pipeline.utils.report import Report
 
 
+def find_number_of_foci(report: str, result: dict, generic_pairs: dict):
+    if result["histologic type"].lower() == "ductal carcinoma in situ":
+        # if in situ type is not found, use histologic type
+        if result["in situ component type"] == "":
+            result["in situ component type"] = result["histologic type"]
+        # if in situ component is not found, use histologic type
+        if result["in situ component"] == "":
+            result["in situ component"] = result["histologic type"]
+
+
 def filter_report(reports: List[Report], column: str, value: List[str], report_ending: str) -> List[Report]:
     cleaned_reports = []
     skip = False
     for index, report in enumerate(reports):
         extractions = report.extractions
         if column in extractions.keys() and not skip:
-            if extractions[column] == "prophylactic":
-                print("yeet")
             if extractions[column] not in value:
                 cleaned_reports.append(report)
             elif extractions[column] in value:
@@ -144,11 +152,6 @@ def process_mm_val(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
 
 
 def number_of_foci(num_foci: str, encodings_so_far: Dict[str, str] = {}) -> str:
-    """
-    0=not specified #=#
-    :param focality:         tumour focality
-    :param num_foci:         # of foci
-    """
     focality = encodings_so_far["Tumour Focality"]
     if focality == "1":
         return "1"
@@ -185,9 +188,9 @@ def tumour_site(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
             value = matches_full[0]
     elif matches_part:
         if len(matches_part[0]) == 1:
-            value = "0" + str(matches_part[0]) + ":00"
+            value = str(matches_part[0]) + " o'clock"
         elif len(matches_part[0]) >= 2:
-            value = str(matches_part[0]) + ":00"
+            value = str(matches_part[0]) + " o'clock"
             if int(matches_part[0]) > 12:
                 value = ""
     else:
