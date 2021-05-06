@@ -30,7 +30,7 @@ def clean_txt(val: str) -> str:
         return remove_letters
 
 
-def get_entities(val: str, remove_stop_words: bool = True):
+def get_entities(val: str, remove_stop_words: bool = True) -> tuple:
     """
     :param remove_stop_words:
     :param val:
@@ -38,7 +38,7 @@ def get_entities(val: str, remove_stop_words: bool = True):
     """
     # val = clean_txt(val)
     if type(val) is float or pd.isna(val) or val is None:
-        return [""]
+        return [""], [""]
     if remove_stop_words:
         doc = nlp(val)
         clean_token = []
@@ -48,7 +48,8 @@ def get_entities(val: str, remove_stop_words: bool = True):
         val = " ".join(clean_token)
     entities = list(nlp(val).ents) if len(val.split()) > 5 else [val]
     # return " ".join([ent.text for ent in entities if isinstance(ent, Span)]), [val]
-    return entities if len(entities) > 0 else [val]
+    # if len(entities) > 0 else
+    return entities, [val]
 
 
 def contains_word(encoding_val: str, pipeline_val_str: str, alpha: float, threshold: float) -> bool:
@@ -111,7 +112,7 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     n_doc = nlp(negation)
                     for pipeline_val in val_to_encode:
                         pipeline_val_str = pipeline_val.text if isinstance(pipeline_val, Span) else pipeline_val
-                        pipeline_doc = nlp(pipeline_val_str.lower())
+                        pipeline_doc = nlp(pipeline_val_str)
                         sim = pipeline_doc.similarity(n_doc)
                         if sim > least_neg:
                             return False
@@ -133,15 +134,15 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     for encoding_val in encoding.val:
                         code_book_doc = nlp(encoding_val)
                         for pipeline_val in val_to_encode:
-                            pipeline_val_str = pipeline_val.text.lower() if isinstance(pipeline_val,
-                                                                                       Span) else pipeline_val.lower()
-                            pipeline_doc = nlp(pipeline_val_str.lower())
+                            pipeline_val_str = pipeline_val.text if isinstance(pipeline_val,
+                                                                               Span) else pipeline_val
+                            pipeline_doc = nlp(pipeline_val_str)
                             sim = pipeline_doc.similarity(code_book_doc)
                             if sim > alpha and sim > threshold:
                                 alpha = sim
                                 num = str(encoding.num)
                                 found = True
-                                pipeline_val_str_to_return = pipeline_val_str.lower()
+                                pipeline_val_str_to_return = pipeline_val_str
                             if alpha == 1 or contains_word(encoding_val.lower().strip(),
                                                            pipeline_val_str.lower().strip(), alpha,
                                                            threshold):
@@ -185,11 +186,11 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     alt_val = extractions[human_col].alternative_value[0] if extractions[
                                                                                  human_col].alternative_value != [] else ""
                     # orig_p
-                    primary_entities = get_entities(primary_val, remove_stop_words)
+                    primary_entities, orig_p = get_entities(primary_val, remove_stop_words)
                     # orig_alt
-                    alt_entities = get_entities(alt_val, remove_stop_words)
-                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(primary_entities)
-                    found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(alt_entities)
+                    alt_entities, orig_alt = get_entities(alt_val, remove_stop_words)
+                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(orig_p)
+                    found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(orig_alt)
                     if primary_alpha == 1 and found_primary:
                         encoded_extractions_dict[human_col] = primary_encoded_value
                     elif alt_alpha == 1 and found_alt:

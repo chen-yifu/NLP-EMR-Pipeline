@@ -46,6 +46,6 @@ my_pipeline.run_pipeline(
            "process_mm_val": process_mm_val,
            "archtectural_patterns": archtectural_patterns},
     extraction_tools=[no_lymph_node, negative_for_dcis],
-    do_training=False,
+    do_training_all=False,
     filter_values=False)
 ```

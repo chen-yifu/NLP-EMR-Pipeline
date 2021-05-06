@@ -18,7 +18,7 @@ from pipeline.processing.process_synoptic_general import process_synoptics_and_i
 from pipeline.processing.turn_to_values import turn_reports_extractions_to_values
 from pipeline.utils.import_tools import get_input_paths, import_code_book, import_columns
 from pipeline.utils.paths import get_paths
-from pipeline.utils.regex_tools import synoptic_capture_regex
+from pipeline.utils.regex_tools import synoptic_capture_regex, synoptic_capture_regex_
 from pipeline.utils.report import Report
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import find_all_vocabulary, get_current_time
@@ -63,8 +63,9 @@ class EMRPipeline:
                      no_anchor_list: list = None, anchor_list: list = None, print_debug: bool = True, filter_func=None,
                      max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
                      sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
-                     filter_func_args: Tuple = None,
-                     perform_autocorrect: bool = False, do_training: bool = False, filter_values: bool = False,
+                     filter_func_args: Tuple = None, cols_to_add: List[str] = [], train_thresholds: bool = False,
+                     train_regex: bool = False,
+                     perform_autocorrect: bool = False, do_training_all: bool = False, filter_values: bool = False,
                      start_threshold: float = 0.7, end_threshold: float = 1, extraction_tools: list = None,
                      threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
         """
@@ -74,7 +75,7 @@ class EMRPipeline:
 
         :param perform_autocorrect:            whether or not pipeline perform autocorrect on values based on medical vocab
         :param threshold_interval:             what interval the pipeline should increment by in training
-        :param do_training:                    whether or not you want pipeline to do training
+        :param do_training_all:                    whether or not you want pipeline to do training
         :param end_threshold:                  where to stop training
         :param start_threshold:                base threshold for training
         :param single_line_list:               columns that have their values on the same line as the column (same line)
@@ -123,17 +124,28 @@ class EMRPipeline:
         # returns list[Report] with everything BUT encoded and not_found initialized
         cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_loaded_in_str)
 
-        synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
+        # synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
+        #     {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
+        #     capture_till_end_of_val_list=single_line_list,
+        #     use_seperater_for_contained_capture=use_separator_to_capture,
+        #     contained_capture_list=contained_capture_list,
+        #     multi_line_cols_list=multi_line_cols,
+        #     no_anchor_list=no_anchor_list,
+        #     anchor=anchor,
+        #     sep_list=sep_list,
+        #     anchor_list=anchor_list,
+        #     is_anchor=add_anchor)
+        #
+        # print(synoptic_regex)
+        # print(regex_variable_mappings)
+
+        synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
             {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
-            capture_till_end_of_val_list=single_line_list,
-            use_seperater_for_contained_capture=use_separator_to_capture,
-            contained_capture_list=contained_capture_list,
-            multi_line_cols_list=multi_line_cols,
-            no_anchor_list=no_anchor_list,
-            anchor=anchor,
-            sep_list=sep_list,
-            anchor_list=anchor_list,
-            is_anchor=add_anchor)
+            cols_to_add=cols_to_add,
+            anchor=anchor)
+
+        print(synoptic_regex)
+        print(regex_variable_mappings)
 
         # this is the str of PDFs that do not contain any Synoptic Report section
         without_synoptics_strs_and_ids = [report for report in cleaned_emr if report.report_id in ids_without_synoptic]
@@ -165,6 +177,13 @@ class EMRPipeline:
             perform_autocorrect=perform_autocorrect,
             extraction_tools=extraction_tools)
 
+        for report in filtered_reports:
+            old_id = report.report_id
+            id_end = self.report_ending[0]
+            new_id = old_id + id_end if old_id[-1].isnumeric() else old_id[:-1] + id_end + old_id[-1]
+            new_id = "".join(new_id.split())
+            report.report_id = new_id
+
         if filter_func:
             filtered_reports = filter_func(filtered_reports, filter_func_args[0], filter_func_args[1],
                                            self.report_ending)
@@ -175,15 +194,30 @@ class EMRPipeline:
                                                 csv_path=self.paths["csv path raw"],
                                                 print_debug=print_debug)
 
-        if do_training:
-            training_df = self.train_pipeline_encodings(
+        if do_training_all:
+            threshold_training_df = self.train_pipeline_encodings(
                 baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
                 start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"], filter_values)
-            if print_debug:
-                print(training_df)
+            regex_training_df = self.train_pipeline_regex()
+
+            print("Regex Training")
+            print(regex_training_df)
+            print("Threshold Training")
+            print(threshold_training_df)
+
+        if train_thresholds:
+            threshold_training_df = self.train_pipeline_encodings(
+                baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
+                start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"], filter_values)
+            print("Threshold Training")
+            print(threshold_training_df)
+        elif train_regex:
+            regex_training_df = self.train_pipeline_regex()
+            print("Regex Training")
+            print(regex_training_df)
 
         encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book, tools=tools,
-                                             input_threshold=start_threshold, training=do_training,
+                                             input_threshold=start_threshold, training=do_training_all,
                                              columns=self.column_mappings, filter_values=filter_values)
 
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=self.paths["path to output"],
@@ -220,9 +254,9 @@ class EMRPipeline:
         return stats, autocorrect_df
 
     def train_pipeline_encodings(self, baseline_versions: List[str], end_threshold: float, print_debug: bool,
-                                 report_name: str,
-                                 reports_with_values: List[Report], start_threshold: float, threshold_interval: float,
-                                 timestamp: str, tools: dict, output_path: str, filter_values: bool) -> pd.DataFrame:
+                                 report_name: str, reports_with_values: List[Report], start_threshold: float,
+                                 threshold_interval: float, timestamp: str, tools: dict, output_path: str,
+                                 filter_values: bool) -> pd.DataFrame:
         """
         :param filter_values:
         :param output_path:
@@ -343,5 +377,5 @@ class EMRPipeline:
         training_df.to_excel(output_path + "training/all_training_{}_{}.xlsx".format(self.report_name, timestamp))
         return best_thresholds_df
 
-    def train_pipeline_regex(self):
-        print("dab")
+    def train_pipeline_regex(self, front_cap_rules: List[str], end_cap_rules: List[str]) -> pd.DataFrame:
+        print("lmfao")

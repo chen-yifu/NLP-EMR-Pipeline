@@ -337,8 +337,7 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost,
                                                       extraction_tools=extraction_tools)
-        old_id = report.report_id
-        report.report_id = old_id + "V" if old_id[-1].isnumeric() else old_id[:-1] + "V" + old_id[-1]
+
 
         report.extractions.update({"laterality": report.laterality})
         report.extractions = {" ".join(k.translate(table).lower().strip().split()): autocorrect(v) for k, v in

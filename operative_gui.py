@@ -143,7 +143,7 @@ class StartPage(tk.Frame):
             tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
             sep_list=["surgical indication", "immediate reconstruction type"],
             perform_autocorrect=True,
-            do_training=False,
+            do_training_all=False,
             filter_values=True)
 
         controller.auto_correct_df = controller.auto_correct_df.sort_values(
