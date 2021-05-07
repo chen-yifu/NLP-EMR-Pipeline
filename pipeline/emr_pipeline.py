@@ -124,28 +124,28 @@ class EMRPipeline:
         # returns list[Report] with everything BUT encoded and not_found initialized
         cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_loaded_in_str)
 
-        # synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
-        #     {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
-        #     capture_till_end_of_val_list=single_line_list,
-        #     use_seperater_for_contained_capture=use_separator_to_capture,
-        #     contained_capture_list=contained_capture_list,
-        #     multi_line_cols_list=multi_line_cols,
-        #     no_anchor_list=no_anchor_list,
-        #     anchor=anchor,
-        #     sep_list=sep_list,
-        #     anchor_list=anchor_list,
-        #     is_anchor=add_anchor)
-        #
-        # print(synoptic_regex)
-        # print(regex_variable_mappings)
-
-        synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
+        synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
             {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
-            cols_to_add=cols_to_add,
-            anchor=anchor)
+            capture_till_end_of_val_list=single_line_list,
+            use_seperater_for_contained_capture=use_separator_to_capture,
+            contained_capture_list=contained_capture_list,
+            multi_line_cols_list=multi_line_cols,
+            no_anchor_list=no_anchor_list,
+            anchor=anchor,
+            sep_list=sep_list,
+            anchor_list=anchor_list,
+            is_anchor=add_anchor)
 
         print(synoptic_regex)
         print(regex_variable_mappings)
+
+        # synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
+        #     {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
+        #     cols_to_add=cols_to_add,
+        #     anchor=anchor)
+        #
+        # print(synoptic_regex)
+        # print(regex_variable_mappings)
 
         # this is the str of PDFs that do not contain any Synoptic Report section
         without_synoptics_strs_and_ids = [report for report in cleaned_emr if report.report_id in ids_without_synoptic]

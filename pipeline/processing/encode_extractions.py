@@ -30,28 +30,6 @@ def clean_txt(val: str) -> str:
         return remove_letters
 
 
-def get_entities(val: str, remove_stop_words: bool = True) -> tuple:
-    """
-    :param remove_stop_words:
-    :param val:
-    :return:
-    """
-    # val = clean_txt(val)
-    if type(val) is float or pd.isna(val) or val is None:
-        return [""], [""]
-    if remove_stop_words:
-        doc = nlp(val)
-        clean_token = []
-        for token in doc:
-            if not token.is_stop:
-                clean_token.append(token.text)
-        val = " ".join(clean_token)
-    entities = list(nlp(val).ents) if len(val.split()) > 5 else [val]
-    # return " ".join([ent.text for ent in entities if isinstance(ent, Span)]), [val]
-    # if len(entities) > 0 else
-    return entities, [val]
-
-
 def contains_word(encoding_val: str, pipeline_val_str: str, alpha: float, threshold: float) -> bool:
     if encoding_val in pipeline_val_str:
         if encoding_val == pipeline_val_str:
@@ -118,9 +96,9 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                             return False
                 return True
 
-            def try_encoding_scispacy(val_to_encode: List[Span], orginal_val: str = "") -> Tuple[bool, str, int]:
+            def try_encoding_scispacy(str_to_encode: str) -> Tuple[bool, str, int]:
                 """
-                :param val_to_encode:
+                :param str_to_encode:
                 :return:
                 """
                 num = ""
@@ -133,21 +111,17 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                 for encoding in encodings:
                     for encoding_val in encoding.val:
                         code_book_doc = nlp(encoding_val)
-                        for pipeline_val in val_to_encode:
-                            pipeline_val_str = pipeline_val.text if isinstance(pipeline_val,
-                                                                               Span) else pipeline_val
-                            pipeline_doc = nlp(pipeline_val_str)
-                            sim = pipeline_doc.similarity(code_book_doc)
-                            if sim > alpha and sim > threshold:
-                                alpha = sim
-                                num = str(encoding.num)
-                                found = True
-                                pipeline_val_str_to_return = pipeline_val_str
-                            if alpha == 1 or contains_word(encoding_val.lower().strip(),
-                                                           pipeline_val_str.lower().strip(), alpha,
-                                                           threshold):
-                                # and sim > threshold
-                                return True, str(encoding.num), 1
+                        pipeline_doc = nlp(str_to_encode)
+                        sim = pipeline_doc.similarity(code_book_doc)
+                        if sim > alpha and sim > threshold:
+                            alpha = sim
+                            num = str(encoding.num)
+                            found = True
+                            pipeline_val_str_to_return = str_to_encode
+                        if alpha == 1 or contains_word(encoding_val.lower().strip(), str_to_encode.lower().strip(),
+                                                       alpha, threshold):
+                            # and sim > threshold
+                            return True, str(encoding.num), 1
                 if found:
                     return found, num, alpha
                 else:
@@ -185,12 +159,8 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     primary_val = extractions[human_col].primary_value
                     alt_val = extractions[human_col].alternative_value[0] if extractions[
                                                                                  human_col].alternative_value != [] else ""
-                    # orig_p
-                    primary_entities, orig_p = get_entities(primary_val, remove_stop_words)
-                    # orig_alt
-                    alt_entities, orig_alt = get_entities(alt_val, remove_stop_words)
-                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(orig_p)
-                    found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(orig_alt)
+                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(primary_val)
+                    found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(alt_val)
                     if primary_alpha == 1 and found_primary:
                         encoded_extractions_dict[human_col] = primary_encoded_value
                     elif alt_alpha == 1 and found_alt:
@@ -200,7 +170,7 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     elif alt_alpha > primary_alpha and found_alt:
                         encoded_extractions_dict[human_col] = alt_encoded_value
                     else:
-                        should_return_val = is_val_medical(primary_entities) if filter_values else True
+                        should_return_val = is_val_medical(primary_val) if filter_values else True
                         encoded_extractions_dict[human_col] = primary_val if should_return_val else ""
                 except KeyError:
                     print("This should of not occurred.")
