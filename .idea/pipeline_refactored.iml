@@ -12,7 +12,7 @@
       <excludeFolder url="file://$MODULE_DIR$/data/reports" />
       <excludeFolder url="file://$MODULE_DIR$/data/reports_many" />
     </content>
-    <orderEntry type="jdk" jdkName="3.8 @ Ubuntu (2)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="3.8 @ Ubuntu" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

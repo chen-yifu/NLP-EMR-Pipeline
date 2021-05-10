@@ -174,6 +174,13 @@ class EMRPipeline:
             perform_autocorrect=perform_autocorrect,
             extraction_tools=extraction_tools)
 
+        for report in filtered_reports:
+            old_id = report.report_id
+            id_end = self.report_ending[0]
+            new_id = old_id + id_end if old_id[-1].isnumeric() else old_id[:-1] + id_end + old_id[-1]
+            new_id = "".join(new_id.split())
+            report.report_id = new_id
+
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings)
 
         df_raw = save_dictionaries_into_csv_raw(reports_with_values, self.column_mappings,
