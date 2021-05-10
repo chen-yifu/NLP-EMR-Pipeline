@@ -101,6 +101,8 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                 :param str_to_encode:
                 :return:
                 """
+                if not str_to_encode:
+                    str_to_encode = ""
                 num = ""
                 found = False
                 pipeline_val_str_to_return = ""

@@ -177,6 +177,11 @@ class EMRPipeline:
             perform_autocorrect=perform_autocorrect,
             extraction_tools=extraction_tools)
 
+        # # write the new columns to csv file:
+        # columns_dict = {}
+        # columns_df = pd.DataFrame(columns_dict)
+        # columns_df.to_csv(self.paths["path to code book"])
+
         for report in filtered_reports:
             old_id = report.report_id
             id_end = self.report_ending[0]

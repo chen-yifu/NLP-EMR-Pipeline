@@ -98,5 +98,4 @@ def operative_pipeline_main():
     #     filter_func_args=("indication", ["prophylaxis", "prophylactic"]))
 
 
-operative_pipeline_main()
 pathology_pipeline_main()

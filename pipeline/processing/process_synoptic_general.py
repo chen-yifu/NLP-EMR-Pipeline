@@ -4,7 +4,7 @@ processes report and finds column value pairs
 import re
 import string
 from collections import defaultdict
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 from nltk import edit_distance
 from nltk.corpus import stopwords
 from pipeline.processing.columns import load_excluded_columns_as_list
@@ -61,14 +61,14 @@ def get_generic_extraction_regex(unfiltered_str: str, regex: str, is_text: bool 
     return generic_pairs
 
 
-def find_nearest_alternative(original_col, possible_candidates: List[str], study_id, value,
-                             list_of_dict_with_stats: List[dict], is_text: bool, pickle_path: str = None,
-                             max_edit_distance=2,
-                             substitution_cost=1):
+def find_nearest_alternative(original_col: str, possible_candidates: List[str], study_id: str, value: str,
+                             list_of_dict_with_stats: List[dict], is_text: bool, col_mappings: Dict[str, Column],
+                             pickle_path: str = None, max_edit_distance=2, substitution_cost=1) -> Union[None, str]:
     """
     find the nearest alternative by choosing the element in possible_candidates with nearest edit distance to source
     if multiple candidates have the nearest distance, return the first candidate by position
 
+    :param col_mappings:
     :param is_text:
     :param pickle_path:              path to data that GUI generates if a user is able to select columns to exclude.
     :param list_of_dict_with_stats:  dict of stats of column corrections
@@ -97,18 +97,25 @@ def find_nearest_alternative(original_col, possible_candidates: List[str], study
     if min_dist > max_edit_distance:
         return None
 
-    # add the auto-correct information to DataFrame
+    # add the auto-correct information to DataFrame and check if the col is in the list of column mappings
     if res != original_col:
+        # add the auto-correct information to DataFrame
         headers = ["Study ID", "Original Column", "Corrected Column", "Edit Distance", "Extracted Data"]
         extracted_stats = [study_id, original_col, res, edit_distance(original_col, res),
                            str(value).replace("\n", " ")]
         list_of_dict_with_stats.append(dict(zip(headers, extracted_stats)))
+        # check if in column mappings
+        for key, col in col_mappings.items():
+            if res in col.primary_report_col:
+                if original_col not in excluded_columns:
+                    col.primary_report_col.append(original_col.lower())
+                    break
 
     return res
 
 
 def autocorrect_columns(correct_col_names, result_so_far, study_id, list_of_dict_with_stats, pickle_path, is_text,
-                        tools: dict, max_edit_distance=5, substitution_cost=2):
+                        col_mappings, tools: dict, max_edit_distance=5, substitution_cost=2):
     """
     using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
 
@@ -130,7 +137,8 @@ def autocorrect_columns(correct_col_names, result_so_far, study_id, list_of_dict
             nearest_column = find_nearest_alternative(col, correct_col_names, study_id, result_so_far[col],
                                                       list_of_dict_with_stats, is_text=is_text,
                                                       max_edit_distance=max_edit_distance,
-                                                      substitution_cost=substitution_cost, pickle_path=pickle_path)
+                                                      substitution_cost=substitution_cost, pickle_path=pickle_path,
+                                                      col_mappings=col_mappings)
             # if the nearest column is already extracted, find the next alternative
             while nearest_column is not None and nearest_column in result_so_far.keys():
                 correct_col_names.remove(nearest_column)
@@ -138,7 +146,7 @@ def autocorrect_columns(correct_col_names, result_so_far, study_id, list_of_dict
                                                           list_of_dict_with_stats, is_text=is_text,
                                                           max_edit_distance=max_edit_distance,
                                                           substitution_cost=substitution_cost,
-                                                          pickle_path=pickle_path)
+                                                          pickle_path=pickle_path, col_mappings=col_mappings)
             # copy the value from incorrect column name to correct column name
             if nearest_column:
                 in_tools = nearest_column.lower() in tools.keys()
@@ -178,7 +186,6 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     # checking if is text or numerical
     is_text = True if report_type is ReportType.ALPHA else False
 
-    # todo
     def missing_columns(correct_cols: List[str], cols_so_far: List[str]) -> List[str]:
         """
         :param correct_cols:
@@ -222,7 +229,8 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     # auto-correct the matches by using a predefined list of correct column names in "column_mappings"
     result = autocorrect_columns(correct_col_names, result, report_id, list_of_dict_with_stats, is_text=is_text,
                                  max_edit_distance=max_edit_distance_autocorrect,
-                                 substitution_cost=substitution_cost, pickle_path=pickle_path, tools=tools)
+                                 substitution_cost=substitution_cost, pickle_path=pickle_path, tools=tools,
+                                 col_mappings=column_mappings)
 
     generic_pairs = get_generic_extraction_regex(synoptic_report_str, general_regex, is_text)
 
@@ -247,7 +255,7 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
         nearest_column = find_nearest_alternative(col, columns_missing, report_id, val, list_of_dict_with_stats,
                                                   max_edit_distance=max_edit_distance_missing, is_text=is_text,
                                                   substitution_cost=substitution_cost,
-                                                  pickle_path=pickle_path)
+                                                  pickle_path=pickle_path, col_mappings=column_mappings)
         if nearest_column in columns_missing:
             in_tools = nearest_column in tools
             cleansed_val = cleanse_value(val, is_text, tools[nearest_column]) if in_tools else cleanse_value(val,
@@ -337,7 +345,6 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost,
                                                       extraction_tools=extraction_tools)
-
 
         report.extractions.update({"laterality": report.laterality})
         report.extractions = {" ".join(k.translate(table).lower().strip().split()): autocorrect(v) for k, v in
