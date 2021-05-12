@@ -41,3 +41,4 @@ class Column:
                           "add anchor": add_anchor, "add separator": add_separator_in_front_cap}
         self.end_cap_rules = {"same line": capture_up_to_end_of_line, "up to separator": capture_up_to_separator,
                         "up to keyword": capture_up_to_keyword}
+        self.found_during_execution = []

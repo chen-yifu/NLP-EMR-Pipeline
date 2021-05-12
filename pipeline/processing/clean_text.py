@@ -19,8 +19,10 @@ def cleanse_column(col: str, is_text: bool = False) -> Tuple[str, str]:
     colon_i = col.find(":")
     col = col[:colon_i] if colon_i != -1 else col
     val = col[colon_i + 1:] if colon_i != -1 else ""
+    col = " ".join(col.translate(table).lower().strip().split())
     if is_text:
-        return " ".join([w for w in col.split() if w.isalpha()]).lower().strip(), val
+        col = " ".join([w for w in col.split() if w.isalpha()]).lower().strip()
+        return col, val
     return col.strip().lower(), val
 
 

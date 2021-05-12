@@ -2,7 +2,7 @@
 This file contains methods that import tools needed to run the pipeline
 """
 import string
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 
 import os
 import pandas as pd
@@ -126,3 +126,12 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, skip=None, p
                                                                   zero_empty=row[zero_empty_index])
 
     return pdf_cols_human_cols_dict_w_column
+
+
+def get_acronyms(encodings: List[str]) -> Set[str]:
+    acronyms = set()
+    for encoding in encodings:
+        all_upper = len([l for l in encoding if l.isupper()]) >= len(encoding) - 1 and len(encoding) > 2
+        if all_upper:
+            acronyms.add(encoding)
+    return acronyms

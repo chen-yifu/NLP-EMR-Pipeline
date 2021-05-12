@@ -99,3 +99,4 @@ def operative_pipeline_main():
 
 
 pathology_pipeline_main()
+operative_pipeline_main()

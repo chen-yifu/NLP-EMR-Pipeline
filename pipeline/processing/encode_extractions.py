@@ -2,7 +2,7 @@
 Encodes the extractions to numbers in code book.
 """
 
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Union, Tuple, Set
 
 import pandas as pd
 import spacy
@@ -51,9 +51,10 @@ def contains_word(encoding_val: str, pipeline_val_str: str, alpha: float, thresh
 
 
 def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding]], input_threshold: float,
-                       columns: Dict[str, Column], filter_values: bool, tools: dict = {}, model: str = "en_core_sci_lg",
-                       training: bool = False, print_debug: bool = True, ) -> List[Report]:
+                       columns: Dict[str, Column], filter_values: bool, acronyms: Set[str], tools: dict = {},
+                       model: str = "en_core_sci_lg", training: bool = False, print_debug: bool = True) -> List[Report]:
     """
+    :param acronyms:
     :param filter_values:
     :param input_threshold:
     :param training:
@@ -66,6 +67,23 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
     :return:
     """
     print("Beginning to encode the extractions using {}".format(model))
+    acronyms_list = list(acronyms)
+    acronyms_lowercased = [a.lower() for a in acronyms]
+
+    def find_replace_acronyms(val: str):
+        if not val:
+            val = ""
+        val_to_return = []
+        for word in val.split():
+            found = False
+            for index, acyn in enumerate(acronyms_lowercased):
+                if word.lower() == acyn.lower():
+                    val_to_return.append(acronyms_list[index])
+                    found = True
+                    break
+            if not found:
+                val_to_return.append(word)
+        return " ".join(val_to_return).translate(table)
 
     def encode_extraction_for_single_report(extractions: Dict[str, Value]) -> Dict[str, str]:
         """
@@ -77,7 +95,6 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
             done_encoding = False
             column_info = columns[human_col] if human_col in columns else None
             col_threshold = column_info.spacy_threshold if human_col in columns else .75
-            remove_stop_words = column_info.remove_stopwords if human_col in columns else False
 
             def is_val_medical(val_to_encode: List[Span], least_neg: float = .65) -> bool:
                 """
@@ -101,8 +118,6 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                 :param str_to_encode:
                 :return:
                 """
-                if not str_to_encode:
-                    str_to_encode = ""
                 num = ""
                 found = False
                 pipeline_val_str_to_return = ""
@@ -161,8 +176,9 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     primary_val = extractions[human_col].primary_value
                     alt_val = extractions[human_col].alternative_value[0] if extractions[
                                                                                  human_col].alternative_value != [] else ""
-                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(primary_val)
-                    found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(alt_val)
+                    found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(
+                        find_replace_acronyms(primary_val))
+                    found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(find_replace_acronyms(alt_val))
                     if primary_alpha == 1 and found_primary:
                         encoded_extractions_dict[human_col] = primary_encoded_value
                     elif alt_alpha == 1 and found_alt:

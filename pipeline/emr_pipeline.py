@@ -16,7 +16,7 @@ from pipeline.preprocessing.scanned_pdf_to_text import load_reports_into_pipelin
 from pipeline.processing.encode_extractions import encode_extractions
 from pipeline.processing.process_synoptic_general import process_synoptics_and_ids
 from pipeline.processing.turn_to_values import turn_reports_extractions_to_values
-from pipeline.utils.import_tools import get_input_paths, import_code_book, import_columns
+from pipeline.utils.import_tools import get_input_paths, import_code_book, import_columns, get_acronyms
 from pipeline.utils.paths import get_paths
 from pipeline.utils.regex_tools import synoptic_capture_regex, synoptic_capture_regex_
 from pipeline.utils.report import Report
@@ -56,6 +56,12 @@ class EMRPipeline:
             report_ending = report_ending[:-3] + "txt"
         self.paths_to_reports_to_read_in = get_input_paths(start, end, path_to_reports=self.paths["path to reports"],
                                                            report_str="{}" + report_ending)
+        flat_los = []
+        for encodings in self.code_book.values():
+            for encoding in encodings:
+                for val in encoding.val:
+                    flat_los += val.split()
+        self.acronyms = get_acronyms(flat_los)
 
     def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = None,
                      separator: str = ":", use_separator_to_capture: bool = False, add_anchor: bool = False,
@@ -63,11 +69,10 @@ class EMRPipeline:
                      no_anchor_list: list = None, anchor_list: list = None, print_debug: bool = True, filter_func=None,
                      max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
                      sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
-                     filter_func_args: Tuple = None, cols_to_add: List[str] = [], train_thresholds: bool = False,
-                     train_regex: bool = False,
-                     perform_autocorrect: bool = False, do_training_all: bool = False, filter_values: bool = False,
-                     start_threshold: float = 0.7, end_threshold: float = 1, extraction_tools: list = None,
-                     threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
+                     filter_func_args: Tuple = None, train_thresholds: bool = False, train_regex: bool = False,
+                     perform_autocorrect: bool = False, do_training_all: bool = False,
+                     filter_values: bool = False, start_threshold: float = 0.7, end_threshold: float = 1,
+                     extraction_tools: list = None, threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
         """
         The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into
         the pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly
@@ -136,16 +141,13 @@ class EMRPipeline:
             anchor_list=anchor_list,
             is_anchor=add_anchor)
 
-        print(synoptic_regex)
-        print(regex_variable_mappings)
-
         # synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
         #     {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
         #     cols_to_add=cols_to_add,
         #     anchor=anchor)
-        #
-        # print(synoptic_regex)
-        # print(regex_variable_mappings)
+
+        print(synoptic_regex)
+        print(regex_variable_mappings)
 
         # this is the str of PDFs that do not contain any Synoptic Report section
         without_synoptics_strs_and_ids = [report for report in cleaned_emr if report.report_id in ids_without_synoptic]
@@ -193,37 +195,21 @@ class EMRPipeline:
             filtered_reports = filter_func(filtered_reports, filter_func_args[0], filter_func_args[1],
                                            self.report_ending)
 
-        reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings)
+        reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings,
+                                                                 list(self.acronyms))
 
         df_raw = save_dictionaries_into_csv_raw(reports_with_values, self.column_mappings,
                                                 csv_path=self.paths["csv path raw"],
                                                 print_debug=print_debug)
 
-        if do_training_all:
-            threshold_training_df = self.train_pipeline_encodings(
-                baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
-                start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"], filter_values)
-            regex_training_df = self.train_pipeline_regex()
-
-            print("Regex Training")
-            print(regex_training_df)
-            print("Threshold Training")
-            print(threshold_training_df)
-
-        if train_thresholds:
-            threshold_training_df = self.train_pipeline_encodings(
-                baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
-                start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"], filter_values)
-            print("Threshold Training")
-            print(threshold_training_df)
-        elif train_regex:
-            regex_training_df = self.train_pipeline_regex()
-            print("Regex Training")
-            print(regex_training_df)
+        self.train_pipeline(
+            do_training_all, train_thresholds, train_regex, baseline_versions, end_threshold, print_debug,
+            start_threshold, threshold_interval, timestamp, tools, filter_values, reports_with_values)
 
         encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book, tools=tools,
                                              input_threshold=start_threshold, training=do_training_all,
-                                             columns=self.column_mappings, filter_values=filter_values)
+                                             columns=self.column_mappings, filter_values=filter_values,
+                                             acronyms=self.acronyms)
 
         dataframe_coded = reports_to_spreadsheet(reports=encoded_reports, path_to_output=self.paths["path to output"],
                                                  type_of_report="coded", function=add_report_id)
@@ -382,5 +368,46 @@ class EMRPipeline:
         training_df.to_excel(output_path + "training/all_training_{}_{}.xlsx".format(self.report_name, timestamp))
         return best_thresholds_df
 
-    def train_pipeline_regex(self, front_cap_rules: List[str], end_cap_rules: List[str]) -> pd.DataFrame:
+    def train_pipeline_regex(self) -> pd.DataFrame:
         print("lmfao")
+
+    def train_pipeline(self, do_training_all: bool, train_thresholds: bool, train_regex: bool,
+                       baseline_versions: List[str], end_threshold: float, print_debug: bool,
+                       start_threshold: float, threshold_interval: float, timestamp: str,
+                       tools: dict, filter_values: bool, reports_with_values: List[Report]):
+        """
+        :param do_training_all:
+        :param train_thresholds:
+        :param train_regex:
+        :param baseline_versions:
+        :param end_threshold:
+        :param print_debug:
+        :param start_threshold:
+        :param threshold_interval:
+        :param timestamp:
+        :param tools:
+        :param filter_values:
+        :param reports_with_values:
+        """
+        if do_training_all:
+            threshold_training_df = self.train_pipeline_encodings(
+                baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
+                start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"], filter_values)
+            regex_training_df = self.train_pipeline_regex()
+
+            print("Regex Training")
+            print(regex_training_df)
+            print("Threshold Training")
+            print(threshold_training_df)
+
+        elif train_thresholds:
+            threshold_training_df = self.train_pipeline_encodings(
+                baseline_versions, end_threshold, print_debug, self.report_name, reports_with_values,
+                start_threshold, threshold_interval, timestamp, tools, self.paths["path to output"], filter_values)
+            print("Threshold Training")
+            print(threshold_training_df)
+
+        elif train_regex:
+            regex_training_df = self.train_pipeline_regex()
+            print("Regex Training")
+            print(regex_training_df)

@@ -81,7 +81,13 @@ def find_nearest_alternative(original_col: str, possible_candidates: List[str], 
     :return:                         candidate that is most similar to source, None if exceeds max_edit_distance
     """
     # get a list of excluded source-target column name pairs that we saved earlier
-    all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path) if pickle_path else []
+    all_excluded_columns = []
+    try:
+        all_excluded_columns = load_excluded_columns_as_list(pickle_path=pickle_path) if pickle_path else []
+    except Exception:
+        pass
+
+    original_col = " ".join(original_col.translate(table).lower().strip().split())
     excluded_columns = [tupl[1] for tupl in all_excluded_columns if tupl[0] == original_col]
     possible_candidates = list(set(possible_candidates) - set(excluded_columns))
     original_col, misc = cleanse_column(original_col, is_text)
@@ -108,7 +114,7 @@ def find_nearest_alternative(original_col: str, possible_candidates: List[str], 
         for key, col in col_mappings.items():
             if res in col.primary_report_col:
                 if original_col not in excluded_columns:
-                    col.primary_report_col.append(original_col.lower())
+                    col.found_during_execution.append(original_col.lower())
                     break
 
     return res
@@ -300,30 +306,6 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     :return:                               the auto-correct information to be shown
     """
 
-    def autocorrect(val: str) -> str:
-        """
-        :param val:
-        :return:
-        """
-        if val is None:
-            return val
-        words = [v.lower().strip() for v in val.split()]
-        autocorrect_words = []
-        for w1 in words:
-            found = False
-            for w2 in medical_vocabulary:
-                if w1 == w2:
-                    autocorrect_words.append(w1)
-                    found = True
-                    break
-                if edit_distance(w1, w2) < 2:
-                    autocorrect_words.append(w2)
-                    found = True
-                    break
-            if not found:
-                autocorrect_words.append(w1)
-        return " ".join(autocorrect_words)
-
     result = []
     if print_debug:
         s = "\nProcessing synoptic report sections..."
@@ -347,9 +329,6 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
                                                       extraction_tools=extraction_tools)
 
         report.extractions.update({"laterality": report.laterality})
-        report.extractions = {" ".join(k.translate(table).lower().strip().split()): autocorrect(v) for k, v in
-                              report.extractions.items()} if perform_autocorrect else {
-            " ".join(k.translate(table).lower().strip().split()): v for k, v in report.extractions.items()}
         result.append(report)
         print(report.report_id)
         print(report.extractions)
