@@ -2,8 +2,10 @@
 main file to invoke methods
 """
 from pipeline.emr_pipeline import EMRPipeline
+from pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
 from pipeline.processing.specific_functions import *
+from pipeline.utils.import_tools import import_columns
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import get_full_path
 
@@ -84,7 +86,8 @@ def operative_pipeline_main():
         do_training_all=False,
         filter_values=True,
         filter_func=filter_report,
-        filter_func_args=("indication", ["prophylaxis", "prophylactic"]))
+        filter_func_args=("indication", ["prophylaxis", "prophylactic"]),
+        resolve_ocr=False)
 
     # operative_pipeline.run_pipeline(
     #     baseline_versions=validation_o,
@@ -98,5 +101,24 @@ def operative_pipeline_main():
     #     filter_func_args=("indication", ["prophylaxis", "prophylactic"]))
 
 
-pathology_pipeline_main()
-operative_pipeline_main()
+# pathology_pipeline_main()
+# operative_pipeline_main()
+
+shawn_op = highlight_csv_differences(
+    csv_path_coded="data/output/operative_results/csv_files/coded_20-04-2021~1112.csv",
+    csv_path_human="data/baselines/operative_SY.csv",
+    report_type="Human Baselines",
+    output_excel_path="data/output/operative_results/excel_files/SY-May-12.xlsx",
+    column_mappings=list(import_columns("data/utils/operative_column_mappings.csv",
+                                        "data/output/operative_results/training/best_training.xlsx").values()),
+    print_debug=True)
+print(shawn_op)
+shawn_path = highlight_csv_differences(
+    csv_path_coded="data/output/pathology_results/csv_files/coded_20-04-2021~1109.csv",
+    csv_path_human="data/baselines/pathology_SY.csv",
+    report_type="Human Baselines",
+    output_excel_path="data/output/pathology_results/excel_files/SY-May-12.xlsx",
+    column_mappings=list(import_columns("data/utils/pathology_column_mappings.csv",
+                                        "data/output/pathology_results/training/best_training.xlsx").values()),
+    print_debug=True)
+print(shawn_path)

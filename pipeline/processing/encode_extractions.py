@@ -102,7 +102,7 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                 :param least_neg:
                 :return:
                 """
-                negations = ["not applicable", "n/a", "na", "no"]
+                negations = ["not applicable", "n/a", "NA", "no"]
                 for negation in negations:
                     n_doc = nlp(negation)
                     for pipeline_val in val_to_encode:
