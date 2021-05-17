@@ -2,24 +2,11 @@ import tkinter as tk  #
 from tkinter import font as tkfont
 from tkinter import ttk
 from pandastable import Table
-
-# fonts
-from pipeline.emr_pipeline import EMRPipeline
+from main import operative_pipeline_main, operative_pipeline
 from pipeline.processing.columns import load_excluded_columns_as_df, load_excluded_columns_as_list, \
     save_excluded_columns
-from pipeline.processing.specific_functions import immediate_reconstruction_mentioned
-from pipeline.utils.report_type import ReportType
 
-# put this in main.py to run
-
-# def operative_gui():
-#     operative_app = OperativeEMRApp()
-#     operative_app.geometry("1280x740")
-#     operative_app.mainloop()
-
-operative_pipeline = EMRPipeline(start=1, end=50, report_name="operative", report_ending="V.pdf",
-                                 report_type=ReportType.ALPHA)
-
+# fonts
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
 MEDIUM_FONT = ("Helvetica", 24)
@@ -130,21 +117,7 @@ class StartPage(tk.Frame):
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
 
-        controller.stats, controller.auto_correct_df = operative_pipeline.run_pipeline(
-            baseline_versions=["operative_validation_D.csv", "operative_validation_VZ.csv"], anchor=r"^\d*\.* *",
-            single_line_list=["neoadjuvant treatment", "neoadjuvant treatment?"],
-            use_separator_to_capture=True,
-            add_anchor=True,
-            cols_to_skip=["immediate reconstruction mentioned", "laterality",
-                          "reconstruction mentioned"],
-            contained_capture_list=["breast incision type", "immediate reconstruction type"],
-            no_anchor_list=["neoadjuvant treatment", "immediate reconstruction mentioned",
-                            "localization"],
-            tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
-            sep_list=["surgical indication", "immediate reconstruction type"],
-            perform_autocorrect=True,
-            do_training_all=False,
-            filter_values=True)
+        controller.stats, controller.auto_correct_df = operative_pipeline_main()
 
         controller.auto_correct_df = controller.auto_correct_df.sort_values(
             ["Edit Distance", "Original Column", "Corrected Column"], ascending=[False, True, True])

@@ -4,26 +4,9 @@ from tkinter import ttk
 from pandastable import Table
 
 # fonts
-from pipeline.emr_pipeline import EMRPipeline
-from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
+from main import pathology_pipeline_main, pathology_pipeline
 from pipeline.processing.columns import load_excluded_columns_as_df, load_excluded_columns_as_list, \
     save_excluded_columns
-from pipeline.processing.specific_functions import *
-from pipeline.utils.report_type import ReportType
-from pipeline.utils.utils import get_full_path
-
-# put this in main.py to run
-
-# def pathology_gui():
-#     pathology_app = PathologyEMRApp()
-#     pathology_app.geometry("1280x740")
-#     pathology_app.mainloop()
-
-pathology_pipeline = EMRPipeline(
-    start=101, end=150, report_name="pathology", report_ending="V.pdf",
-    report_type=ReportType.NUMERICAL,
-    other_paths={"pickle path": get_full_path("data/utils/excluded_autocorrect_column_pairs.data"),
-                 "path to stages": get_full_path("data/utils/stages.csv")})
 
 EXTRA_SMALL_FONT = ("Helvetica", 15)
 SMALL_FONT = ("Helvetica", 18)
@@ -137,29 +120,7 @@ class StartPage(tk.Frame):
         self.update()
         # run converter and get the accuracy statistics and autocorrected columns DataFrame
 
-        controller.stats, controller.auto_correct_df = pathology_pipeline.run_pipeline(
-            sep_list=["invasive carcinoma", "in situ component", "in situ component type", "insitu component",
-                      "insitu type"],
-            baseline_versions=["pathology_validation_D.csv", "pathology_validation_VZ.csv"],
-            anchor=r"^ *-* *",
-            add_anchor=True,
-            multi_line_cols=["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage",
-                             "comment(s)",
-                             "Part(s) Involved:"],
-            cols_to_skip=["study #", "specimen", "treatment effect", "margins",
-                          "pathologic stage", "comment(s)",
-                          "part(s) involved", "nottingham score", "closest margin",
-                          "closest margin1"],
-            tools={"pathologic stage": find_pathologic_stage,
-                   "nottingham_score": nottingham_score,
-                   "process_mm_val": process_mm_val,
-                   "number_of_foci": number_of_foci,
-                   "tumour_site": tumour_site,
-                   "do_nothing": do_nothing,
-                   "archtectural_patterns": archtectural_patterns},
-            extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ],
-            do_training_all=False,
-            filter_values=False)
+        controller.stats, controller.auto_correct_df = pathology_pipeline_main()
 
         controller.auto_correct_df = controller.auto_correct_df.sort_values(
             ["Edit Distance", "Original Column", "Corrected Column"], ascending=[False, True, True])

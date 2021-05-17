@@ -11,8 +11,8 @@ data/output/pathology_results/csv_files/*.xlsx
 data/output/pathology_results/excel_files/*.xlsx
 data/utils/training_metrics/params/*.csv
 data/utils/training_metrics/*.xlsx
-data/utils/operative_column_mappings.csv
-data/utils/pathology_column_mappings.csv
+data/utils/operative_reports/operative_column_mappings.csv
+data/utils/pathology_reports/pathology_column_mappings.csv
 data/utils/*.data
 data/utils/*.ods
 data/utils/*.xlsx

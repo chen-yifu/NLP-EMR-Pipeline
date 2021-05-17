@@ -1,6 +1,6 @@
 import re
 import string
-from typing import Tuple
+from typing import Tuple, List, Dict
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
 
@@ -63,7 +63,7 @@ def remove_new_line_if_colon_present(s: str):
     return val
 
 
-def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
+def cleanse_value(val: str, is_text: bool = False, function=None, paths: Dict[str, str] = {}) -> str:
     """
     Cleanse the captured value according to whether it is text or numerical
     TEXT: removes all punctuation and lowers everything and removes single letters and strips all spaces
@@ -82,4 +82,6 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     if colon_index != -1:
         val = val[colon_index + 1:]
     val = re.sub(r":\s*$", "", val)  # remove ":"
-    return function(val) if function else val.replace("\n", " ").strip()
+    if not paths:
+        print("There are no paths!")
+    return function(val, paths) if function else val.replace("\n", " ").strip()

@@ -35,32 +35,6 @@ def get_extraction_specific_regex(unfiltered_str: str, synoptic_report_regex: st
     return filtered_pairs
 
 
-def get_generic_extraction_regex(unfiltered_str: str, regex: str, is_text: bool = False, tools: dict = {}) -> dict:
-    """
-    Extracts information from the generic capture regex. Cleans out values that are None or "" and performs cleaning on the column and value.
-
-    :param tools:               dictionary of functions that certain columns may need to use
-    :param is_text:             whether or not the report is ReportType.TEXT or NUMERICAL
-    :param unfiltered_str:      the report that the regex is to be used on
-    :param regex:               the generic regex to be used
-    :return:                    dictionary of the cleaned pairs
-    """
-    matches = re.finditer(regex, unfiltered_str, re.MULTILINE)
-    generic_pairs = {}
-    for m in matches:
-        cleaned_column, to_append = cleanse_column(m["column"], is_text)
-        func = tools[cleaned_column] if cleaned_column in tools.keys() else None
-        cleaned_value = cleanse_value(to_append + " " + m["value"], is_text, func)
-        if cleaned_column in generic_pairs:
-            for num in range(1, 10):
-                if cleaned_column + str(num) not in generic_pairs:
-                    generic_pairs[cleaned_column + str(num)] = cleaned_value
-                    break
-        else:
-            generic_pairs[cleaned_column] = cleaned_value
-    return generic_pairs
-
-
 def find_nearest_alternative(original_col: str, possible_candidates: List[str], study_id: str, value: str,
                              list_of_dict_with_stats: List[dict], is_text: bool, col_mappings: Dict[str, Column],
                              pickle_path: str = None, max_edit_distance=2, substitution_cost=1) -> Union[None, str]:
@@ -120,59 +94,17 @@ def find_nearest_alternative(original_col: str, possible_candidates: List[str], 
     return res
 
 
-def autocorrect_columns(correct_col_names, result_so_far, study_id, list_of_dict_with_stats, pickle_path, is_text,
-                        col_mappings, tools: dict, max_edit_distance=5, substitution_cost=2):
-    """
-    using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
-
-    :param tools:                        functions that some columns may use for cleaning
-    :param pickle_path:                  path to pickled data from GUI
-    :param correct_col_names:            a list of correct column names
-    :param result_so_far:           extracted generic key-value pairs from synoptic reports
-    :param study_id:                     the study id of the dictionary
-    :param list_of_dict_with_stats:      save the auto-correct activities to be shown on GUI
-    :param max_edit_distance:            maximum distance allowed between source and candidate
-    :param substitution_cost:            cost to substitute a character instead of inserting/removing
-    :return:                             dict with auto-corrected column names
-    """
-    columns = list(result_so_far.keys())
-    for col in columns:
-        if col in correct_col_names:  # do nothing if key is correct
-            continue
-        else:
-            nearest_column = find_nearest_alternative(col, correct_col_names, study_id, result_so_far[col],
-                                                      list_of_dict_with_stats, is_text=is_text,
-                                                      max_edit_distance=max_edit_distance,
-                                                      substitution_cost=substitution_cost, pickle_path=pickle_path,
-                                                      col_mappings=col_mappings)
-            # if the nearest column is already extracted, find the next alternative
-            while nearest_column is not None and nearest_column in result_so_far.keys():
-                correct_col_names.remove(nearest_column)
-                nearest_column = find_nearest_alternative(col, correct_col_names, study_id, result_so_far[col],
-                                                          list_of_dict_with_stats, is_text=is_text,
-                                                          max_edit_distance=max_edit_distance,
-                                                          substitution_cost=substitution_cost,
-                                                          pickle_path=pickle_path, col_mappings=col_mappings)
-            # copy the value from incorrect column name to correct column name
-            if nearest_column:
-                in_tools = nearest_column.lower() in tools.keys()
-                cleansed_val = cleanse_value(result_so_far[col], is_text,
-                                             tools[nearest_column]) if in_tools else cleanse_value(
-                    result_so_far[col], is_text)
-                result_so_far[nearest_column] = cleansed_val
-
-    return result_so_far
-
-
 def process_synoptic_section(synoptic_report_str: str, report_id: str, report_type: ReportType, pickle_path: str,
-                             column_mappings: Dict[str, Column], list_of_dict_with_stats: List[dict],
+                             paths: dict, column_mappings: Dict[str, Column], list_of_dict_with_stats: List[dict],
                              regex_mappings: Dict[str, List[str]], specific_regex: str, general_regex: str,
                              tools: dict = {}, print_debug: bool = True, extraction_tools: list = [],
                              max_edit_distance_missing=5, max_edit_distance_autocorrect=5,
                              substitution_cost=2, skip_threshold=0.95) -> dict:
     """
+    :param extraction_tools:
+    :param paths:
     :param pickle_path:                        path to pickled data via GUI
-    :param column_mappings:                    human columns and report columns where that inforamtion can be found
+    :param column_mappings:                    human columns and report columns where that information can be found
     :param report_type:                        enum of either TEXT or NUMERICAL
     :param substitution_cost:                  cost for a letter substitution
     :param specific_regex:                     regular pattern that was generated earlier by synoptic_capture_regex
@@ -191,6 +123,74 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
     """
     # checking if is text or numerical
     is_text = True if report_type is ReportType.ALPHA else False
+
+    def autocorrect_columns(correct_col_names, result_so_far, study_id, list_of_dict_with_stats, pickle_path, is_text,
+                            col_mappings, tools: dict, max_edit_distance=5, substitution_cost=2):
+        """
+        using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
+
+        :param tools:                        functions that some columns may use for cleaning
+        :param pickle_path:                  path to pickled data from GUI
+        :param correct_col_names:            a list of correct column names
+        :param result_so_far:           extracted generic key-value pairs from synoptic reports
+        :param study_id:                     the study id of the dictionary
+        :param list_of_dict_with_stats:      save the auto-correct activities to be shown on GUI
+        :param max_edit_distance:            maximum distance allowed between source and candidate
+        :param substitution_cost:            cost to substitute a character instead of inserting/removing
+        :return:                             dict with auto-corrected column names
+        """
+        columns = list(result_so_far.keys())
+        for col in columns:
+            if col in correct_col_names:  # do nothing if key is correct
+                continue
+            else:
+                nearest_column = find_nearest_alternative(col, correct_col_names, study_id, result_so_far[col],
+                                                          list_of_dict_with_stats, is_text=is_text,
+                                                          max_edit_distance=max_edit_distance,
+                                                          substitution_cost=substitution_cost, pickle_path=pickle_path,
+                                                          col_mappings=col_mappings)
+                # if the nearest column is already extracted, find the next alternative
+                while nearest_column is not None and nearest_column in result_so_far.keys():
+                    correct_col_names.remove(nearest_column)
+                    nearest_column = find_nearest_alternative(col, correct_col_names, study_id, result_so_far[col],
+                                                              list_of_dict_with_stats, is_text=is_text,
+                                                              max_edit_distance=max_edit_distance,
+                                                              substitution_cost=substitution_cost,
+                                                              pickle_path=pickle_path, col_mappings=col_mappings)
+                # copy the value from incorrect column name to correct column name
+                if nearest_column:
+                    func = tools[nearest_column] if nearest_column.lower() in tools.keys() else None
+                    cleansed_val = cleanse_value(result_so_far[col], is_text, func, paths) if func else cleanse_value(
+                        result_so_far[col], is_text)
+                    result_so_far[nearest_column] = cleansed_val
+
+        return result_so_far
+
+    def get_generic_extraction_regex(unfiltered_str: str, regex: str, is_text: bool = False, tools: dict = {}) -> dict:
+        """
+        Extracts information from the generic capture regex. Cleans out values that are None or "" and performs cleaning on the column and value.
+
+        :param tools:               dictionary of functions that certain columns may need to use
+        :param is_text:             whether or not the report is ReportType.TEXT or NUMERICAL
+        :param unfiltered_str:      the report that the regex is to be used on
+        :param regex:               the generic regex to be used
+        :return:                    dictionary of the cleaned pairs
+        """
+        matches = re.finditer(regex, unfiltered_str, re.MULTILINE)
+        generic_pairs = {}
+        for m in matches:
+            cleaned_column, to_append = cleanse_column(m["column"], is_text)
+            func = tools[cleaned_column] if cleaned_column in tools.keys() else None
+            cleaned_value = cleanse_value(to_append + " " + m["value"], is_text, func,
+                                          paths) if func else cleanse_value(to_append + " " + m["value"], is_text)
+            if cleaned_column in generic_pairs:
+                for num in range(1, 10):
+                    if cleaned_column + str(num) not in generic_pairs:
+                        generic_pairs[cleaned_column + str(num)] = cleaned_value
+                        break
+            else:
+                generic_pairs[cleaned_column] = cleaned_value
+        return generic_pairs
 
     def missing_columns(correct_cols: List[str], cols_so_far: List[str]) -> List[str]:
         """
@@ -220,8 +220,8 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
 
     for key, val in specific_pairs.items():
         pdf_key = regex_mappings[key][-1].lower()
-        in_tools = pdf_key in tools.keys()
-        val = cleanse_value(val, is_text, function=tools[pdf_key]) if in_tools else cleanse_value(val, is_text)
+        func = tools[pdf_key] if pdf_key in tools.keys() else None
+        val = cleanse_value(val, is_text, func, paths) if func else cleanse_value(val, is_text)
         result[regex_mappings[key][-1]] = val
 
     # save study_id
@@ -263,9 +263,8 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
                                                   substitution_cost=substitution_cost,
                                                   pickle_path=pickle_path, col_mappings=column_mappings)
         if nearest_column in columns_missing:
-            in_tools = nearest_column in tools
-            cleansed_val = cleanse_value(val, is_text, tools[nearest_column]) if in_tools else cleanse_value(val,
-                                                                                                             is_text)
+            func = tools[nearest_column] if nearest_column in tools else None
+            cleansed_val = cleanse_value(val, is_text, func, paths) if func else cleanse_value(val, is_text)
             result[nearest_column] = cleansed_val
         elif nearest_column:
             raise ValueError("Should never reached this branch. Nearest column is among possible candidates")
@@ -281,15 +280,14 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
 
 
 def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings: Dict[str, Column], specific_regex: str,
-                              general_regex: str, regex_mappings: Dict[str, List[str]], pickle_path,
-                              tools: dict = {}, print_debug=True, max_edit_distance_missing: int = 5,
+                              general_regex: str, regex_mappings: Dict[str, List[str]], pickle_path: str, paths: dict,
+                              autocorrect_tools: dict = {}, print_debug=True, max_edit_distance_missing: int = 5,
                               max_edit_distance_autocorrect: int = 5, substitution_cost: int = 2,
-                              extraction_tools: list = [], medical_vocabulary: List[str] = [],
-                              perform_autocorrect: bool = False) -> Tuple[
-    List[Report], pd.DataFrame]:
+                              extraction_tools: list = []) -> Tuple[List[Report], pd.DataFrame]:
     """
     process and extract data from a list of synoptic reports by using regular expression
 
+    :param extraction_tools:
     :param pickle_path:                    path to columns you want to exclude from autocorrect if applicable
     :param column_mappings:                dict of human col name mapped to Column object
     :param max_edit_distance_autocorrect:  the maximum edit distance for autocorrecting extracted pairs
@@ -297,7 +295,7 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     :param max_edit_distance_missing:      max allowed edit distance to find missing cells
     :param regex_mappings:                 the mappings of columns to their regex variables
     :param general_regex:                  a regular pattern that extracts column and values
-    :param tools:                          a dictionary of column names mapped to functions to act on any values of that column
+    :param autocorrect_tools:                          a dictionary of column names mapped to functions to act on any values of that column
     :param specific_regex:                 the regex pattern generated earlier in the pipeline based on the user input columns
     :param unfiltered_reports:             synoptic sections and study IDs
     :param column_mappings:                first str is col name from PDF, second str is col from Excel
@@ -316,13 +314,14 @@ def process_synoptics_and_ids(unfiltered_reports: List[Report], column_mappings:
     for report in unfiltered_reports:
         cleaned_text = report.text.strip().replace(" is ", ":")
         report.extractions = process_synoptic_section(cleaned_text, report.report_id, report.report_type,
+                                                      paths=paths,
                                                       pickle_path=pickle_path,
                                                       column_mappings=column_mappings,
                                                       list_of_dict_with_stats=list_of_dict_with_stats,
                                                       regex_mappings=regex_mappings,
                                                       specific_regex=specific_regex,
                                                       general_regex=general_regex,
-                                                      tools=tools,
+                                                      tools=autocorrect_tools,
                                                       max_edit_distance_missing=max_edit_distance_missing,
                                                       max_edit_distance_autocorrect=max_edit_distance_autocorrect,
                                                       substitution_cost=substitution_cost,

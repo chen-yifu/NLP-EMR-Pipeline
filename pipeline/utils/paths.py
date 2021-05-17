@@ -15,20 +15,25 @@ def get_paths(report_type: str, other_paths=None) -> dict:
     if other_paths is None:
         other_paths = {}
     paths = {}
-    path_to_utils = get_full_path("data/utils/")
+    # folders
+    path_to_utils = get_full_path("data/utils/{}_reports/".format(report_type))
     path_to_input = get_full_path("data/input/{}_reports/".format(report_type))
-    path_to_code_book = path_to_utils + "{}_code_book.ods".format(report_type)
     path_to_output = get_full_path("data/output/{}_results/".format(report_type))
     path_to_reports = get_full_path("data/input/{}_reports/".format(report_type))
     path_to_baselines = get_full_path("data/baselines/")
     path_to_output_csv = get_full_path("data/output/{}_results/csv_files/".format(report_type))
+    path_to_output_excel = get_full_path("data/output/{}_results/excel_files/".format(report_type))
+    path_to_training = path_to_output + "training/"
+
+    # files
+    path_to_code_book = path_to_utils + "{}_code_book.ods".format(report_type)
     csv_path_raw = path_to_output_csv + "raw_{}.csv".format(timestamp)
     csv_path_coded = path_to_output_csv + "coded_{}.csv".format(timestamp)
-    path_to_output_excel = get_full_path("data/output/{}_results/excel_files/".format(report_type))
     path_to_mappings = path_to_utils + "{}_column_mappings.csv".format(report_type)
-    path_to_training = path_to_output + "training/"
     path_to_thresholds = path_to_training + "best_training.xlsx"
     path_to_autocorrect = path_to_utils + "{}_excluded_autocorrect_column_pairs.data".format(report_type)
+
+    # add other paths
     paths.update(other_paths)
 
     paths.update(

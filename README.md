@@ -6,7 +6,11 @@ to install dependencies, run
 pip install -r requirements.txt
 ```
 
-## To use
+## For Windows:
+
+## For Linux/MacOS:
+
+### To use
 
 There are several folders that need to have certain files in them:
 
@@ -41,10 +45,10 @@ my_pipeline.run_pipeline(
     add_anchor=True,
     multi_line_cols=["SPECIMEN", "Treatment Effect", "Margins"],
     cols_to_skip=["study #", "specimen", "treatment effect", "margins"],
-    tools={"pathologic stage": find_pathologic_stage,
-           "nottingham_score": nottingham_score,
-           "process_mm_val": process_mm_val,
-           "archtectural_patterns": archtectural_patterns},
+    encoding_tools={"pathologic stage": find_pathologic_stage,
+                    "nottingham_score": nottingham_score,
+                    "process_mm_val": process_mm_val,
+                    "archtectural_patterns": archtectural_patterns},
     extraction_tools=[no_lymph_node, negative_for_dcis],
     do_training_all=False,
     filter_values=False)

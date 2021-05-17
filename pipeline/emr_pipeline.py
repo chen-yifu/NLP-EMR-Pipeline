@@ -1,14 +1,14 @@
 """
 🧬 file that contains the function that runs the emr pipeline
 """
+import re
 from typing import List, Any, Tuple
 
 import os
 import pandas as pd
 
-from pipeline.archive.operative_pipeline.postprocessing.to_spreadsheet import reports_to_spreadsheet, add_report_id
-from pipeline.archive.pathology_pipeline.preprocessing.isolate_sections import isolate_final_diagnosis_sections
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
+from pipeline.postprocessing.write_csv import reports_to_spreadsheet, add_report_id
 from pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
@@ -63,21 +63,28 @@ class EMRPipeline:
                     flat_los += val.split()
         self.acronyms = get_acronyms(flat_los)
 
-    def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = None,
+    def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = [],
                      separator: str = ":", use_separator_to_capture: bool = False, add_anchor: bool = False,
-                     multi_line_cols: list = None, cols_to_skip: list = None, contained_capture_list: list = None,
-                     no_anchor_list: list = None, anchor_list: list = None, print_debug: bool = True, filter_func=None,
-                     max_edit_distance_missing: int = 5, tools: dict = None, max_edit_distance_autocorrect: int = 5,
-                     sep_list: list = None, substitution_cost: int = 2, resolve_ocr: bool = True,
-                     filter_func_args: Tuple = None, train_thresholds: bool = False, train_regex: bool = False,
-                     perform_autocorrect: bool = False, do_training_all: bool = False,
+                     multi_line_cols: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
+                     no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True, filter_func=None,
+                     autocorrect_tools: dict = {}, max_edit_distance_missing: int = 5, encoding_tools: dict = {},
+                     max_edit_distance_autocorrect: int = 5, sep_list: list = [], substitution_cost: int = 2,
+                     resolve_ocr: bool = True, filter_func_args: Tuple = None, train_thresholds: bool = False,
+                     train_regex: bool = False, perform_autocorrect: bool = False, do_training_all: bool = False,
                      filter_values: bool = False, start_threshold: float = 0.7, end_threshold: float = 1,
-                     extraction_tools: list = None, threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
+                     extraction_tools: list = [], threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
         """
         The starting function of the EMR pipeline. Reports must be preprocessed by Adobe OCR before being loaded into
         the pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly
         alphabetical do not need to be preprocessed, as the pytesseract library will turn them into .txt files.
 
+        :param autocorrect_tools:
+        :param extraction_tools:
+        :param filter_values:
+        :param filter_func_args:
+        :param train_thresholds:
+        :param filter_func:
+        :param train_regex:
         :param perform_autocorrect:            whether or not pipeline perform autocorrect on values based on medical vocab
         :param threshold_interval:             what interval the pipeline should increment by in training
         :param do_training_all:                    whether or not you want pipeline to do training
@@ -92,7 +99,7 @@ class EMRPipeline:
         :param contained_capture_list:         columns that you want to use contained capture on
         :param add_anchor:                     whether or not you want to add anchor, default is False
         :param separator:                      what separates the column and value, ex -> invasive carcinoma : negative
-        :param tools:                          functions that other columns need for cleansing
+        :param encoding_tools:                          functions that other columns need for cleansing
         :param baseline_versions:              the baseline version to compare to
         :param cols_to_skip:                   which columns to not put in the regex
         :param multi_line_cols:                the columns in the report that span two lines
@@ -103,14 +110,6 @@ class EMRPipeline:
         :param resolve_ocr:                    resolve ocr white space if true
         :return:                               autocorrect results
         """
-        tools = tools if tools is not None else {}
-        contained_capture_list = contained_capture_list if contained_capture_list is not None else []
-        anchor_list = anchor_list if anchor_list is not None else []
-        sep_list = sep_list if sep_list is not None else []
-        no_anchor_list = no_anchor_list if no_anchor_list is not None else []
-        multi_line_cols = multi_line_cols if multi_line_cols is not None else []
-        single_line_list = single_line_list if single_line_list is not None else []
-        extraction_tools = extraction_tools if extraction_tools is not None else []
         timestamp = get_current_time()
 
         # try to read in the reports. if there is exception this is because the pdfs have to be turned into text
@@ -152,17 +151,6 @@ class EMRPipeline:
         # this is the str of PDFs that do not contain any Synoptic Report section
         without_synoptics_strs_and_ids = [report for report in cleaned_emr if report.report_id in ids_without_synoptic]
 
-        # If the PDF doesn't contain a synoptic section, use the Final Diagnosis section instead
-        # this part is in development
-        final_diagnosis_reports, ids_without_final_diagnosis = isolate_final_diagnosis_sections(
-            without_synoptics_strs_and_ids,
-            print_debug=print_debug)
-
-        if print_debug:
-            if len(ids_without_final_diagnosis) > 0:
-                s = "Study IDs with neither Synoptic Report nor Final Diagnosis: {}".format(ids_without_final_diagnosis)
-                print(s)
-
         filtered_reports, autocorrect_df = process_synoptics_and_ids(
             cleaned_emr,
             self.column_mappings,
@@ -172,11 +160,10 @@ class EMRPipeline:
             max_edit_distance_missing=max_edit_distance_missing,
             max_edit_distance_autocorrect=max_edit_distance_autocorrect,
             substitution_cost=substitution_cost,
-            tools=tools,
+            autocorrect_tools=autocorrect_tools,
             regex_mappings=regex_variable_mappings,
             pickle_path=self.pickle_path,
-            medical_vocabulary=medical_vocabulary,
-            perform_autocorrect=perform_autocorrect,
+            paths=self.paths,
             extraction_tools=extraction_tools)
 
         # # write the new columns to csv file:
@@ -204,9 +191,10 @@ class EMRPipeline:
 
         self.train_pipeline(
             do_training_all, train_thresholds, train_regex, baseline_versions, end_threshold, print_debug,
-            start_threshold, threshold_interval, timestamp, tools, filter_values, reports_with_values)
+            start_threshold, threshold_interval, timestamp, encoding_tools, filter_values, reports_with_values)
 
-        encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book, tools=tools,
+        encoded_reports = encode_extractions(reports=reports_with_values, code_book=self.code_book,
+                                             tools=encoding_tools,
                                              input_threshold=start_threshold, training=do_training_all,
                                              columns=self.column_mappings, filter_values=filter_values,
                                              acronyms=self.acronyms)
