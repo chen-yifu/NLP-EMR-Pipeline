@@ -48,8 +48,8 @@ pipeline.run_pipeline(
 ├── README.md
 ├── data
 │   ├── baselines
-│   │   ├── baseline_B.csv
-│   │   └── baseline_A.csv
+│   │   ├── baseline_BB.csv
+│   │   └── baseline_AA.csv
 │   ├── input
 │   │   └── {report_type}_reports
 │   │       ├── 1{report_ending}
@@ -64,8 +64,8 @@ pipeline.run_pipeline(
 │   │       │   ├── coded_02-05-2021~1313.csv
 │   │       │   └── raw_30-04-2021~1738.csv
 │   │       ├── excel_files
-│   │       │   ├── compare_A_10-05-2021~1051_corD5_misD5_subC2.xlsx
-│   │       │   └── compare_B_11-05-2021~0914_corD5_misD5_subC2.xlsx
+│   │       │   ├── compare_AA_10-05-2021~1051_corD5_misD5_subC2.xlsx
+│   │       │   └── compare_BB_11-05-2021~0914_corD5_misD5_subC2.xlsx
 │   │       └── training
 │   │           ├── all_training_{report_type}_20-04-2021~1036.xlsx
 │   │           └── best_training.xlsx
@@ -74,6 +74,7 @@ pipeline.run_pipeline(
 │           ├── medical_vocabulary_{report_type}
 │           ├── {report_type}_code_book.ods
 │           ├── {report_type}_column_mappings.csv
+│           ├── {report_type}_regex_rules.csv
 │           └── {report_type}_excluded_autocorrect_column_pairs.data
 ├── main.py
 ├── {report_type}_gui.py
@@ -109,7 +110,7 @@ pipeline.run_pipeline(
 └── requirements.txt
 ```
 
-#### data folder
+### data folder
 
 The data folder contains all the files the pipeline needs to run and is where the pipeline will output files. The data
 folder contains 4 sub folders. In order to facilitate the processing of different types of reports, there will be
@@ -134,10 +135,18 @@ folders that are the same for each report type:
           be automatically generated in the {report_type}_results folder.
 - **utils**:
     - {report_type}_reports:
-        - {report_type}_code_book.ods
-        - {report_type}_column_mappings.csv
-        - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui)
+        - {report_type}_code_book.ods:
+        - {report_type}_column_mappings.csv:
+        - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui):
         - any other types of files needed for the pipeline to run
+
+### The code book, column mappings and excluded autocorrect column pairs:
+
+#### code book:
+
+#### column mappings:
+
+#### excluded autocorrect column pairs:
 
 ### Instantiating the pipeline
 
@@ -169,6 +178,13 @@ After a value has been extracted, you might want to clean it a special type of w
 
 Sometimes you may want a value to be encoded a certain way. This can include using regex to clean a value or some kind
 of different encoding method.
+
+### regex generation function
+
+This pipeline's coolest and probably most confusing feature is the regular pattern (regex) generation algorithm. Since
+the synoptic section is highly structured, we decided to use regular patterns to extract information. However, since
+each report has different columns, a unique regular pattern would need to be used for each type of report. Thus, we have
+a regex generation algorithm.
 
 
 
