@@ -12,10 +12,9 @@ class Column:
 
     def __init__(self, human_col: str, primary_report_col: List[str], alternative_report_col: List[str] = [],
                  threshold: float = 0.75, remove_stopwords: bool = False, extract_entities: bool = False,
-                 zero_empty: bool = False, ignore_caps: bool = True, add_anchor: bool = True,
-                 same_line_capture: bool = False, capture_up_to_separator: bool = True,
-                 capture_up_to_keyword: bool = True, multi_line_capture: bool = False,
-                 capture_up_to_end_of_line: bool = False,
+                 zero_empty: bool = False, add_anchor: bool = True, same_line_capture: bool = False,
+                 capture_up_to_separator: bool = True, capture_up_to_keyword: bool = True,
+                 multi_line_capture: bool = False, capture_up_to_end_of_line: bool = False,
                  add_separator_in_front_cap: bool = False):
         """
         :param human_col:              The column that the individual wants the extracted information to be under
@@ -36,9 +35,8 @@ class Column:
         self.remove_stopwords = remove_stopwords
         self.extract_entities = extract_entities
         self.zero_empty = zero_empty
-        self.ignore_caps = ignore_caps
         self.front_cap_rules = {"same line": same_line_capture, "multi line": multi_line_capture,
-                          "add anchor": add_anchor, "add separator": add_separator_in_front_cap}
+                                "add anchor": add_anchor, "add separator": add_separator_in_front_cap}
         self.end_cap_rules = {"same line": capture_up_to_end_of_line, "up to separator": capture_up_to_separator,
-                        "up to keyword": capture_up_to_keyword}
+                              "up to keyword": capture_up_to_keyword}
         self.found_during_execution = []

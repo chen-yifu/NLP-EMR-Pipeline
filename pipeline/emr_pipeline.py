@@ -46,7 +46,8 @@ class EMRPipeline:
         self.other_paths = other_paths
         self.paths = get_paths(report_name, other_paths)
         self.code_book = import_code_book(self.paths["path to code book"])
-        self.column_mappings = import_columns(self.paths["path to mappings"], self.paths["path to thresholds"])
+        self.column_mappings = import_columns(self.paths["path to mappings"], self.paths["path to thresholds"],
+                                              self.paths["path to regex rules"])
         self.pickle_path = self.paths["path to autocorrect"] if "path to autocorrect" in self.paths else None
         self.paths_to_pdfs = get_input_paths(start, end, path_to_reports=self.paths["path to reports"],
                                              report_str="{}" + report_ending)
