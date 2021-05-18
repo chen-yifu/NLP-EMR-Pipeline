@@ -41,7 +41,7 @@ pipeline.run_pipeline(
     baseline_versions=["baseline.csv"])
 ```
 
-## folder structure
+### Folder structure
 
 ```shell
 .
@@ -53,6 +53,10 @@ pipeline.run_pipeline(
 │   ├── input
 │   │   └── {report_type}_reports
 │   │       ├── 1{report_ending}
+│   │       ├── 2{report_ending}
+│   │       ├── 3{report_ending}
+│   │       ├── 5{report_ending}
+│   │       ├── 7{report_ending}
 │   │       └── 10{report_ending}
 │   ├── output
 │   │   └── {report_type}_results
@@ -105,22 +109,35 @@ pipeline.run_pipeline(
 └── requirements.txt
 ```
 
-The data folder contains all the files the pipeline needs to run and is where the pipeline will output files.
+#### data folder
 
-There are several folders that need to have certain files in them:
+The data folder contains all the files the pipeline needs to run and is where the pipeline will output files. The data
+folder contains 4 sub folders. In order to facilitate the processing of different types of reports, there will be
+another sub folder for each report type named {report_type}_reports. In {report_type}_reports folder, there is a set of
+folders that are the same for each report type:
 
-- in the data folder:
-    - baselines: put all your human encoded baselines here (if you plan to train the pipeline). Your baselines
-      should be in csv format.
-    - input: make a new folder named {report_type}_reports and put all your reports in the {report_type}_reports folder.
-    - output: make a new folder named {report_type}_results. All of the pipeline's output such as raw extractions and
-      encoded extractions will go here. The subfolders will be automatically generated in the {report_type}_results
-      folder.
-    - utils: you must have
+- **baselines**:
+    - {report_type}_reports:
+        - put all your human encoded baselines here (if you plan to train the pipeline). Your baselines must be in csv
+          format.
+- **input**:
+    - {report_type}_reports:
+        - put all your reports in the {report_type}_reports folder. All your reports must be numbered from an integer to
+          another integer.
+        - You should try your best to make sure the numbering of the reports are close to being consecutive.
+        - It is okay to have gaps in the numbers (as shown in the folder structure above). Each report must have the
+          same file ending.
+        - Your reports must be in pdf format.
+- **output**:
+    - {report_type}_reports:
+        - All the pipeline's output such as raw extractions and encoded extractions will go here. The sub folders will
+          be automatically generated in the {report_type}_results folder.
+- **utils**:
+    - {report_type}_reports:
         - {report_type}_code_book.ods
         - {report_type}_column_mappings.csv
-        - stages.csv (optional, for pathology breast cancer reports only)
         - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui)
+        - any other types of files needed for the pipeline to run
 
 ### Instantiating the pipeline
 
