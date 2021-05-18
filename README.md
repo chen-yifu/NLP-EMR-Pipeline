@@ -31,7 +31,7 @@ pipeline.run_pipeline(
     sep_list=["invasive carcinoma"],
     anchor=r"^ *-* *",
     add_anchor=True,
-    multi_line_cols=["SPECIMEN", "Treatment Effect"],
+    multi_line_cols_to_add=["SPECIMEN", "Treatment Effect"],
     cols_to_skip=["study #", "specimen", "treatment effect", "margins"],
     encoding_tools={"nottingham_score": nottingham_score,
                     "process_mm_val": process_mm_val,

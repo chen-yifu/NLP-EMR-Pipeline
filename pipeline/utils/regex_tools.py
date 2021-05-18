@@ -370,15 +370,14 @@ def synoptic_capture_regex_(columns: Dict[str, Column], cols_to_add=None, anchor
     cols_len = len(col_keys)
     for index in range(cols_len):
         current_col = columns[col_keys[index]]  # grabs the associated pdf columns in Column object
-        front_cap_rules = current_col.front_cap_rules
-        end_cap_rules = current_col.end_cap_rules
+        regex_rules = current_col.regular_pattern_rules
 
         def process_columns_to_regex_str(cols: List[str]) -> str:
             """
             :param cols:
             """
             # adding separator into regex
-            if front_cap_rules["add separator"]:
+            if regex_rules["add separator to col name"]:
                 # ["col1","col2"] -> ["col1:","col2:"]
                 cols = [c + separator for c in cols]
             cols_str = make_punc_regex_literal("|".join(cols))
@@ -401,7 +400,7 @@ def synoptic_capture_regex_(columns: Dict[str, Column], cols_to_add=None, anchor
             front_cap = front_cap.format(col=col, col_var=col_var)
             return front_cap + end_cap if no_or else front_cap + end_cap + "|"
 
-        if front_cap_rules["multi line"]:
+        if regex_rules["val on next line"]:
             # this is for any columns that have the column on the first line and value on the second line
             col = current_col.primary_report_col[0]
             multi_col_var, seen = to_camel_or_underscore(col, seen)
@@ -425,12 +424,13 @@ def synoptic_capture_regex_(columns: Dict[str, Column], cols_to_add=None, anchor
             if index + 1 < cols_len:
                 primary_next_cols = columns[col_keys[index + 1]].primary_report_col
                 primary_next_col_str = make_punc_regex_literal("|".join(primary_next_cols))
+
                 # if we want to capture up to a keyword
-                if end_cap_rules["up to keyword"]:
+                if regex_rules["capture up to keyword"]:
                     end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=primary_next_col_str)
 
             # this is for only capturing up to a separator
-            if end_cap_rules["up to separator"]:
+            if regex_rules["capture up to line with separator"]:
                 end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=separator)
 
             # column has been converted to variable and seen is list of already used variable names
@@ -440,7 +440,7 @@ def synoptic_capture_regex_(columns: Dict[str, Column], cols_to_add=None, anchor
             primary_variablefied, seen = to_camel_or_underscore(primary_curr_cols[0], seen)
 
             # if we want to "anchor" the word to the start of the document
-            if front_cap_rules["add anchor"]:
+            if regex_rules["add anchor"]:
                 primary_curr_col_str = r"{anchor}({curr_col})".format(anchor=anchor, curr_col=primary_curr_col_str)
 
             primary_col_regex = create_regex_str(primary_curr_col_str, primary_variablefied, end_cap)

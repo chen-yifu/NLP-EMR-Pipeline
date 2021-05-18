@@ -94,12 +94,24 @@ def create_regex_rules_csv(regex_rules_path: str, pdf_cols_human_cols_dict_w_col
     regex_rules_list = []
     for col_name, col_obj in pdf_cols_human_cols_dict_w_column.items():
         regex_col_dict = {"col": col_name}
-        regex_col_dict.update(col_obj.front_cap_rules)
-        regex_col_dict.update(col_obj.end_cap_rules)
+        regex_col_dict.update(col_obj.regular_pattern_rules)
         regex_rules_list.append(regex_col_dict)
     regex_rules_df = pd.DataFrame(regex_rules_list)
-    regex_rules_df.to_csv(regex_rules_path)
+    regex_rules_df.to_csv(regex_rules_path, index=False)
     print(regex_rules_df)
+
+
+def find_regex_rules(regex_rules: List[dict], human_col: str):
+    """
+    :param regex_rules:
+    :param human_col:
+    :return:
+    """
+    for cols_dict in regex_rules:
+        if cols_dict["col"] == human_col:
+            cols_dict.pop("col")
+            return cols_dict
+    return {}
 
 
 def import_columns(pdf_human_excel_sheet: str, threshold_path: str, regex_rules_path: str, skip=None,
@@ -125,15 +137,14 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, regex_rules_
     thresholds_exist = os.path.exists(threshold_path)
     regex_rules_exist = os.path.exists(regex_rules_path)
     if not thresholds_exist:
-        print("No specialized thresholds exist, will use defaults of 0.75 and keeping stopwords.")
-    if not regex_rules_exist:
-        print("No regex rules exist, will make regex rules csv.")
+        print("No specialized thresholds exist, will use defaults of 0.75.")
     column_thresholds = pd.read_excel(threshold_path) if thresholds_exist else None
     regex_rules = pd.read_csv(regex_rules_path).to_dict('record') if regex_rules_exist else None
     list_of_cols = list(column_thresholds["column"]) if thresholds_exist else []
     for index, row in pdf_cols_human_cols.iterrows():
         human_col = row[human_col_index]
         index_t = list_of_cols.index(human_col) if human_col in list_of_cols else -1
+        col_regex_rules = find_regex_rules(regex_rules, human_col)
         if human_col.lower() in skip:
             continue
         else:
@@ -145,7 +156,8 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, regex_rules_
                                                                   threshold=
                                                                   column_thresholds.iloc[[index_t]]["threshold"][
                                                                       index_t] if index_t != -1 else .75,
-                                                                  zero_empty=row[zero_empty_index])
+                                                                  zero_empty=row[zero_empty_index],
+                                                                  regular_pattern_rules=col_regex_rules)
     if not regex_rules_exist:
         print("No regex rules exist, will make default regex rules csv.")
         create_regex_rules_csv(regex_rules_path, pdf_cols_human_cols_dict_w_column)
