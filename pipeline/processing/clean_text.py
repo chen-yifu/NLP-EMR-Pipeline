@@ -82,6 +82,4 @@ def cleanse_value(val: str, is_text: bool = False, function=None, paths: Dict[st
     if colon_index != -1:
         val = val[colon_index + 1:]
     val = re.sub(r":\s*$", "", val)  # remove ":"
-    if not paths:
-        print("There are no paths!")
     return function(val, paths) if function else val.replace("\n", " ").strip()

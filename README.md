@@ -8,6 +8,8 @@ pip install -r requirements.txt
 
 ## For Windows:
 
+*WSL is highly recommended.*
+
 ## For Linux/MacOS:
 
 ### To use
@@ -31,25 +33,41 @@ There are several folders that need to have certain files in them:
 
 ```python
 from pipeline.emr_pipeline import EMRPipeline
-from pipeline.preprocessing.resolve_ocr_spaces import find_pathologic_stage
-from pipeline.processing.specific_functions import *
+from pipeline.processing.autocorrect_specific_functions import *
+from pipeline.processing.encoding_specific_functions import *
+from pipeline.processing.extraction_specific_functions import *
 from pipeline.utils.report_type import ReportType
 
-my_pipeline = EMRPipeline(
-    start=101, end=150, report_name="pathology", report_ending="V.pdf", report_type=ReportType.NUMERICAL)
+pipeline = EMRPipeline(
+    start=101, end=150, report_name="pathology", report_ending="V.pdf",
+    report_type=ReportType.NUMERICAL)
 
-my_pipeline.run_pipeline(
-    sep_list=["invasive carcinoma", "in situ component"],
-    baseline_versions=["operative_validation.csv", "operative_validation_other.csv"],
+pipeline.run_pipeline(
+    sep_list=["invasive carcinoma"],
     anchor=r"^ *-* *",
     add_anchor=True,
-    multi_line_cols=["SPECIMEN", "Treatment Effect", "Margins"],
+    multi_line_cols=["SPECIMEN", "Treatment Effect"],
     cols_to_skip=["study #", "specimen", "treatment effect", "margins"],
-    encoding_tools={"pathologic stage": find_pathologic_stage,
-                    "nottingham_score": nottingham_score,
+    encoding_tools={"nottingham_score": nottingham_score,
                     "process_mm_val": process_mm_val,
-                    "archtectural_patterns": archtectural_patterns},
+                    "number_of_foci": number_of_foci},
+    autocorrect_tools={"pathologic stage": find_pathologic_stage},
     extraction_tools=[no_lymph_node, negative_for_dcis],
-    do_training_all=False,
-    filter_values=False)
+    baseline_versions=["baseline.csv"])
+```
+
+## Quick Use
+
+```python
+encoding_tools
+```
+Sometimes you may want a value to be encoded a certain way. This can include using regex to clean a value or some kind
+of different encoding method.
+
+```python
+autocorrect_tools
+```
+
+```python
+extraction_tools
 ```

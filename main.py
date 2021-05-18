@@ -3,7 +3,9 @@ main file to invoke methods
 """
 from typing import Tuple, Any
 from pipeline.emr_pipeline import EMRPipeline
-from pipeline.processing.specific_functions import *
+from pipeline.processing.autocorrect_specific_functions import *
+from pipeline.processing.encoding_specific_functions import *
+from pipeline.processing.extraction_specific_functions import *
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import get_full_path
 
@@ -40,7 +42,6 @@ def pathology_pipeline_main() -> Tuple[Any, pd.DataFrame]:
                         "process_mm_val": process_mm_val,
                         "number_of_foci": number_of_foci,
                         "tumour_site": tumour_site,
-                        "do_nothing": do_nothing,
                         "archtectural_patterns": archtectural_patterns},
         autocorrect_tools={"pathologic stage": find_pathologic_stage},
         extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ, duplicate_lymph_nodes,
@@ -82,10 +83,8 @@ def operative_pipeline_main() -> Tuple[Any, pd.DataFrame]:
                         "localization"],
         encoding_tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
         sep_list=["surgical indication", "immediate reconstruction type"],
-        perform_autocorrect=True,
         do_training_all=False,
         filter_values=True,
-        filter_func=filter_report,
         filter_func_args=("indication", ["prophylaxis", "prophylactic"]),
         resolve_ocr=False)
 
@@ -113,6 +112,6 @@ def operative_pipeline_main() -> Tuple[Any, pd.DataFrame]:
 
 # pathology_gui()
 # operative_gui()
-
-operative_pipeline_main()
 pathology_pipeline_main()
+operative_pipeline_main()
+

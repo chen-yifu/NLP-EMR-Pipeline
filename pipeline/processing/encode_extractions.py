@@ -8,7 +8,6 @@ import pandas as pd
 import spacy
 from spacy.tokens import Span
 
-from pipeline.processing.specific_functions import *
 from pipeline.utils.column import Column, table
 from pipeline.utils.encoding import Encoding
 from pipeline.utils.report import Report
@@ -145,8 +144,7 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     return found, pipeline_val_str_to_return, alpha
 
             for encoding in encodings:
-                # is the encoding is -1 it means it either depends on another column or uses a special function to be
-                # encoded
+                # if the encoding is -1 it means it uses a special function to be encoded
                 if encoding.num == -1:
                     possible_function_name = encoding.val[0].strip().lower()
                     human_column_name = human_col.lower().strip()
@@ -156,18 +154,35 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                     elif possible_function_name in possible_functions:
                         func_in_tools = tools[possible_function_name]
                     else:
-                        print("Function for {} not found, will use default function".format(
-                            human_column_name + " | " + possible_function_name))
-                        func_in_tools = do_nothing
+                        if possible_function_name != "nan":
+                            print("Function for {} not found, will return extracted value as is.".format(
+                                human_column_name + " | " + possible_function_name))
                     try:
-                        val = extractions[human_col].primary_value
+                        try:
+                            val = extractions[human_col].primary_value
+                        except Exception as e:
+                            print(e, "This function probably only uses the extractions.")
+                            val = ""
                         encoded_extractions_dict[human_col] = func_in_tools(val, encoded_extractions_dict)
                     except Exception as e:
+                        print(e)
+                        print("""
+                        Please double check your self specified function is correct. It should be in the form:\n
+                        def func_name(value: str, encodings_so_far: Dict[str, str] = {}):
+                            # do stuff
+                        \n
+                        In your code book:
+                        | FoI | -1 | identifier
+                        \n
+                        In the run_pipeline method your function should look like:
+                         encoding_tools={"identifier": func_name},
+                        """)
                         try:
-                            encoded_extractions_dict[human_col] = func_in_tools(encoded_extractions_dict)
+                            val = extractions[human_col].primary_value
                         except Exception as e:
-                            print(e)
-                            encoded_extractions_dict[human_col] = "pipeline malfunction"
+                            print(e, "This function probably only uses the extractions.")
+                            val = ""
+                        encoded_extractions_dict[human_col] = val
                     done_encoding = True
 
             # try to find the highest number, if its one then we return that num

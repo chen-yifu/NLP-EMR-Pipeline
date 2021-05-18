@@ -1,7 +1,6 @@
 """
 🧬 file that contains the function that runs the emr pipeline
 """
-import re
 from typing import List, Any, Tuple
 
 import os
@@ -66,11 +65,11 @@ class EMRPipeline:
     def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = [],
                      separator: str = ":", use_separator_to_capture: bool = False, add_anchor: bool = False,
                      multi_line_cols: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
-                     no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True, filter_func=None,
+                     no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True,
                      autocorrect_tools: dict = {}, max_edit_distance_missing: int = 5, encoding_tools: dict = {},
                      max_edit_distance_autocorrect: int = 5, sep_list: list = [], substitution_cost: int = 2,
                      resolve_ocr: bool = True, filter_func_args: Tuple = None, train_thresholds: bool = False,
-                     train_regex: bool = False, perform_autocorrect: bool = False, do_training_all: bool = False,
+                     train_regex: bool = False, do_training_all: bool = False,
                      filter_values: bool = False, start_threshold: float = 0.7, end_threshold: float = 1,
                      extraction_tools: list = [], threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
         """
@@ -178,9 +177,9 @@ class EMRPipeline:
             new_id = "".join(new_id.split())
             report.report_id = new_id
 
-        if filter_func:
-            filtered_reports = filter_func(filtered_reports, filter_func_args[0], filter_func_args[1],
-                                           self.report_ending)
+        if filter_func_args:
+            filtered_reports = self.filter_report(filtered_reports, filter_func_args[0], filter_func_args[1],
+                                                  self.report_ending)
 
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings,
                                                                  list(self.acronyms))
@@ -399,3 +398,31 @@ class EMRPipeline:
             regex_training_df = self.train_pipeline_regex()
             print("Regex Training")
             print(regex_training_df)
+
+    def filter_report(self, reports: List[Report], column: str, value: List[str], report_ending: str) -> List[Report]:
+        cleaned_reports = []
+        skip = False
+        for index, report in enumerate(reports):
+            extractions = report.extractions
+            if column in extractions.keys() and not skip:
+                if extractions[column] not in value:
+                    cleaned_reports.append(report)
+                elif extractions[column] in value:
+                    prev_index = index - 1 if index - 1 > 0 else False
+                    next_index = index + 1 if index + 1 < len(reports) else False
+                    prev_report_id = "".join(
+                        [l for l in list(reports[prev_index].report_id) if not l.isalpha()]) if prev_index else -1
+                    next_report_id = "".join(
+                        [l for l in list(reports[next_index].report_id) if not l.isalpha()]) if prev_index else -1
+                    curr_id = "".join([l for l in list(report.report_id) if not l.isalpha()])
+                    if curr_id == prev_report_id:
+                        prev_report = reports[prev_index]
+                        prev_report.report_id = curr_id + report_ending[:-4]
+                    elif curr_id == next_report_id:
+                        next_report = reports[next_index]
+                        next_report.report_id = curr_id + report_ending[:-4]
+                        cleaned_reports.append(next_report)
+                        skip = True
+            else:
+                skip = False
+        return cleaned_reports
