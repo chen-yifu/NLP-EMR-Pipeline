@@ -146,17 +146,27 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
             for encoding in encodings:
                 # if the encoding is -1 it means it uses a special function to be encoded
                 if encoding.num == -1:
-                    possible_function_name = encoding.val[0].strip().lower()
+                    possible_function_name = encoding.val[0].strip().lower() if encoding.val else None
                     human_column_name = human_col.lower().strip()
                     possible_functions = [f.lower().strip() for f in tools.keys()]
-                    if human_column_name in possible_functions:
+
+                    try:
+                        val = extractions[human_col].primary_value
+                    except Exception as e:
+                        print(e, "This function probably only uses the extractions.")
+                        val = ""
+                    encoded_extractions_dict[human_col] = val
+
+                    if not possible_function_name:
+                        done_encoding = True
+                        break
+                    elif human_column_name in possible_functions:
                         func_in_tools = tools[human_column_name]
                     elif possible_function_name in possible_functions:
                         func_in_tools = tools[possible_function_name]
                     else:
-                        if possible_function_name != "nan":
-                            print("Function for {} not found, will return extracted value as is.".format(
-                                human_column_name + " | " + possible_function_name))
+                        print("Function for {} not found, will return extracted value as is.".format(
+                            human_column_name + " | " + possible_function_name))
                     try:
                         try:
                             val = extractions[human_col].primary_value
@@ -164,33 +174,30 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                             print(e, "This function probably only uses the extractions.")
                             val = ""
                         encoded_extractions_dict[human_col] = func_in_tools(val, encoded_extractions_dict)
+                        done_encoding = True
                     except Exception as e:
                         print(e)
                         print("""
-                        Please double check your self specified function is correct. It should be in the form:\n
+                        Please double check that your self specified function is correct. It should be in the form:\n
                         def func_name(value: str, encodings_so_far: Dict[str, str] = {}):
                             # do stuff
                         \n
                         In your code book:
                         | FoI | -1 | identifier
+                        
+                        If your FoI does not have an associated function, leave identifier blank
                         \n
                         In the run_pipeline method your function should look like:
                          encoding_tools={"identifier": func_name},
                         """)
-                        try:
-                            val = extractions[human_col].primary_value
-                        except Exception as e:
-                            print(e, "This function probably only uses the extractions.")
-                            val = ""
-                        encoded_extractions_dict[human_col] = val
                     done_encoding = True
 
             # try to find the highest number, if its one then we return that num
             if not done_encoding:
                 try:
                     primary_val = extractions[human_col].primary_value
-                    alt_val = extractions[human_col].alternative_value[0] if extractions[
-                                                                                 human_col].alternative_value != [] else ""
+                    alt_exists = extractions[human_col].alternative_value
+                    alt_val = extractions[human_col].alternative_value[0] if alt_exists else ""
                     found_primary, primary_encoded_value, primary_alpha = try_encoding_scispacy(
                         find_replace_acronyms(primary_val))
                     found_alt, alt_encoded_value, alt_alpha = try_encoding_scispacy(find_replace_acronyms(alt_val))

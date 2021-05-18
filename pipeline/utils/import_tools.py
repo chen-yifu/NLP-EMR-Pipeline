@@ -36,7 +36,7 @@ def import_code_book(code_book_path: str, column_id: int = 0, encoding_id: int =
         col_name = row[column_id]
         num = row[encoding_id]
         val = row[value_id]
-        val_list = str(val).split(",")
+        val_list = str(val).split(",") if not pd.isna(val) else []
         cleaned_val_list = [e.strip() for e in val_list]
         if col_name not in code_book:
             code_book[col_name] = []
