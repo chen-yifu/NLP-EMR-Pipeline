@@ -42,6 +42,8 @@ pipeline.run_pipeline(
 ```
 
 ## folder structure
+
+```shell
 .
 ├── README.md
 ├── data
@@ -101,6 +103,7 @@ pipeline.run_pipeline(
 │       ├── utils.py
 │       └── value.py
 └── requirements.txt
+```
 
 The data folder contains all the files the pipeline needs to run and is where the pipeline will output files.
 
