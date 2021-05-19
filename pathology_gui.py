@@ -1,3 +1,8 @@
+"""
+2021 Yifu (https://github.com/chen-yifu)
+GUI for Pathology reports.
+"""
+
 import tkinter as tk  #
 from tkinter import font as tkfont
 from tkinter import ttk

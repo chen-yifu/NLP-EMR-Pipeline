@@ -1,3 +1,8 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that represents a Report object.
+"""
+
 from typing import Union, List, Dict
 
 from pipeline.utils.value import Value

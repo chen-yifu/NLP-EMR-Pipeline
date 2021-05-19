@@ -1,14 +1,22 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that encodes extractions based on the respective code book. Functions must
+be in a certain form:
+
+def function_name(value: str="", encodings_so_far: Dict[str, str] = {}):
+    do stuff
+
+value is the current string to be encoded
+encodings_so_far are the encodings that have been processed so far
+"""
+
 import re
-from typing import Dict, List
-
-import pandas as pd
-from nltk import edit_distance
-
-from pipeline.utils.report import Report
+from typing import Dict
 
 
-def nottingham_score(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
+def nottingham_score(value: str = "", encodings_so_far: Dict[str, str] = {}) -> str:
     """
+    :param value:
     :param encodings_so_far:
     :return:
     """
@@ -54,10 +62,11 @@ def nottingham_score(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
     return str(score) if score > 0 else ""
 
 
-def process_mm_val(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
+def process_mm_val(value: str = "", encodings_so_far: Dict[str, str] = {}) -> str:
     """
     mm
-    :param value:        unprocessed data
+    :param encodings_so_far:
+    :param value:
     """
     value = str(value).lower().replace(" ", "")
     # regex demo: https://regex101.com/r/FkMTtr/1
@@ -67,12 +76,17 @@ def process_mm_val(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
         return matches[0]
 
 
-def number_of_foci(num_foci: str, encodings_so_far: Dict[str, str] = {}) -> str:
+def number_of_foci(value: str = "", encodings_so_far: Dict[str, str] = {}) -> str:
+    """
+    :param value:
+    :param encodings_so_far:
+    :return:
+    """
     focality = encodings_so_far["Tumour Focality"]
     if focality == "1":
         return "1"
-    raw = str(num_foci)
-    value = str(num_foci).lower().replace(" ", "")
+    raw = str(value)
+    value = str(value).lower().replace(" ", "")
     regex = re.compile(r"(\d+)")
     matches = re.findall(regex, value)
     if "single" in value:
@@ -83,10 +97,11 @@ def number_of_foci(num_foci: str, encodings_so_far: Dict[str, str] = {}) -> str:
         return "cannot be determined"
 
 
-def tumour_site(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
+def tumour_site(value: str = "", encodings_so_far: Dict[str, str] = {}) -> str:
     """
     clock orientation
-    :param value:           unprocessed data
+    :param encodings_so_far:
+    :param value:
     """
     value_copy = str(value)
     value = str(value).lower().replace(" ", "")
@@ -114,10 +129,10 @@ def tumour_site(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
     return value
 
 
-def archtectural_patterns(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
+def archtectural_patterns(value: str = "", encodings_so_far: Dict[str, str] = {}) -> str:
     """
     :param encodings_so_far:
-    :param value:      unprocessed data
+    :param value:
     """
     value = str(value)
     regex = re.compile(r" {2,}")
@@ -128,8 +143,9 @@ def archtectural_patterns(value: str, encodings_so_far: Dict[str, str] = {}) -> 
         return ""
 
 
-def immediate_reconstruction_mentioned(value: str, encodings_so_far: Dict[str, str] = {}) -> str:
+def immediate_reconstruction_mentioned(value: str = "", encodings_so_far: Dict[str, str] = {}) -> str:
     """
+    :param value:
     :param encodings_so_far:
     :return:
     """

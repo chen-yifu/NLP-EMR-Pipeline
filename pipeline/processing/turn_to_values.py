@@ -1,3 +1,7 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that that turns extractions into Value objects.
+"""
 from typing import List, Dict
 from pipeline.utils.column import Column, table
 from pipeline.utils.report import Report
@@ -9,6 +13,7 @@ def turn_extractions_to_values_single(extractions: Dict[str, str], column_mappin
     """
     Turns string extractions into Value objects for a single report.
 
+    :param acronyms:
     :param extractions:     the extracted values and their respective columns
     :param column_mappings: human columns and their respective report columns
     :return:                single report with Value objects in extractions
@@ -57,6 +62,8 @@ def turn_reports_extractions_to_values(reports: List[Report], column_mappings: D
                                        acronyms: List[str]) -> List[Report]:
     """
     Outer function that takes all reports and turns their string extractions into Value objects
+
+    :param acronyms:
     :param reports:          all the reports with extractions
     :param column_mappings:  human columns and their respective report columns
     :return:                 reports with Values objects

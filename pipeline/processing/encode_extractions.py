@@ -1,23 +1,27 @@
 """
-Encodes the extractions to numbers in code book.
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that encodes extractions using scispaCy based on the respective code book.
+Run this if you don't have the en_core_sci_lg model:
+os.system("pip install https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz")
 """
 
-from typing import Dict, List, Union, Tuple, Set
-
+from typing import Dict, List, Tuple, Set
 import pandas as pd
 import spacy
 from spacy.tokens import Span
-
 from pipeline.utils.column import Column, table
 from pipeline.utils.encoding import Encoding
 from pipeline.utils.report import Report
 from pipeline.utils.value import Value
-import os
 
 nlp = spacy.load("en_core_sci_lg")
 
 
 def clean_txt(val: str) -> str:
+    """
+    :param val:
+    :return:
+    """
     if type(val) is float or pd.isna(val) or val is None:
         return ""
     is_num = any([True for l in val if l.isnumeric()])
@@ -30,6 +34,13 @@ def clean_txt(val: str) -> str:
 
 
 def contains_word(encoding_val: str, pipeline_val_str: str, alpha: float, threshold: float) -> bool:
+    """
+    :param encoding_val:
+    :param pipeline_val_str:
+    :param alpha:
+    :param threshold:
+    :return:
+    """
     if encoding_val in pipeline_val_str:
         if encoding_val == pipeline_val_str:
             return True
@@ -70,6 +81,11 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
     acronyms_lowercased = [a.lower() for a in acronyms]
 
     def find_replace_acronyms(val: str):
+        """
+
+        :param val:
+        :return:
+        """
         if not val:
             val = ""
         val_to_return = []
@@ -168,18 +184,12 @@ def encode_extractions(reports: List[Report], code_book: Dict[str, List[Encoding
                         print("Function for {} not found, will return extracted value as is.".format(
                             human_column_name + " | " + possible_function_name))
                     try:
-                        try:
-                            val = extractions[human_col].primary_value
-                        except Exception as e:
-                            print(e, "This function probably only uses the extractions.")
-                            val = ""
                         encoded_extractions_dict[human_col] = func_in_tools(val, encoded_extractions_dict)
-                        done_encoding = True
                     except Exception as e:
                         print(e)
                         print("""
                         Please double check that your self specified function is correct. It should be in the form:\n
-                        def func_name(value: str, encodings_so_far: Dict[str, str] = {}):
+                        def func_name(value: str = "", encodings_so_far: Dict[str, str] = {}):
                             # do stuff
                         \n
                         In your code book:

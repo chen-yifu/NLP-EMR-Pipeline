@@ -1,3 +1,7 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that generates paths to input files and output files.
+"""
 import os
 
 from pipeline.utils.utils import get_full_path, get_current_time

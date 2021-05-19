@@ -1,5 +1,6 @@
 """
-Other functions to help the pipeline run
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that deals with utilities such as time and paths.
 """
 import collections
 import os

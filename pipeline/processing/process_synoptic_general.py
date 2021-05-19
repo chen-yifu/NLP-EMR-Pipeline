@@ -1,5 +1,6 @@
 """
-processes report and finds column value pairs
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that that extracts values from the synpotic section of a report.
 """
 import re
 import string
@@ -129,10 +130,11 @@ def process_synoptic_section(synoptic_report_str: str, report_id: str, report_ty
         """
         using a list of correct column names, autocorrect potential typos (that resulted from OCR) in column names
 
+        :param col_mappings:
         :param tools:                        functions that some columns may use for cleaning
         :param pickle_path:                  path to pickled data from GUI
         :param correct_col_names:            a list of correct column names
-        :param result_so_far:           extracted generic key-value pairs from synoptic reports
+        :param result_so_far:                extracted generic key-value pairs from synoptic reports
         :param study_id:                     the study id of the dictionary
         :param list_of_dict_with_stats:      save the auto-correct activities to be shown on GUI
         :param max_edit_distance:            maximum distance allowed between source and candidate

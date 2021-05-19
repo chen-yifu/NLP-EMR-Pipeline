@@ -1,3 +1,7 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code represents a Encoding object.
+"""
 from dataclasses import dataclass
 from typing import List
 

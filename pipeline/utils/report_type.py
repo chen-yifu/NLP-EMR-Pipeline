@@ -1,5 +1,6 @@
 """
-ReportType is an enumeration consisting of NUMERICAL or TEXT.
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that represents the enumeration ReportType.
 """
 
 

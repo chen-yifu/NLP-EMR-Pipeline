@@ -1,5 +1,6 @@
 """
-helper regex functions
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that generates regular patterns.
 """
 import random
 import re

@@ -1,5 +1,6 @@
 """
-main file to invoke methods
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+Main file to run from.
 """
 from typing import Tuple, Any
 from pipeline.emr_pipeline import EMRPipeline

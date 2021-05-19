@@ -1,5 +1,6 @@
 """
-🧬 file that contains the function that runs the emr pipeline
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that represents an EMRPipeline object.
 """
 from typing import List, Any, Tuple
 
@@ -7,7 +8,8 @@ import os
 import pandas as pd
 
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
-from pipeline.postprocessing.write_csv import reports_to_spreadsheet, add_report_id, save_dictionaries_into_csv_raw
+from pipeline.postprocessing.write_csv_excel import save_dictionaries_into_csv_raw, reports_to_spreadsheet, \
+    add_report_id
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.preprocessing.scanned_pdf_to_text import load_reports_into_pipeline

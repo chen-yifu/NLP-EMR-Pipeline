@@ -1,3 +1,8 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that deals with columns that should be excluded from autocorrect and columns in which None and
+0 mean the same thing.
+"""
 import pickle
 from typing import List
 

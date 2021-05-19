@@ -1,5 +1,6 @@
 """
-This file contains methods that import tools needed to run the pipeline
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that imports utils needed by pipeline to run.
 """
 import string
 from typing import Dict, List, Tuple, Set
@@ -13,6 +14,10 @@ table = str.maketrans(dict.fromkeys(string.punctuation))
 
 
 def extract_cols(row):
+    """
+    :param row:
+    :return:
+    """
     try:
         return row.split(",")
     except AttributeError:

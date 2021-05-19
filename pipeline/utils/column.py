@@ -1,3 +1,8 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code represents a Column object
+"""
+
 import string
 from dataclasses import dataclass
 from typing import List
