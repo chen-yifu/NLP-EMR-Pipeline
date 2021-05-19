@@ -12,9 +12,9 @@ pip install -r requirements.txt
 
 ## For Linux/MacOS:
 
-## Documentation
+# Documentation
 
-### Sample usage
+## Sample usage
 
 ```python
 from pipeline.emr_pipeline import EMRPipeline
@@ -31,7 +31,7 @@ pipeline.run_pipeline(
     sep_list=["invasive carcinoma"],
     anchor=r"^ *-* *",
     add_anchor=True,
-    multi_line_cols_to_add=["SPECIMEN", "Treatment Effect"],
+    val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect"],
     cols_to_skip=["study #", "specimen", "treatment effect", "margins"],
     encoding_tools={"nottingham_score": nottingham_score,
                     "process_mm_val": process_mm_val,
@@ -41,7 +41,7 @@ pipeline.run_pipeline(
     baseline_versions=["baseline.csv"])
 ```
 
-### Folder structure
+# Folder structure
 
 ```shell
 .
@@ -110,7 +110,7 @@ pipeline.run_pipeline(
 └── requirements.txt
 ```
 
-### data folder
+## data folder
 
 The data folder contains all the files the pipeline needs to run and is where the pipeline will output files. The data
 folder contains 4 sub folders. In order to facilitate the processing of different types of reports, there will be
@@ -140,15 +140,15 @@ folders that are the same for each report type:
         - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui):
         - any other types of files needed for the pipeline to run
 
-### The code book, column mappings and excluded autocorrect column pairs:
+## The code book, column mappings and excluded autocorrect column pairs:
 
-#### code book:
+### code book:
 
-#### column mappings:
+### column mappings:
 
-#### excluded autocorrect column pairs:
+### excluded autocorrect column pairs:
 
-### Instantiating the pipeline
+# Instantiating the pipeline
 
 You must create an EMRPipeline object first.
 
@@ -164,27 +164,39 @@ pipeline = EMRPipeline(
     report_type=ReportType.NUMERICAL)
 ```
 
+# Running the pipeline
+
 This pipeline can be fully customized through the use of functions. There are three types of functions you can make.
 
-### extraction_tools
+## extraction_tools
 
 These functions deal with how the pipeline should extract FoI, either based on other parts of the report of other FoI.
 
-### autocorrect_tools
+## autocorrect_tools
 
 After a value has been extracted, you might want to clean it a special type of way.
 
-### encoding_tools
+## encoding_tools
 
 Sometimes you may want a value to be encoded a certain way. This can include using regex to clean a value or some kind
 of different encoding method.
 
-### regex generation function
+# regex generation function
 
 This pipeline's coolest and probably most confusing feature is the regular pattern (regex) generation algorithm. Since
 the synoptic section is highly structured, we decided to use regular patterns to extract information. However, since
 each report has different columns, a unique regular pattern would need to be used for each type of report. Thus, we have
 a regex generation algorithm.
+
+## The regex rules (NEW)
+
+### add {}
+
+### capture up to {}
+
+### val on {}
+
+# Training the pipeline 
 
 
 

@@ -108,9 +108,10 @@ def find_regex_rules(regex_rules: List[dict], human_col: str):
     :return:
     """
     for cols_dict in regex_rules:
-        if cols_dict["col"] == human_col:
-            cols_dict.pop("col")
-            return cols_dict
+        if "col" in cols_dict.keys():
+            if cols_dict["col"] == human_col:
+                cols_dict.pop("col")
+                return cols_dict
     return {}
 
 
@@ -144,7 +145,7 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, regex_rules_
     for index, row in pdf_cols_human_cols.iterrows():
         human_col = row[human_col_index]
         index_t = list_of_cols.index(human_col) if human_col in list_of_cols else -1
-        col_regex_rules = find_regex_rules(regex_rules, human_col)
+        col_regex_rules = find_regex_rules(regex_rules, human_col) if regex_rules else {}
         if human_col.lower() in skip:
             continue
         else:

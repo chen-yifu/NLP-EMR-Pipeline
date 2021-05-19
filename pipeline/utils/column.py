@@ -10,12 +10,23 @@ class Column:
     """ Dataclass used to represent a column in a report and its relationship with the excel file
     """
 
-    def __init__(self, human_col: str, primary_report_col: List[str], regular_pattern_rules: dict,
-                 alternative_report_col: List[str] = [], threshold: float = 0.75, remove_stopwords: bool = False,
-                 extract_entities: bool = False, zero_empty: bool = False, add_anchor: bool = True,
-                 same_line_capture: bool = False, capture_up_to_separator: bool = True,
-                 capture_up_to_keyword: bool = True, multi_line_capture: bool = False,
-                 capture_up_to_end_of_line: bool = False, add_separator_in_front_cap: bool = False):
+    def __init__(self, human_col: str, primary_report_col: List[str], regular_pattern_rules: dict = {},
+                 alternative_report_col: List[str] = [], threshold: float = 0.75,
+                 zero_empty: bool = False,
+                 # regex rules stat
+
+                 # front cap rules
+                 val_on_same_line: bool = True,
+                 val_on_next_line: bool = False,
+
+                 # end cap rules
+                 capture_up_to_separator: bool = True,
+                 capture_up_to_keyword: bool = False,
+                 capture_up_to_end_of_line: bool = False,
+
+                 # front cap col rules
+                 add_separator_in_front_cap: bool = False,
+                 add_anchor: bool = True):
         """
         :param human_col:              The column that the individual wants the extracted information to be under
         :param primary_report_col:     The most likely column in the report in which we can find the information
@@ -32,11 +43,9 @@ class Column:
         self.cleaned_alternative_report_col = [" ".join(col.translate(table).lower().strip().split()) for col in
                                                alternative_report_col]
         self.spacy_threshold = threshold
-        self.remove_stopwords = remove_stopwords
-        self.extract_entities = extract_entities
         self.zero_empty = zero_empty
         self.regular_pattern_rules = regular_pattern_rules if regular_pattern_rules != {} else {
-            "val on same line": same_line_capture, "val on next line": multi_line_capture,
+            "val on same line": val_on_same_line, "val on next line": val_on_next_line,
             "add anchor": add_anchor, "add separator to col name": add_separator_in_front_cap,
             "capture to end of val": capture_up_to_end_of_line,
             "capture up to line with separator": capture_up_to_separator,

@@ -65,12 +65,13 @@ class EMRPipeline:
 
     def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = [],
                      separator: str = ":", use_separator_to_capture: bool = False, add_anchor: bool = False,
-                     multi_line_cols_to_add: list = [], cols_to_skip: list = [], contained_capture_list: list = [],
+                     val_on_next_line_cols_to_add: list = [], val_on_same_line_cols_to_add: list = [],
+                     cols_to_skip: list = [], contained_capture_list: list = [],
                      no_anchor_list: list = [], anchor_list: list = [], print_debug: bool = True,
                      autocorrect_tools: dict = {}, max_edit_distance_missing: int = 5, encoding_tools: dict = {},
                      max_edit_distance_autocorrect: int = 5, sep_list: list = [], substitution_cost: int = 2,
                      resolve_ocr: bool = True, filter_func_args: Tuple = None, train_thresholds: bool = False,
-                     train_regex: bool = False, do_training_all: bool = False, cols_to_add:list = [],
+                     train_regex: bool = False, do_training_all: bool = False,
                      filter_values: bool = False, start_threshold: float = 0.7, end_threshold: float = 1,
                      extraction_tools: list = [], threshold_interval: float = 0.05) -> Tuple[Any, pd.DataFrame]:
         """
@@ -78,6 +79,7 @@ class EMRPipeline:
         the pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly
         alphabetical do not need to be preprocessed, as the pytesseract library will turn them into .txt files.
 
+        :param val_on_same_line_cols_to_add:
         :param cols_to_add:
         :param autocorrect_tools:
         :param extraction_tools:
@@ -101,7 +103,7 @@ class EMRPipeline:
         :param encoding_tools:                          functions that other columns need for cleansing
         :param baseline_versions:              the baseline version to compare to
         :param cols_to_skip:                   which columns to not put in the regex
-        :param multi_line_cols_to_add:                the columns in the report that span two lines
+        :param val_on_next_line_cols_to_add:                the columns in the report that span two lines
         :param print_debug:                    print debug statements in Terminal if True
         :param max_edit_distance_missing:      the maximum edit distance for searching for missing cell values
         :param max_edit_distance_autocorrect:  the maximum edit distance for autocorrecting extracted pairs
@@ -127,28 +129,29 @@ class EMRPipeline:
         # returns list[Report] with everything BUT encoded and not_found initialized
         cleaned_emr, ids_without_synoptic = clean_up_reports(emr_text=reports_loaded_in_str)
 
-        synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
-            {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
-            capture_till_end_of_val_list=single_line_list,
-            use_seperater_for_contained_capture=use_separator_to_capture,
-            contained_capture_list=contained_capture_list,
-            multi_line_cols_list=multi_line_cols_to_add,
-            no_anchor_list=no_anchor_list,
-            anchor=anchor,
-            sep_list=sep_list,
-            anchor_list=anchor_list,
-            is_anchor=add_anchor)
-
-        print(synoptic_regex)
-        print(regex_variable_mappings)
-
-        # synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
+        # synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
         #     {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
-        #     cols_to_add=cols_to_add,
-        #     anchor=anchor)
+        #     capture_till_end_of_val_list=single_line_list,
+        #     use_seperater_for_contained_capture=use_separator_to_capture,
+        #     contained_capture_list=contained_capture_list,
+        #     multi_line_cols_list=val_on_next_line_cols_to_add,
+        #     no_anchor_list=no_anchor_list,
+        #     anchor=anchor,
+        #     sep_list=sep_list,
+        #     anchor_list=anchor_list,
+        #     is_anchor=add_anchor)
         #
         # print(synoptic_regex)
         # print(regex_variable_mappings)
+
+        synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
+            {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
+            val_on_same_line_cols_to_add=val_on_same_line_cols_to_add,
+            val_on_next_line_cols_to_add=val_on_next_line_cols_to_add,
+            anchor=anchor)
+
+        print(synoptic_regex)
+        print(regex_variable_mappings)
 
         # this is the str of PDFs that do not contain any Synoptic Report section
         without_synoptics_strs_and_ids = [report for report in cleaned_emr if report.report_id in ids_without_synoptic]
