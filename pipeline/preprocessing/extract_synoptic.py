@@ -1,3 +1,8 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that preprocesses a report and searches for synoptic sections in a report.
+There can be 1 or 2 synoptic sections in a report.
+"""
 import itertools
 import re
 from typing import Tuple, List
@@ -65,6 +70,10 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
     """
 
     def split_report_find_left_right_pathlogy(matches: List[str]) -> List[Report]:
+        """
+        :param matches:
+        :return:
+        """
         reports_to_return = []
         for m in matches:
             label = report_id + find_left_right_label(m, report_type=report_type)
@@ -72,6 +81,9 @@ def extract_synoptic_report(uncleaned_txt: str, report_id: str, report_type: Rep
         return reports_to_return
 
     def split_report_find_left_right_operative() -> List[Report]:
+        """
+        :return:
+        """
         left_breast = extract_section(left_operative_report, uncleaned_txt)
         left_text = left_breast[0] if len(left_breast) > 0 else ""
         left_text = left_text[0] if isinstance(left_text, tuple) else left_text

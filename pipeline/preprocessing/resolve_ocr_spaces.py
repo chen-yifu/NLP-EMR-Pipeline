@@ -1,11 +1,10 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that resolves errors that occur from optical character recognition (OCR).
+"""
 import re
-from typing import Dict
-
 from nltk.corpus import stopwords
-import pandas as pd
-from nltk import edit_distance
 from pipeline.utils import utils
-from pipeline.utils.utils import get_full_path
 
 
 def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_debug=True,
@@ -58,7 +57,7 @@ def preprocess_resolve_ocr_spaces(strings_and_ids, medical_vocabulary=[], print_
                 for next_word in words_list[i:]:
                     if not next_word.strip().isalpha():
                         continue
-                    candidate_word = candidate_word + next_word
+                    candidate_word += next_word
                     skip += 1
                     if candidate_word.lower().strip() in vocab:
                         skip -= 1

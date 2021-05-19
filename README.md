@@ -82,7 +82,7 @@ pipeline.run_pipeline(
 │   ├── emr_pipeline.py
 │   ├── postprocessing
 │   │   ├── highlight_differences.py
-│   │   ├── write_csv.py
+│   │   ├── write_csv_excel.py
 │   │   └── write_excel.py
 │   ├── preprocessing
 │   │   ├── extract_synoptic.py

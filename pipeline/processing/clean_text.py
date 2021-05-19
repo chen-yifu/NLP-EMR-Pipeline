@@ -1,3 +1,7 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that cleans columns and values after they have been extracted by regular patterns.
+"""
 import re
 import string
 from typing import Tuple, List, Dict

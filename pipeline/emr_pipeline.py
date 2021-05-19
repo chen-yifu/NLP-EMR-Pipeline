@@ -7,8 +7,7 @@ import os
 import pandas as pd
 
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
-from pipeline.postprocessing.write_csv import reports_to_spreadsheet, add_report_id
-from pipeline.postprocessing.write_excel import save_dictionaries_into_csv_raw
+from pipeline.postprocessing.write_csv import reports_to_spreadsheet, add_report_id, save_dictionaries_into_csv_raw
 from pipeline.preprocessing.extract_synoptic import clean_up_reports
 from pipeline.preprocessing.resolve_ocr_spaces import preprocess_resolve_ocr_spaces
 from pipeline.preprocessing.scanned_pdf_to_text import load_reports_into_pipeline
@@ -406,6 +405,13 @@ class EMRPipeline:
             print(regex_training_df)
 
     def filter_report(self, reports: List[Report], column: str, value: List[str], report_ending: str) -> List[Report]:
+        """
+        :param reports:
+        :param column:
+        :param value:
+        :param report_ending:
+        :return:
+        """
         cleaned_reports = []
         skip = False
         for index, report in enumerate(reports):

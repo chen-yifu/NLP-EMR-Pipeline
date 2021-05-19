@@ -1,5 +1,8 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code autocorrects specific features of interest.
+"""
 from typing import Dict
-
 import pandas as pd
 from nltk import edit_distance
 

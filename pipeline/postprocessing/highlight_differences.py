@@ -1,3 +1,7 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes the code that compares two dataframes and outputs an excel sheet showing the differences.
+"""
 from collections import defaultdict
 from typing import Tuple, Dict, List
 
@@ -221,7 +225,7 @@ def calculate_statistics(df_coded: pd.DataFrame, df_human: pd.DataFrame, zero_em
                          id_col: str = "Study #") -> Tuple[tuple, Dict[str, Dict[str, int]]]:
     """
     calculate the overall accuracy, as well as accuracy for each column
-
+    :param zero_empty_columns:
     :param df_coded:
     :param df_human:
     :param id_col:
