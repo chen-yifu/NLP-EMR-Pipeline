@@ -269,12 +269,12 @@ If you want to add something the report column. For instance:
 
 ### val on {}
 Whether the value is on the same line as the column or the next line. For instance:
-- same line: ``````
+- same line (https://regex101.com/r/BxtXNo/1): ```col3:(?P<var>.+)```
 - next line (https://regex101.com/r/LZkuW9/1): ```col1\s*-*(?P<col1>.+)```
 
 #### Example:
-A regular pattern for a column that uses a seperator, anchor, captures up to but not including the line with a seperator and is on the same line:
-
+A regular pattern for a column named "Indication" that uses a seperator, anchor, captures up to but not including the line with a seperator and is on the same line:
+```^\d*\.* *Indication:(?P<var>((?!.+:\?*)[\s\S])*)``` -> see it in action here: https://regex101.com/r/mZw1ov/1
 
 The mentioned rules above are the current ones in place. If you want to add more rules please feel free to! 
 
