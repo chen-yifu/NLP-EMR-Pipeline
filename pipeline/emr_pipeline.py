@@ -2,7 +2,7 @@
 2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
 This file includes code that represents an EMRPipeline object.
 """
-from copy import copy
+from copy import copy, deepcopy
 from typing import List, Any, Tuple, Dict
 import os
 import pandas as pd
@@ -64,7 +64,7 @@ class EMRPipeline:
                 for val in encoding.val:
                     flat_los += val.split()
         self.acronyms = get_acronyms(flat_los)
-        self.current_regex_rules = copy(list(list(self.column_mappings.values())[0].regular_pattern_rules.keys()))
+        self.current_regex_rules = deepcopy(list(list(self.column_mappings.values())[0].regular_pattern_rules.keys()))
 
     def run_pipeline(self, baseline_versions: List[str], anchor: str, single_line_list: list = [],
                      separator: str = ":", use_separator_to_capture: bool = False, add_anchor: bool = False,
@@ -428,12 +428,14 @@ class EMRPipeline:
         training_sets = [{} for _ in range(len(training_rules))]
         for index, training_set in enumerate(training_sets):
             for col_name, col in columns.items():
-                col_copy = copy(col)
-                regular_pattern_rules_copy = copy(training_rules[index])
+                col_copy = deepcopy(col)
+                regular_pattern_rules_copy = deepcopy(training_rules[index])
                 col_copy.regular_pattern_rules = regular_pattern_rules_copy
                 training_set[col_name] = col_copy
 
-        for training_set in training_sets:
+        for index,training_set in enumerate(training_sets):
+            print("On training set number", str(index))
+            cleaned_reports_copy = deepcopy(cleaned_reports)
 
             synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
                 training_set,
@@ -445,7 +447,7 @@ class EMRPipeline:
             print(regex_variable_mappings)
 
             filtered_reports, autocorrect_df = process_synoptics_and_ids(
-                cleaned_reports,
+                cleaned_reports_copy,
                 self.column_mappings,
                 synoptic_regex,
                 r"(?P<column>.*){}(?P<value>((?!.+({}|—)\?*)[\s\S])*)".format(separator, separator),
@@ -461,7 +463,7 @@ class EMRPipeline:
             id_end = self.report_ending[0]
             for report in filtered_reports:
                 old_id = report.report_id
-                if old_id[-1] != id_end:
+                if id_end not in old_id:
                     new_id = old_id + id_end if old_id[-1].isnumeric() else old_id[:-1] + id_end + old_id[-1]
                     new_id = "".join(new_id.split())
                     report.report_id = new_id
@@ -519,7 +521,7 @@ class EMRPipeline:
                         if col in training_regex_rules_best_dict.keys():
                             og_same = training_regex_rules_best_dict[col]["same"]
                             og_missing = training_regex_rules_best_dict[col]["missing"]
-                            if og_same < same and og_missing > missing:
+                            if og_same <= same and og_missing >= missing:
                                 training_regex_rules_best_dict[col] = training_set[col].regular_pattern_rules
 
         training_regex_rules_list = []

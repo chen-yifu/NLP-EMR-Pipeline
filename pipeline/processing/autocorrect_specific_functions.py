@@ -1,6 +1,8 @@
 """
 2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
-This file includes code autocorrects specific features of interest.
+This file includes code autocorrects specific features of interest. Every function must have this format:
+def autocorrect_function(val: str, paths: Dict[str,str]) -> str:
+    # do stuff
 """
 from typing import Dict
 import pandas as pd
