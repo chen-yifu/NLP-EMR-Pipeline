@@ -1,6 +1,6 @@
-# electronic medical records pipeline for synoptic sections
+# A Novel Natural Language Processing Extraction System
 
-to install dependencies, run
+To install dependencies, run
 
 ```
 pip install -r requirements.txt
@@ -238,6 +238,13 @@ the synoptic section is highly structured, we decided to use regular patterns to
 each report has different columns, a unique regular pattern would need to be used for each type of report. Thus, we have
 a regex generation algorithm.
 
+The algorithm utilizes a template:
+```python
+{front_cap}(?P<var>{end_cap}
+```
+- front_cap: specifies rules for column you want to extract
+- end_cap: specifies rules for the value you want to extract
+
 ## The regex rules (NEW)
 There will be a csv that looks like this:
 **col**|**val on same line**|**val on next line**|**add anchor**|**add separator to col name**|**capture to end of val**|**capture up to line with separator**|**capture up to keyword**
@@ -249,24 +256,27 @@ Pre-Operative Biopsy|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE
 Pre-Operative Diagnosis|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE
 Neoadjuvant Treatment|TRUE|FALSE|FALSE|FALSE|TRUE|FALSE|FALSE
 
-### add {}
-If you want to add something the report column. For instance:
-- seperator
-- anchor
-
 ### capture {}
 When you want to stop capturing the value. For instance:
-- up to but not including the line with a seperator:
-- up to a keyword
-- up to the end of the same line as the column:
+- up to but not including the line with a seperator: ```((?!.+{sep}\?*)[\s\S])*)```
+- up to a keyword: ```((?!{next_col})[\s\S])*)```
+- up to the end of the same line as the column: ```.+)```
+
+### add {}
+If you want to add something the report column. For instance:
+- seperator (https://regex101.com/r/OJxapt/1): ```col1:(?P<var>.+)```
+- anchor (https://regex101.com/r/IDwCHq/1): ```^\d*\.* *col1(?P<var>.+)```
 
 ### val on {}
 Whether the value is on the same line as the column or the next line. For instance:
-- same line:
-- next line:
+- same line: ``````
+- next line (https://regex101.com/r/LZkuW9/1): ```col1\s*-*(?P<col1>.+)```
+
+#### Example:
+A regular pattern for a column that uses a seperator, anchor, captures up to but not including the line with a seperator and is on the same line:
+
 
 The mentioned rules above are the current ones in place. If you want to add more rules please feel free to! 
-
 
 # Training the pipeline
 
@@ -276,4 +286,8 @@ You can train parts of the pipeline; the encoding portion and the extraction por
 
 ## Training the extraction (NEW)
 
+# Contact:
+Lucy: lhao03[at]student.ubc.ca 
 
+# Reference:
+Preprint: https://www.medrxiv.org/content/10.1101/2021.05.04.21256134v1
