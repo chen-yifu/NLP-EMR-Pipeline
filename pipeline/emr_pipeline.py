@@ -4,10 +4,8 @@ This file includes code that represents an EMRPipeline object.
 """
 from copy import copy
 from typing import List, Any, Tuple, Dict
-
 import os
 import pandas as pd
-
 from pipeline.postprocessing.highlight_differences import highlight_csv_differences
 from pipeline.postprocessing.write_csv_excel import save_dictionaries_into_csv_raw, reports_to_spreadsheet, \
     add_report_id
@@ -85,7 +83,6 @@ class EMRPipeline:
         alphabetical do not need to be preprocessed, as the pytesseract library will turn them into .txt files.
 
         :param val_on_same_line_cols_to_add:
-        :param cols_to_add:
         :param autocorrect_tools:
         :param extraction_tools:
         :param filter_values:
@@ -414,7 +411,7 @@ class EMRPipeline:
         :return:
         """
 
-        training_regex_rules_list = []
+        training_regex_rules_best_dict = {}
         # test front cap
         front_cap_rules = [rule for rule in self.current_regex_rules if "val on" in rule[0:6]]
         # set adding to column
@@ -506,8 +503,21 @@ class EMRPipeline:
                     output_excel_path=output_excel_path,
                     column_mappings=list(self.column_mappings.values()))
 
-                for k, acc in column_accuracies.items():
-                    print("lmfao")
+                for col, acc in column_accuracies.items():
+                    if col in training_set.keys():
+                        same = acc["num_same"] if "num_same" in acc.keys() else 0
+                        missing = acc["num_missing"] if "num_missing" in acc.keys() else 0
+                        training_set[col]["same"] = same
+                        training_set[col]["missing"] = missing
+                        # check if its better
+                        if col in training_regex_rules_best_dict.keys():
+                            og_same = training_regex_rules_best_dict[col]["same"]
+                            og_missing = training_regex_rules_best_dict[col]["missing"]
+                            if og_same < same and og_missing < missing:
+                                training_regex_rules_best_dict[col] = training_set[col]
 
+        training_regex_rules_list = []
+        for col_name, rules in training_regex_rules_best_dict.items():
+            rules.update({"col": col_name})
         training_regex_rules_df = pd.DataFrame(training_regex_rules_list)
         return training_regex_rules_df

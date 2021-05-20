@@ -92,7 +92,8 @@ def operative_pipeline_main() -> Tuple[Any, pd.DataFrame]:
         encoding_tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
         filter_values=True,
         filter_func_args=("indication", ["prophylaxis", "prophylactic"]),
-        resolve_ocr=False)
+        resolve_ocr=False,
+        train_regex=True)
 
 
 # def operative_gui():
@@ -107,5 +108,4 @@ def operative_pipeline_main() -> Tuple[Any, pd.DataFrame]:
 
 # pathology_gui()
 # operative_gui()
-pathology_pipeline_main()
 operative_pipeline_main()
