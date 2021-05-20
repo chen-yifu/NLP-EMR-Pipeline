@@ -412,20 +412,25 @@ class EMRPipeline:
         """
 
         training_regex_rules_best_dict = {}
+        for col_name, col in columns.items():
+            training_regex_rules_best_dict[col_name] = {"same": float('-inf'), "missing": float('inf')}
+
         # test front cap
         front_cap_rules = [rule for rule in self.current_regex_rules if "val on" in rule[0:6]]
         # set adding to column
         add_to_col_rules = [rule for rule in self.current_regex_rules if "add" in rule[0:3]]
         # set end cap
-        end_cap_rules = [rule for rule in self.current_regex_rules if "capture up to" in rule[0:13]]
+        end_cap_rules = [rule for rule in self.current_regex_rules if "capture" in rule[0:8]]
+
+        # make all possible regex rules
         training_rules = create_rules(front_cap_rules, add_to_col_rules, end_cap_rules)
 
-        training_sets = [{} for i in range(len(training_rules))]
+        training_sets = [{} for _ in range(len(training_rules))]
         for index, training_set in enumerate(training_sets):
             for col_name, col in columns.items():
                 col_copy = copy(col)
                 regular_pattern_rules_copy = copy(training_rules[index])
-                col.regular_pattern_rules = regular_pattern_rules_copy
+                col_copy.regular_pattern_rules = regular_pattern_rules_copy
                 training_set[col_name] = col_copy
 
         for training_set in training_sets:
@@ -453,12 +458,13 @@ class EMRPipeline:
                 paths=self.paths,
                 extraction_tools=extraction_tools)
 
+            id_end = self.report_ending[0]
             for report in filtered_reports:
                 old_id = report.report_id
-                id_end = self.report_ending[0]
-                new_id = old_id + id_end if old_id[-1].isnumeric() else old_id[:-1] + id_end + old_id[-1]
-                new_id = "".join(new_id.split())
-                report.report_id = new_id
+                if old_id[-1] != id_end:
+                    new_id = old_id + id_end if old_id[-1].isnumeric() else old_id[:-1] + id_end + old_id[-1]
+                    new_id = "".join(new_id.split())
+                    report.report_id = new_id
 
             if filter_func_args:
                 filtered_reports = filter_report(filtered_reports, filter_func_args[0], filter_func_args[1],
@@ -507,17 +513,20 @@ class EMRPipeline:
                     if col in training_set.keys():
                         same = acc["num_same"] if "num_same" in acc.keys() else 0
                         missing = acc["num_missing"] if "num_missing" in acc.keys() else 0
-                        training_set[col]["same"] = same
-                        training_set[col]["missing"] = missing
+                        training_set[col].regular_pattern_rules["same"] = same
+                        training_set[col].regular_pattern_rules["missing"] = missing
                         # check if its better
                         if col in training_regex_rules_best_dict.keys():
                             og_same = training_regex_rules_best_dict[col]["same"]
                             og_missing = training_regex_rules_best_dict[col]["missing"]
-                            if og_same < same and og_missing < missing:
-                                training_regex_rules_best_dict[col] = training_set[col]
+                            if og_same < same and og_missing > missing:
+                                training_regex_rules_best_dict[col] = training_set[col].regular_pattern_rules
 
         training_regex_rules_list = []
         for col_name, rules in training_regex_rules_best_dict.items():
-            rules.update({"col": col_name})
+            best_rules_dict = {"col": col_name}
+            best_rules_dict.update(rules)
+            training_regex_rules_list.append(best_rules_dict)
         training_regex_rules_df = pd.DataFrame(training_regex_rules_list)
+        training_regex_rules_df.to_csv(self.paths["path to regex rules"], index=False)
         return training_regex_rules_df

@@ -12,7 +12,9 @@ from pipeline.utils.utils import get_full_path
 
 validation_p = ["pathology_validation_D.csv", "pathology_validation_VZ.csv"]
 training_p = ["pathology_VZ.csv"]
-validation_o = ["operative_validation_D.csv", "operative_validation_VZ.csv"]
+validation_o = [
+    # "operative_validation_D.csv",
+    "operative_validation_VZ.csv"]
 training_o = ["operative_VZ.csv"]
 
 # operative pipeline

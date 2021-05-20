@@ -110,7 +110,7 @@ def create_rules(front_cap_rules: List[str], add_to_col_rules: List[str], end_ca
     front_rules = []
     end_rules = []
     possible_tf = 2 ** len(add_to_col_rules)
-    col_rules = [{} for i in range(possible_tf)]
+    col_rules = [{} for _ in range(possible_tf)]
 
     # front cap: only one can be true at all times
     # add to col: all can be true at one time
