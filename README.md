@@ -8,9 +8,16 @@ pip install -r requirements.txt
 
 ## For Windows:
 
-*WSL is highly recommended.*
+*WSL2 is highly recommended. You can try out command prompt or powershell at your own risk. For development, I reccomend Pycharm Professional or VSCode, as these development environemnts allow you to set up a remote connection to WSL2.* 
+
+- For pytesseract: https://school.geekwall.in/p/9QG6NstS/
+- For Tkinter: https://www.techinfected.net/2015/09/how-to-install-and-use-tkinter-in-ubuntu-debian-linux-mint.html
+- For using WSL2 as your interpreter in Pycharm Professional: https://www.jetbrains.com/help/pycharm/using-wsl-as-a-remote-interpreter.html#configure-wsl
+- For using VSCode and WSL: https://code.visualstudio.com/docs/remote/wsl-tutorial
 
 ## For Linux/MacOS:
+
+TODO
 
 # Documentation
 
@@ -135,17 +142,33 @@ folders that are the same for each report type:
           be automatically generated in the {report_type}_results folder.
 - **utils**:
     - {report_type}_reports:
-        - {report_type}_code_book.ods:
-        - {report_type}_column_mappings.csv:
-        - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui):
-        - {report_type}_regex_rules.csv:
+        - {report_type}_code_book.ods: values and their encodings
+        - {report_type}_column_mappings.csv: the features of interests and the column in the report and the column in which the value should be recorded 
+        - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui): in the GUI you can select what texts should not be autocorrected,
+        - {report_type}_regex_rules.csv: the rules pertaining to each feature of interest to be extracted (more on this in regex generation function)
         - any other types of files needed for the pipeline to run
 
 ## The code book, column mappings and excluded autocorrect column pairs:
 
 ### code book:
+**col**|**num**|**value**
+:-----:|:-----:|:-----:
+Laterality|1|left
+Laterality|2|right
+Laterality|3|bilateral
 
 ### column mappings:
+**pdf_col**|**alternative**|**col_to_collect**|**zero_empty**
+:-----:|:-----:|:-----:|:-----:
+study #| |Study #|false
+laterality| |Laterality|false
+"indication for surgury,indication"| |Surgical Indication|false
+preoperative biopsy| |Pre-Operative Biopsy|false
+"preoperative diagnosis (pathology),preoperative diagnosis"| |Pre-Operative Diagnosis|false
+neoadjuvant treatment?| |Neoadjuvant Treatment|false
+"incision and its relation to tumour,incision in relation to tumor"|"Additional notes on breast procedure (narrative),Additional notes on breast procedure"|Breast Incision Type|false
+
+
 
 ### excluded autocorrect column pairs:
 
