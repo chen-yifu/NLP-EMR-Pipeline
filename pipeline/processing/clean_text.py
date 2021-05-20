@@ -6,6 +6,8 @@ import re
 import string
 from typing import Tuple, List, Dict
 
+from pipeline.utils.report import Report
+
 table = str.maketrans(dict.fromkeys(string.punctuation))
 
 
@@ -87,3 +89,39 @@ def cleanse_value(val: str, is_text: bool = False, function=None, paths: Dict[st
         val = val[colon_index + 1:]
     val = re.sub(r":\s*$", "", val)  # remove ":"
     return function(val, paths) if function else val.replace("\n", " ").strip()
+
+
+def filter_report(reports: List[Report], column: str, value: List[str], report_ending: str) -> List[Report]:
+    """
+    :param reports:
+    :param column:
+    :param value:
+    :param report_ending:
+    :return:
+    """
+    cleaned_reports = []
+    skip = False
+    for index, report in enumerate(reports):
+        extractions = report.extractions
+        if column in extractions.keys() and not skip:
+            if extractions[column] not in value:
+                cleaned_reports.append(report)
+            elif extractions[column] in value:
+                prev_index = index - 1 if index - 1 > 0 else False
+                next_index = index + 1 if index + 1 < len(reports) else False
+                prev_report_id = "".join(
+                    [l for l in list(reports[prev_index].report_id) if not l.isalpha()]) if prev_index else -1
+                next_report_id = "".join(
+                    [l for l in list(reports[next_index].report_id) if not l.isalpha()]) if prev_index else -1
+                curr_id = "".join([l for l in list(report.report_id) if not l.isalpha()])
+                if curr_id == prev_report_id:
+                    prev_report = reports[prev_index]
+                    prev_report.report_id = curr_id + report_ending[:-4]
+                elif curr_id == next_report_id:
+                    next_report = reports[next_index]
+                    next_report.report_id = curr_id + report_ending[:-4]
+                    cleaned_reports.append(next_report)
+                    skip = True
+        else:
+            skip = False
+    return cleaned_reports

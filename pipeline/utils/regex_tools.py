@@ -349,12 +349,13 @@ def capture_double_regex(starting_word: List[Union[str, List[str]]],
     return modified_regex
 
 
-def synoptic_capture_regex_(columns: Dict[str, Column], val_on_same_line_cols_to_add: list = [],
-                            val_on_next_line_cols_to_add: list = [], anchor: str = "",
+def synoptic_capture_regex_(columns: Dict[str, Column], val_on_same_line_cols_to_add: List[str] = [],
+                            val_on_next_line_cols_to_add: List[str] = [], anchor: str = "",
                             ignore_caps: bool = True, separator: str = ":") -> Tuple[str, Dict[str, List[str]]]:
     """
     Based on a regex pattern template, turns a list of columns into a regex that can capture the values associated with
     those columns.
+    :param val_on_next_line_cols_to_add:
     :param val_on_same_line_cols_to_add:
     :param ignore_caps:
     :param columns:                       the columns that you want to capture
@@ -362,11 +363,12 @@ def synoptic_capture_regex_(columns: Dict[str, Column], val_on_same_line_cols_to
     :param separator:                     The punctuation or letters that separates a column and value. Default is :
     :return:                              A regex pattern
     """
-    val_on_same_line_cols_to_add = {col: Column(human_col=col, primary_report_col=[col], regular_pattern_rules={}) for
+    val_on_same_line_cols_to_add = {col: Column(human_col=col, primary_report_col=[col]) for
                                     col in val_on_same_line_cols_to_add}
     val_on_next_line_cols_to_add = {col: Column(human_col=col, primary_report_col=[col], val_on_next_line=True) for
                                     col in val_on_next_line_cols_to_add}
     columns.update(val_on_same_line_cols_to_add)
+    columns.update(val_on_next_line_cols_to_add)
     col_keys = list(columns.keys())
     template_regex = r""
     mappings_to_regex_vals = {}

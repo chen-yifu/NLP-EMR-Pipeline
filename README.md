@@ -138,6 +138,7 @@ folders that are the same for each report type:
         - {report_type}_code_book.ods:
         - {report_type}_column_mappings.csv:
         - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui):
+        - {report_type}_regex_rules.csv:
         - any other types of files needed for the pipeline to run
 
 ## The code book, column mappings and excluded autocorrect column pairs:
@@ -172,14 +173,26 @@ This pipeline can be fully customized through the use of functions. There are th
 
 These functions deal with how the pipeline should extract FoI, either based on other parts of the report of other FoI.
 
+```python
+
+```
+
 ## autocorrect_tools
 
 After a value has been extracted, you might want to clean it a special type of way.
+
+```python
+
+```
 
 ## encoding_tools
 
 Sometimes you may want a value to be encoded a certain way. This can include using regex to clean a value or some kind
 of different encoding method.
+
+```python
+
+```
 
 # regex generation function
 
@@ -189,6 +202,8 @@ each report has different columns, a unique regular pattern would need to be use
 a regex generation algorithm.
 
 ## The regex rules (NEW)
+There will be a csv that looks like this:
+
 
 ### add {}
 
@@ -196,7 +211,12 @@ a regex generation algorithm.
 
 ### val on {}
 
-# Training the pipeline 
+# Training the pipeline
 
+You can train parts of the pipeline. The encoding portion and the extraction portion.
+
+## Training the encoding
+
+## Training the extraction (NEW)
 
 
