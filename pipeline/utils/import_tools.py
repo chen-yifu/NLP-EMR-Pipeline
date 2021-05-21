@@ -144,7 +144,7 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, regex_rules_
     regex_rules_exist = os.path.exists(regex_rules_path)
     if not thresholds_exist:
         print("No specialized thresholds exist, will use defaults of 0.75.")
-    column_thresholds = pd.read_excel(threshold_path) if thresholds_exist else None
+    column_thresholds = pd.read_csv(threshold_path) if thresholds_exist else None
     regex_rules = pd.read_csv(regex_rules_path).to_dict('record') if regex_rules_exist else None
     list_of_cols = list(column_thresholds["column"]) if thresholds_exist else []
     for index, row in pdf_cols_human_cols.iterrows():

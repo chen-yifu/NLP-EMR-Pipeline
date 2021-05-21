@@ -82,6 +82,7 @@ pipeline.run_pipeline(
 │           ├── {report_type}_code_book.ods
 │           ├── {report_type}_column_mappings.csv
 │           ├── {report_type}_regex_rules.csv
+│           ├── {report_type}_thresholds.csv
 │           └── {report_type}_excluded_autocorrect_column_pairs.data
 ├── main.py
 ├── {report_type}_gui.py

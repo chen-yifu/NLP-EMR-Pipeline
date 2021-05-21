@@ -32,17 +32,15 @@ def get_paths(report_type: str, other_paths=None) -> dict:
     # files
 
     # utils
-    path_to_code_book = path_to_utils + "{}_code_book.ods".format(report_type)
+    path_to_code_book = path_to_utils + "{}_code_book.xlsx".format(report_type)
     path_to_mappings = path_to_utils + "{}_column_mappings.csv".format(report_type)
     path_to_autocorrect = path_to_utils + "{}_excluded_autocorrect_column_pairs.data".format(report_type)
     path_to_regex_rules = path_to_utils + "{}_regex_rules.csv".format(report_type)
+    path_to_thresholds = path_to_utils + "{}_thresholds.csv".format(report_type)
 
     # output
     csv_path_raw = path_to_output_csv + "raw_{}.csv".format(timestamp)
     csv_path_coded = path_to_output_csv + "coded_{}.csv".format(timestamp)
-
-    # thresholds
-    path_to_thresholds = path_to_training + "best_training.xlsx"
 
     # add other paths
     paths.update(other_paths)
