@@ -27,3 +27,4 @@ data/output/pathology_results/training
 data/input/validation
 nlp
 data
+__pycache__/
