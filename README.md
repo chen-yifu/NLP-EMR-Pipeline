@@ -210,48 +210,52 @@ pipeline = EMRPipeline(
 ```
 
 # Running the pipeline
-## Using new regular pattern rules 
+
+## Using new regular pattern rules
+
 ```python
 # using the pipeline object created earlier
 pipeline.run_pipeline(
-        baseline_versions=validation_p,
-        anchor=r"^ *-* *",
-        cols_to_skip=["study #", "nottingham score", "closest margin", "closest margin1"],
-        val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect", "Margins", "comment(s)", "Part(s) Involved:"],
-        encoding_tools={"nottingham_score": nottingham_score,
-                        "process_mm_val": process_mm_val,
-                        "number_of_foci": number_of_foci,
-                        "tumour_site": tumour_site,
-                        "archtectural_patterns": archtectural_patterns},
-        autocorrect_tools={"pathologic stage": find_pathologic_stage},
-        extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ, duplicate_lymph_nodes,
-                          find_num_foci])
+    baseline_versions=validation_p,
+    anchor=r"^ *-* *",
+    cols_to_skip=["study #", "nottingham score", "closest margin", "closest margin1"],
+    val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect", "Margins", "comment(s)", "Part(s) Involved:"],
+    encoding_tools={"nottingham_score": nottingham_score,
+                    "process_mm_val": process_mm_val,
+                    "number_of_foci": number_of_foci,
+                    "tumour_site": tumour_site,
+                    "archtectural_patterns": archtectural_patterns},
+    autocorrect_tools={"pathologic stage": find_pathologic_stage},
+    extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ, duplicate_lymph_nodes,
+                      find_num_foci])
 ```
 
 ## Using old regular pattern rules
+
 ```python
 # using the pipeline object created earlier
 pipeline.run_pipeline(
-        sep_list=["invasive carcinoma", "in situ component", "in situ component type", "insitu component",
-                  "insitu type"],
-        baseline_versions=validation_p,
-        anchor=r"^ *-* *",
-        add_anchor=True,
-        val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage", "comment(s)",
-                                "Part(s) Involved:"],
-        cols_to_skip=["study #", "specimen", "treatment effect", "margins", "pathologic stage", "comment(s)",
-                      "part(s) involved", "nottingham score", "closest margin", "closest margin1"],
-        encoding_tools={"nottingham_score": nottingham_score,
-                        "process_mm_val": process_mm_val,
-                        "number_of_foci": number_of_foci,
-                        "tumour_site": tumour_site,
-                        "archtectural_patterns": archtectural_patterns},
-        autocorrect_tools={"pathologic stage": find_pathologic_stage},
-        extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ, duplicate_lymph_nodes,
-                          find_num_foci])
+    sep_list=["invasive carcinoma", "in situ component", "in situ component type", "insitu component",
+              "insitu type"],
+    baseline_versions=validation_p,
+    anchor=r"^ *-* *",
+    add_anchor=True,
+    val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage", "comment(s)",
+                                  "Part(s) Involved:"],
+    cols_to_skip=["study #", "specimen", "treatment effect", "margins", "pathologic stage", "comment(s)",
+                  "part(s) involved", "nottingham score", "closest margin", "closest margin1"],
+    encoding_tools={"nottingham_score": nottingham_score,
+                    "process_mm_val": process_mm_val,
+                    "number_of_foci": number_of_foci,
+                    "tumour_site": tumour_site,
+                    "archtectural_patterns": archtectural_patterns},
+    autocorrect_tools={"pathologic stage": find_pathologic_stage},
+    extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ, duplicate_lymph_nodes,
+                      find_num_foci])
 ```
 
 # Customization
+
 This pipeline can be fully customized through the use of functions. There are three types of functions you can make.
 
 ## extraction_tools
@@ -261,7 +265,7 @@ Every function must follow this format:
 
 ```python
 def extraction_function(report: str, result: dict, generic_pairs: dict):
-    # do stuff
+# do stuff
 
 ```
 
@@ -274,7 +278,7 @@ format:
 
 ```python
 def autocorrect_function(val: str, paths: Dict[str, str]) -> str:
-    # do stuff 
+# do stuff 
 ```
 
 ## encoding_tools
@@ -284,7 +288,7 @@ of different encoding method. Every function must have this format:
 
 ```python
 def encoding_function(value: str = "", encodings_so_far: Dict[str, str] = {}):
-    # do stuff
+# do stuff
 ```
 
 # Regex Generation Function
@@ -295,9 +299,11 @@ each report has different columns, a unique regular pattern would need to be use
 a regex generation algorithm.
 
 The algorithm utilizes a template:
+
 ```python
-{front_cap}(?P<var>{end_cap}
+{front_cap}(?P < var > {end_cap}
 ```
+
 - front_cap: specifies rules for column you want to extract
 - end_cap: specifies rules for the value you want to extract
 
@@ -315,26 +321,32 @@ Treatment|TRUE|FALSE|FALSE|FALSE|TRUE|FALSE|FALSE
 ### capture {}
 
 When you want to stop capturing the value. For instance:
+
 - up to but not including the line with a seperator: ```((?!.+{sep}\?*)[\s\S])*)```
 - up to a keyword: ```((?!{next_col})[\s\S])*)```
 - up to the end of the same line as the column: ```.+)```
 
 ### add {}
+
 If you want to add something the report column. For instance:
+
 - seperator (https://regex101.com/r/OJxapt/1): ```col1:(?P<var>.+)```
 - anchor (https://regex101.com/r/IDwCHq/1): ```^\d*\.* *col1(?P<var>.+)```
 
 ### val on {}
 
 Whether the value is on the same line as the column or the next line. For instance:
+
 - same line (https://regex101.com/r/BxtXNo/1): ```col3:(?P<var>.+)```
 - next line (https://regex101.com/r/LZkuW9/1): ```col1\s*-*(?P<col1>.+)```
 
 #### Example:
-A regular pattern for a column named "Indication" that uses a seperator, anchor, captures up to but not including the line with a seperator and is on the same line:
+
+A regular pattern for a column named "Indication" that uses a seperator, anchor, captures up to but not including the
+line with a seperator and is on the same line:
 ```^\d*\.* *Indication:(?P<var>((?!.+:\?*)[\s\S])*)``` -> see it in action here: https://regex101.com/r/mZw1ov/1
 
-The mentioned rules above are the current ones in place. If you want to add more rules please feel free to! 
+The mentioned rules above are the current ones in place. If you want to add more rules please feel free to!
 
 # Training the pipeline
 
@@ -345,7 +357,9 @@ You can train parts of the pipeline; the encoding portion and the extraction por
 ## Training the extraction (NEW)
 
 # Contact:
-Lucy: lhao03[at]student.ubc.ca 
+
+Lucy: lhao03[at]student.ubc.ca
 
 # Reference:
+
 Preprint: https://www.medrxiv.org/content/10.1101/2021.05.04.21256134v1
