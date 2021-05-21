@@ -433,8 +433,8 @@ class EMRPipeline:
                 col_copy.regular_pattern_rules = regular_pattern_rules_copy
                 training_set[col_name] = col_copy
 
-        for index,training_set in enumerate(training_sets):
-            print("On training set number", str(index))
+        for index, training_set in enumerate(training_sets):
+            print("On training set number", str(index + 1))
             cleaned_reports_copy = deepcopy(cleaned_reports)
 
             synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(

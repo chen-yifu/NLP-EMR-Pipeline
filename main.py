@@ -94,8 +94,7 @@ def operative_pipeline_main() -> Tuple[Any, pd.DataFrame]:
         encoding_tools={"immediate_reconstruction_mentioned": immediate_reconstruction_mentioned},
         filter_values=True,
         filter_func_args=("indication", ["prophylaxis", "prophylactic"]),
-        resolve_ocr=False,
-        train_regex=True)
+        resolve_ocr=False)
 
 
 # def operative_gui():

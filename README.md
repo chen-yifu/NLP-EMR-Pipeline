@@ -8,11 +8,13 @@ pip install -r requirements.txt
 
 ## For Windows:
 
-*WSL2 is highly recommended. You can try out command prompt or powershell at your own risk. For development, I reccomend Pycharm Professional or VSCode, as these development environemnts allow you to set up a remote connection to WSL2.* 
+*WSL2 is highly recommended. You can try out command prompt or powershell at your own risk. For development, I reccomend
+Pycharm Professional or VSCode, as these development environemnts allow you to set up a remote connection to WSL2.*
 
 - For pytesseract: https://school.geekwall.in/p/9QG6NstS/
 - For Tkinter: https://www.techinfected.net/2015/09/how-to-install-and-use-tkinter-in-ubuntu-debian-linux-mint.html
-- For using WSL2 as your interpreter in Pycharm Professional: https://www.jetbrains.com/help/pycharm/using-wsl-as-a-remote-interpreter.html#configure-wsl
+- For using WSL2 as your interpreter in Pycharm
+  Professional: https://www.jetbrains.com/help/pycharm/using-wsl-as-a-remote-interpreter.html#configure-wsl
 - For using VSCode and WSL: https://code.visualstudio.com/docs/remote/wsl-tutorial
 
 ## For Linux/MacOS:
@@ -141,25 +143,33 @@ folders that are the same for each report type:
 - **utils**:
     - {report_type}_reports:
         - {report_type}_code_book.ods: values and their encodings
-        - {report_type}_column_mappings.csv: the features of interests and the column in the report and the column in which the value should be recorded 
-        - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui): in the GUI you can select what texts should not be autocorrected,
-        - {report_type}_regex_rules.csv: the rules pertaining to each feature of interest to be extracted (more on this in regex generation function)
+        - {report_type}_column_mappings.csv: the features of interests and the column in the report and the column in
+          which the value should be recorded
+        - {report_type}_excluded_autocorrect_column_pairs.data (used mainly in gui): in the GUI you can select what
+          texts should not be autocorrected,
+        - {report_type}_regex_rules.csv: the rules pertaining to each feature of interest to be extracted (more on this
+          in regex generation function)
         - any other types of files needed for the pipeline to run
 
 ## The code book, column mappings and excluded autocorrect column pairs:
 
 ### code book (.ods or .xlsx):
+
 **col**|**num**|**value**
 :-----:|:-----:|:-----:
 Laterality|1|left
 Laterality|2|right
 Laterality|3|bilateral
 
-- col: the name that you want the extracted value to be under in the excel sheet. Must match col_to_collect in column mappings.
-- num: the integer encoding you want the value to be matched to. If you want to use a custom encoding function or just want the value to be returned, leave this as -1.
-- value: the string value that should be encoded to 3. If num is -1, either put the function you want to use here or leave it blank if you just want the extracted value to be returned.
+- col: the name that you want the extracted value to be under in the excel sheet. Must match col_to_collect in column
+  mappings.
+- num: the integer encoding you want the value to be matched to. If you want to use a custom encoding function or just
+  want the value to be returned, leave this as -1.
+- value: the string value that should be encoded to 3. If num is -1, either put the function you want to use here or
+  leave it blank if you just want the extracted value to be returned.
 
 ### column mappings (.csv):
+
 ![image](https://user-images.githubusercontent.com/55033656/119017166-f34af000-b957-11eb-87de-2a1011affc20.png)
 ![image](https://user-images.githubusercontent.com/55033656/119017270-11b0eb80-b958-11eb-8677-a03e6ef3c1de.png)
 
@@ -179,6 +189,7 @@ neoadjuvant treatment?| |Neoadjuvant Treatment|false
 - zero_empty: if None and 0 mean the same thing
 
 ### excluded autocorrect column pairs (.data):
+
 In the GUI, you are able to select which autocorrections to exclude or add.
 
 # Instantiating the pipeline
@@ -203,21 +214,24 @@ This pipeline can be fully customized through the use of functions. There are th
 
 ## extraction_tools
 
-These functions deal with how the pipeline should extract FoI, either based on other parts of the report of other FoI. Every function must follow this format:
+These functions deal with how the pipeline should extract FoI, either based on other parts of the report of other FoI.
+Every function must follow this format:
 
 ```python
 def extraction_function(report: str, result: dict, generic_pairs: dict):
     # do stuff
 
 ```
-You don't have to use all three arguments, but they must all be present in the function. 
+
+You don't have to use all three arguments, but they must all be present in the function.
 
 ## autocorrect_tools
 
-After a value has been extracted, you might want to clean it a special type of way. Every function must follow this format:
+After a value has been extracted, you might want to clean it a special type of way. Every function must follow this
+format:
 
 ```python
-def autocorrect_function(val: str, paths: Dict[str,str]) -> str:
+def autocorrect_function(val: str, paths: Dict[str, str]) -> str:
     # do stuff 
 ```
 
@@ -227,7 +241,7 @@ Sometimes you may want a value to be encoded a certain way. This can include usi
 of different encoding method. Every function must have this format:
 
 ```python
-def encoding_function(value: str="", encodings_so_far: Dict[str, str] = {}):
+def encoding_function(value: str = "", encodings_so_far: Dict[str, str] = {}):
     # do stuff
 ```
 
@@ -239,34 +253,39 @@ each report has different columns, a unique regular pattern would need to be use
 a regex generation algorithm.
 
 ## The regex rules (NEW)
+
 There will be a csv that looks like this:
-**col**|**val on same line**|**val on next line**|**add anchor**|**add separator to col name**|**capture to end of val**|**capture up to line with separator**|**capture up to keyword**
+**col**|**val on same line**|**val on next line**|**add anchor**|**add separator to col name**|**capture to end of val**
+|**capture up to line with separator**|**capture up to keyword**
 :-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:
-Study #|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE
-Laterality|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE
-Surgical Indication|TRUE|FALSE|TRUE|TRUE|FALSE|TRUE|FALSE
-Pre-Operative Biopsy|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE
-Pre-Operative Diagnosis|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE
-Neoadjuvant Treatment|TRUE|FALSE|FALSE|FALSE|TRUE|FALSE|FALSE
+Study #|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE Laterality|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE Surgical
+Indication|TRUE|FALSE|TRUE|TRUE|FALSE|TRUE|FALSE Pre-Operative Biopsy|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE
+Pre-Operative Diagnosis|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE Neoadjuvant
+Treatment|TRUE|FALSE|FALSE|FALSE|TRUE|FALSE|FALSE
 
 ### add {}
+
 If you want to add something the report column. For instance:
+
 - seperator
 - anchor
 
 ### capture {}
+
 When you want to stop capturing the value. For instance:
+
 - up to but not including the line with a seperator:
 - up to a keyword
 - up to the end of the same line as the column:
 
 ### val on {}
+
 Whether the value is on the same line as the column or the next line. For instance:
+
 - same line:
 - next line:
 
-The mentioned rules above are the current ones in place. If you want to add more rules please feel free to! 
-
+The mentioned rules above are the current ones in place. If you want to add more rules please feel free to!
 
 # Training the pipeline
 
