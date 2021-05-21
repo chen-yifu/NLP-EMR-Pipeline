@@ -204,6 +204,7 @@ class EMRPipeline:
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings,
                                                                  list(self.acronyms))
 
+
         df_raw = save_dictionaries_into_csv_raw(reports_with_values, self.column_mappings,
                                                 csv_path=self.paths["csv path raw"],
                                                 print_debug=print_debug)

@@ -1,10 +1,10 @@
 # A Novel Natural Language Processing Extraction System
 
 To install dependencies, run
-
 ```
 pip install -r requirements.txt
 ```
+
 
 ## For Windows:
 
