@@ -13,4 +13,6 @@ scispacy~=0.4.0
 spacy~=3.0.5
 transformers~=4.2.2
 scipy~=1.6.0
+openpyxl
 https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.4.0/en_core_sci_lg-0.4.0.tar.gz
+

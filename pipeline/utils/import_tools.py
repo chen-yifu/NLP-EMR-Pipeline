@@ -1,8 +1,9 @@
 """
-This file contains methods that import tools needed to run the pipeline
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that imports utils needed by pipeline to run.
 """
 import string
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 
 import os
 import pandas as pd
@@ -13,6 +14,10 @@ table = str.maketrans(dict.fromkeys(string.punctuation))
 
 
 def extract_cols(row):
+    """
+    :param row:
+    :return:
+    """
     try:
         return row.split(",")
     except AttributeError:
@@ -36,7 +41,7 @@ def import_code_book(code_book_path: str, column_id: int = 0, encoding_id: int =
         col_name = row[column_id]
         num = row[encoding_id]
         val = row[value_id]
-        val_list = str(val).split(",")
+        val_list = str(val).split(",") if not pd.isna(val) else []
         cleaned_val_list = [e.strip() for e in val_list]
         if col_name not in code_book:
             code_book[col_name] = []
@@ -86,11 +91,44 @@ def import_pdf_human_cols_tuples(pdf_human_csv: str, keep_punc: bool = False) ->
     return pdf_cols_human_cols_list
 
 
-def import_columns(pdf_human_excel_sheet: str, threshold_path: str, skip=None, primary_row_index: int = 0,
-                   alternative_row_index: int = 1, human_col_index: int = 2) -> Dict[str, Column]:
+def create_regex_rules_csv(regex_rules_path: str, pdf_cols_human_cols_dict_w_column: Dict[str, Column]):
+    """
+    :param regex_rules_path:
+    :param pdf_cols_human_cols_dict_w_column:
+    """
+    regex_rules_list = []
+    for col_name, col_obj in pdf_cols_human_cols_dict_w_column.items():
+        regex_col_dict = {"col": col_name}
+        regex_col_dict.update(col_obj.regular_pattern_rules)
+        regex_rules_list.append(regex_col_dict)
+    regex_rules_df = pd.DataFrame(regex_rules_list)
+    regex_rules_df.to_csv(regex_rules_path, index=False)
+    print(regex_rules_df)
+
+
+def find_regex_rules(regex_rules: List[dict], human_col: str):
+    """
+    :param regex_rules:
+    :param human_col:
+    :return:
+    """
+    for cols_dict in regex_rules:
+        if "col" in cols_dict.keys():
+            if cols_dict["col"] == human_col:
+                cols_dict.pop("col")
+                return cols_dict
+    return {}
+
+
+def import_columns(pdf_human_excel_sheet: str, threshold_path: str, regex_rules_path: str, skip=None,
+                   primary_row_index: int = 0, alternative_row_index: int = 1, human_col_index: int = 2,
+                   zero_empty_index: int = 3) -> Dict[str, Column]:
     """
     Imports the columns you want to find from a csv file as a dict of type Column.
 
+    :param regex_rules_path:
+    :param zero_empty_index:
+    :param threshold_path:
     :param alternative_row_index:       the index that corresponds to column that contains alternative columns
     :param primary_row_index:           the index that corresponds to column that contains primary columns
     :param human_col_index:             the index that corresponds to column that contains the human excel columns
@@ -103,13 +141,16 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, skip=None, p
     pdf_cols_human_cols_dict_w_column = {}
     pdf_cols_human_cols = pd.read_csv(pdf_human_excel_sheet)
     thresholds_exist = os.path.exists(threshold_path)
+    regex_rules_exist = os.path.exists(regex_rules_path)
     if not thresholds_exist:
-        print("No specialized thresholds exist, will use defaults of 0.75 and keeping stopwords.")
-    column_thresholds = pd.read_excel(threshold_path) if thresholds_exist else None
+        print("No specialized thresholds exist, will use defaults of 0.75.")
+    column_thresholds = pd.read_csv(threshold_path) if thresholds_exist else None
+    regex_rules = pd.read_csv(regex_rules_path).to_dict('record') if regex_rules_exist else None
     list_of_cols = list(column_thresholds["column"]) if thresholds_exist else []
     for index, row in pdf_cols_human_cols.iterrows():
         human_col = row[human_col_index]
         index_t = list_of_cols.index(human_col) if human_col in list_of_cols else -1
+        col_regex_rules = find_regex_rules(regex_rules, human_col) if regex_rules else {}
         if human_col.lower() in skip:
             continue
         else:
@@ -120,6 +161,24 @@ def import_columns(pdf_human_excel_sheet: str, threshold_path: str, skip=None, p
                                                                   alternative_report_col=alternative_pdf_col_list,
                                                                   threshold=
                                                                   column_thresholds.iloc[[index_t]]["threshold"][
-                                                                      index_t] if index_t != -1 else .75)
+                                                                      index_t] if index_t != -1 else .75,
+                                                                  zero_empty=row[zero_empty_index],
+                                                                  regular_pattern_rules=col_regex_rules)
+    if not regex_rules_exist:
+        print("No regex rules exist, will make default regex rules csv.")
+        create_regex_rules_csv(regex_rules_path, pdf_cols_human_cols_dict_w_column)
 
     return pdf_cols_human_cols_dict_w_column
+
+
+def get_acronyms(encodings: List[str]) -> Set[str]:
+    """
+    :param encodings:
+    :return:
+    """
+    acronyms = set()
+    for encoding in encodings:
+        all_upper = len([l for l in encoding if l.isupper()]) >= len(encoding) - 1 and len(encoding) > 2
+        if all_upper:
+            acronyms.add(encoding)
+    return acronyms

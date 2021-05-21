@@ -1,17 +1,23 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes the code that compares two dataframes and outputs an excel sheet showing the differences.
+"""
 from collections import defaultdict
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 import pandas as pd
-from pipeline.processing import columns
 
-zero_empty_columns = columns.get_zero_empty_columns()
+from pipeline.processing.columns import get_zero_empty_columns
+from pipeline.utils.column import Column
 
 
 def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_excel_path: str, report_type: str,
-                              print_debug=True, id_col: str = "Study #") -> Tuple[tuple, Dict[str, Dict[str, int]]]:
+                              column_mappings: List[Column], print_debug=True,
+                              id_col: str = "Study #") -> Tuple[tuple, Dict[str, Dict[str, int]]]:
     """
     given two csv files to compare, merge the data into a xlsx file, while highlighting the cells that are different
 
+    :param column_mappings:
     :param id_col:                     columns name that stores the report ids
     :param report_type:                the report category
     :param csv_path_coded:             path to csv file that has been codified
@@ -22,6 +28,7 @@ def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_e
     """
     df_coded = pd.read_csv(csv_path_coded, dtype=str)
     df_human = pd.read_csv(csv_path_human, dtype=str)
+    zero_empty_columns = get_zero_empty_columns(column_mappings)
 
     # matching up the columns from baseline with pipeline so it can be compared
     df_coded = df_coded.reindex(columns=list(df_human.columns))
@@ -34,7 +41,7 @@ def highlight_csv_differences(csv_path_coded: str, csv_path_human: str, output_e
         return
 
     # compare the two dataframe to determine the number of same/different/missing/extra cells
-    overall_accuracy, column_accuracies = calculate_statistics(df_coded, df_human)
+    overall_accuracy, column_accuracies = calculate_statistics(df_coded, df_human, zero_empty_columns)
     num_same, num_different, num_missing, num_extra = overall_accuracy
 
     # rename the output path to show overall_accuracy
@@ -214,11 +221,11 @@ def are_different(val1, val2):
             return True
 
 
-def calculate_statistics(df_coded: pd.DataFrame, df_human: pd.DataFrame,
+def calculate_statistics(df_coded: pd.DataFrame, df_human: pd.DataFrame, zero_empty_columns: List[str],
                          id_col: str = "Study #") -> Tuple[tuple, Dict[str, Dict[str, int]]]:
     """
     calculate the overall accuracy, as well as accuracy for each column
-
+    :param zero_empty_columns:
     :param df_coded:
     :param df_human:
     :param id_col:
@@ -262,11 +269,11 @@ def calculate_statistics(df_coded: pd.DataFrame, df_human: pd.DataFrame,
             # check if the report is missing from the baseline.
             # check if there is a version (R or L) in reports missing from pipeline, but not missing in baseline
             # and use that baseline version to check accuracy
-            if coded_id in report_ids_missing_from_baseline:
-                coded_id_no_lat = "".join([l for l in list(coded_id) if not l.isalpha()])
-                for index, report_id in enumerate(report_ids_missing_from_pipeline_no_laterality):
-                    if coded_id_no_lat == report_id:
-                        coded_id = report_ids_missing_from_pipeline[index]
+            # if coded_id in report_ids_missing_from_baseline:
+            #     coded_id_no_lat = "".join([l for l in list(coded_id) if not l.isalpha()])
+            #     for index, report_id in enumerate(report_ids_missing_from_pipeline_no_laterality):
+            #         if coded_id_no_lat == report_id:
+            #             coded_id = report_ids_missing_from_pipeline[index]
 
             coded_val = str(df_coded[col_name][row_index])
             try:

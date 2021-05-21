@@ -1,6 +1,12 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that cleans columns and values after they have been extracted by regular patterns.
+"""
 import re
 import string
-from typing import Tuple
+from typing import Tuple, List, Dict
+
+from pipeline.utils.report import Report
 
 table = str.maketrans(dict.fromkeys(string.punctuation))
 
@@ -19,8 +25,10 @@ def cleanse_column(col: str, is_text: bool = False) -> Tuple[str, str]:
     colon_i = col.find(":")
     col = col[:colon_i] if colon_i != -1 else col
     val = col[colon_i + 1:] if colon_i != -1 else ""
+    col = " ".join(col.translate(table).lower().strip().split())
     if is_text:
-        return " ".join([w for w in col.split() if w.isalpha()]).lower().strip(), val
+        col = " ".join([w for w in col.split() if w.isalpha()]).lower().strip()
+        return col, val
     return col.strip().lower(), val
 
 
@@ -61,7 +69,7 @@ def remove_new_line_if_colon_present(s: str):
     return val
 
 
-def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
+def cleanse_value(val: str, is_text: bool = False, function=None, paths: Dict[str, str] = {}) -> str:
     """
     Cleanse the captured value according to whether it is text or numerical
     TEXT: removes all punctuation and lowers everything and removes single letters and strips all spaces
@@ -80,4 +88,40 @@ def cleanse_value(val: str, is_text: bool = False, function=None) -> str:
     if colon_index != -1:
         val = val[colon_index + 1:]
     val = re.sub(r":\s*$", "", val)  # remove ":"
-    return function(val) if function else val.replace("\n", " ").strip()
+    return function(val, paths) if function else val.replace("\n", " ").strip()
+
+
+def filter_report(reports: List[Report], column: str, value: List[str], report_ending: str) -> List[Report]:
+    """
+    :param reports:
+    :param column:
+    :param value:
+    :param report_ending:
+    :return:
+    """
+    cleaned_reports = []
+    skip = False
+    for index, report in enumerate(reports):
+        extractions = report.extractions
+        if column in extractions.keys() and not skip:
+            if extractions[column] not in value:
+                cleaned_reports.append(report)
+            elif extractions[column] in value:
+                prev_index = index - 1 if index - 1 > 0 else False
+                next_index = index + 1 if index + 1 < len(reports) else False
+                prev_report_id = "".join(
+                    [l for l in list(reports[prev_index].report_id) if not l.isalpha()]) if prev_index else -1
+                next_report_id = "".join(
+                    [l for l in list(reports[next_index].report_id) if not l.isalpha()]) if prev_index else -1
+                curr_id = "".join([l for l in list(report.report_id) if not l.isalpha()])
+                if curr_id == prev_report_id:
+                    prev_report = reports[prev_index]
+                    prev_report.report_id = curr_id + report_ending[:-4]
+                elif curr_id == next_report_id:
+                    next_report = reports[next_index]
+                    next_report.report_id = curr_id + report_ending[:-4]
+                    cleaned_reports.append(next_report)
+                    skip = True
+        else:
+            skip = False
+    return cleaned_reports

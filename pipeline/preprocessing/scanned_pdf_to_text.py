@@ -1,3 +1,8 @@
+"""
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that converts PDFs to .txt documents.
+We use pytesseract (https://pypi.org/project/pytesseract/).
+"""
 import re
 from typing import List
 import pdftotext

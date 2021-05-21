@@ -1,5 +1,6 @@
 """
-helper regex functions
+2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
+This file includes code that generates regular patterns.
 """
 import random
 import re
@@ -156,7 +157,7 @@ def make_punc_regex_literal(str_with_punc: str) -> str:
 
 def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True, anchor_list: List[str] = [],
                            capture_till_end_of_val_list=[], stop_capture_at_end_of_value: bool = True, anchor: str = "",
-                           is_anchor: bool = False, use_seperater_for_contained_capture: bool = False,
+                           is_anchor: bool = False, use_seperater_for_contained_capture: bool = True,
                            multi_line_cols_list: List[str] = [], no_anchor_list: List[str] = [],
                            contained_capture_list: List[str] = [], separator: str = ":", no_sep_list: List[str] = [],
                            add_sep: bool = False, sep_list: List[str] = []) -> Tuple[str, Dict[str, List[str]]]:
@@ -175,7 +176,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
     :param multi_line_cols_list:          Columns that you know have values that span two lines: https://regex101.com/r/pgzUuH/1
     :param no_anchor_list:                Columns you do not want to have the anchor
     :param contained_capture_list:        Columns you want the capture to be between columns: https://regex101.com/r/akxofC/1
-    :param separator:                     The punctuation or letters that seperates a column and value. Default is :
+    :param separator:                     The punctuation or letters that separates a column and value. Default is :
     :param no_sep_list:                   Columns which you do not want the separator to be used in the regex
     :param add_sep:                       Whether or not you want the separator to be included in the regex. Default is False.
     :param sep_list:                      Columns where you want the separator to be added to the regex.
@@ -186,7 +187,7 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
         """
         :param cols:
         """
-        # adding seperator into regex
+        # adding separator into regex
         if add_sep and not dont_add_seperator or add_seperater:
             # ["col1","col2"] -> ["col1:","col2:"]
             cols = [c + separator for c in cols if c not in no_sep_list]
@@ -278,8 +279,14 @@ def synoptic_capture_regex(columns: Dict[str, Column], ignore_caps: bool = True,
 
     last_one = make_punc_regex_literal("|".join(last_col))
     last_one_variable, seen = to_camel_or_underscore(last_one, seen)
-    template_regex += r"{last_one}(?P<{last_no_space}>.+)".format(last_one=last_one,
-                                                                  last_no_space=last_one_variable)
+    if use_seperater_for_contained_capture:
+        end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=separator)
+    else:
+        end_cap = r".+)"
+    template_regex += r"{last_one}(?P<{last_no_space}>{end_cap}".format(last_one=last_one,
+                                                                        last_no_space=last_one_variable,
+                                                                        end_cap=end_cap)
+
     mappings_to_regex_vals[last_one_variable] = columns[last_col_key].primary_report_col
 
     # this is for any columns that have the column on the first line and value on the second line
@@ -340,6 +347,124 @@ def capture_double_regex(starting_word: List[Union[str, List[str]]],
         starting_word=modified_starting_word,
         ending_word=modified_ending_word)
     return modified_regex
+
+
+def synoptic_capture_regex_(columns: Dict[str, Column], val_on_same_line_cols_to_add: List[str] = [],
+                            val_on_next_line_cols_to_add: List[str] = [], anchor: str = "",
+                            ignore_caps: bool = True, separator: str = ":") -> Tuple[str, Dict[str, List[str]]]:
+    """
+    Based on a regex pattern template, turns a list of columns into a regex that can capture the values associated with
+    those columns.
+    :param val_on_next_line_cols_to_add:
+    :param val_on_same_line_cols_to_add:
+    :param ignore_caps:
+    :param columns:                       the columns that you want to capture
+    :param anchor:                        What position is being matched before the column: https://regex101.com/r/JGWIKB/1
+    :param separator:                     The punctuation or letters that separates a column and value. Default is :
+    :return:                              A regex pattern
+    """
+    val_on_same_line_cols_to_add = {col: Column(human_col=col, primary_report_col=[col]) for
+                                    col in val_on_same_line_cols_to_add}
+    val_on_next_line_cols_to_add = {col: Column(human_col=col, primary_report_col=[col], val_on_next_line=True) for
+                                    col in val_on_next_line_cols_to_add}
+    columns.update(val_on_same_line_cols_to_add)
+    columns.update(val_on_next_line_cols_to_add)
+    col_keys = list(columns.keys())
+    template_regex = r""
+    mappings_to_regex_vals = {}
+    seen = set()
+    cols_len = len(col_keys)
+    for index in range(cols_len):
+        current_col = columns[col_keys[index]]  # grabs the associated pdf columns in Column object
+        regex_rules = current_col.regular_pattern_rules
+
+        def process_columns_to_regex_str(cols: List[str]) -> str:
+            """
+            :param cols:
+            """
+            # adding separator into regex
+            if regex_rules["add separator to col name"]:
+                # ["col1","col2"] -> ["col1:","col2:"]
+                cols = [c + separator for c in cols]
+            cols_str = make_punc_regex_literal("|".join(cols))
+            if len(cols) > 1:
+                return "(" + cols_str + ")"
+            return cols_str
+
+        def create_regex_str(col: str, col_var: str, end_cap: str, front_cap: str = r"{col}(?P<{col_var}>",
+                             no_or: bool = False) -> str:
+            """
+            Generic function to create a capture regular pattern. See examples in above links under synoptic_capture_regex
+
+            :param no_or:     whether or not to add a OR (|) to the end of the regular pattern
+            :param col:       column we are capturing
+            :param col_var:   the column but as a variable, previously generated
+            :param end_cap:   the end of the regular pattern, variations can be seen under synoptic_capture_regex
+            :param front_cap: the front of the regular pattern, variations can be seen under synoptic_capture_regex
+            :return:          regular pattern
+            """
+            front_cap = front_cap.format(col=col, col_var=col_var)
+            return front_cap + end_cap if no_or else front_cap + end_cap + "|"
+
+        if regex_rules["val on next line"]:
+            # this is for any columns that have the column on the first line and value on the second line
+            col = current_col.primary_report_col[0]
+            multi_col_var, seen = to_camel_or_underscore(col, seen)
+            multi_col_str = make_punc_regex_literal(col.lower())
+            multi_line_regex = r"{column}\s*-*(?P<{multi_col_var}>.+)".format(column=multi_col_str,
+                                                                              multi_col_var=multi_col_var)
+            template_regex += "|" + multi_line_regex
+            mappings_to_regex_vals[multi_col_var] = [col.lower()]
+
+        else:
+            end_cap = ".+)"
+            # all the columns we might use
+            primary_curr_cols = current_col.primary_report_col
+            alternative_curr_cols = current_col.alternative_report_col
+
+            # adding symbolic OR between words and making punctuation regexible
+            # ["col1","col2"] -> "(col1|col2)"
+            primary_curr_col_str = process_columns_to_regex_str(primary_curr_cols)
+            alternative_curr_col_str = process_columns_to_regex_str(alternative_curr_cols)
+
+            if index + 1 < cols_len:
+                primary_next_cols = columns[col_keys[index + 1]].primary_report_col
+                primary_next_col_str = make_punc_regex_literal("|".join(primary_next_cols))
+
+                # if we want to capture up to a keyword
+                if regex_rules["capture up to keyword"]:
+                    end_cap = r"((?!{next_col})[\s\S])*)".format(next_col=primary_next_col_str)
+
+            # this is for only capturing up to a separator
+            if regex_rules["capture up to line with separator"]:
+                end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=separator)
+
+            # column has been converted to variable and seen is list of already used variable names
+            # regex variable names must be unique
+            # ex: pathologic stage -> pathologicStage
+            # ex: tumor site -> tumor_site
+            primary_variablefied, seen = to_camel_or_underscore(primary_curr_cols[0], seen)
+
+            # if we want to "anchor" the word to the start of the document
+            if regex_rules["add anchor"]:
+                primary_curr_col_str = r"{anchor}({curr_col})".format(anchor=anchor, curr_col=primary_curr_col_str)
+
+            primary_col_regex = create_regex_str(primary_curr_col_str, primary_variablefied, end_cap)
+
+            # make alternative column regex if needed
+            alternative_col_reg = r""
+            if len(alternative_curr_cols) != 0:
+                alternative_variablefied, seen = to_camel_or_underscore(alternative_curr_cols[0], seen)
+                end_cap = r"((?!.+{sep}\?*)[\s\S])*)".format(sep=separator)
+                alternative_col_reg = create_regex_str(alternative_curr_col_str, alternative_variablefied, end_cap)
+                mappings_to_regex_vals[alternative_variablefied] = alternative_curr_cols
+
+            template_regex += primary_col_regex + alternative_col_reg
+
+            # adding variable name so we can use for later
+            mappings_to_regex_vals[primary_variablefied] = primary_curr_cols
+
+    return "(?i)" + template_regex if ignore_caps else template_regex, mappings_to_regex_vals
 
 
 # exporting regular patterns for use in pipeline (not all of them are being used):
