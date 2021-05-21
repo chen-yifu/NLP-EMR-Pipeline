@@ -413,7 +413,8 @@ class EMRPipeline:
 
         training_regex_rules_best_dict = {}
         for col_name, col in columns.items():
-            training_regex_rules_best_dict[col_name] = {"same": float('-inf'), "missing": float('inf')}
+            training_regex_rules_best_dict[col_name] = {"same": float('-inf'), "missing": float('inf'),
+                                                        "different": float('inf')}
 
         # test front cap
         front_cap_rules = [rule for rule in self.current_regex_rules if "val on" in rule[0:6]]
@@ -515,13 +516,16 @@ class EMRPipeline:
                     if col in training_set.keys():
                         same = acc["num_same"] if "num_same" in acc.keys() else 0
                         missing = acc["num_missing"] if "num_missing" in acc.keys() else 0
+                        different = acc["num_different"] if "num_different" in acc.keys() else 0
                         training_set[col].regular_pattern_rules["same"] = same
                         training_set[col].regular_pattern_rules["missing"] = missing
+                        training_set[col].regular_pattern_rules["different"] = different
                         # check if its better
                         if col in training_regex_rules_best_dict.keys():
                             og_same = training_regex_rules_best_dict[col]["same"]
                             og_missing = training_regex_rules_best_dict[col]["missing"]
-                            if og_same <= same and og_missing >= missing:
+                            og_different = training_regex_rules_best_dict[col]["different"]
+                            if og_same <= same and og_missing >= missing and og_different >= different:
                                 training_regex_rules_best_dict[col] = training_set[col].regular_pattern_rules
 
         training_regex_rules_list = []
