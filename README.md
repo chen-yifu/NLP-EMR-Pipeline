@@ -216,7 +216,7 @@ pipeline = EMRPipeline(
 ```python
 # using the pipeline object created earlier
 pipeline.run_pipeline(
-    baseline_versions=validation_p,
+    baseline_versions=["baseline.csv"],
     anchor=r"^ *-* *",
     cols_to_skip=["study #", "nottingham score", "closest margin", "closest margin1"],
     val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect", "Margins", "comment(s)", "Part(s) Involved:"],
@@ -237,7 +237,7 @@ pipeline.run_pipeline(
 pipeline.run_pipeline(
     sep_list=["invasive carcinoma", "in situ component", "in situ component type", "insitu component",
               "insitu type"],
-    baseline_versions=validation_p,
+    baseline_versions=["baseline.csv"],
     anchor=r"^ *-* *",
     add_anchor=True,
     val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect", "Margins", "pathologic stage", "comment(s)",
@@ -265,7 +265,8 @@ Every function must follow this format:
 
 ```python
 def extraction_function(report: str, result: dict, generic_pairs: dict):
-# do stuff
+    if "key" in generic_pairs.keys():
+        result["another_key"] = generic_pairs["key"]
 
 ```
 
@@ -278,7 +279,7 @@ format:
 
 ```python
 def autocorrect_function(val: str, paths: Dict[str, str]) -> str:
-# do stuff 
+    return clean_val(val)
 ```
 
 ## encoding_tools
@@ -288,7 +289,8 @@ of different encoding method. Every function must have this format:
 
 ```python
 def encoding_function(value: str = "", encodings_so_far: Dict[str, str] = {}):
-# do stuff
+    if "col" in encodings_so_far.keys():
+        return value + encodings_so_far["col"]
 ```
 
 # Regex Generation Function
@@ -300,8 +302,8 @@ a regex generation algorithm.
 
 The algorithm utilizes a template:
 
-```python
-{front_cap}(?P < var > {end_cap}
+```bash
+{front_cap}(?P<var>{end_cap}
 ```
 
 - front_cap: specifies rules for column you want to extract
@@ -320,41 +322,84 @@ Treatment|TRUE|FALSE|FALSE|FALSE|TRUE|FALSE|FALSE
 
 ### capture {}
 
-When you want to stop capturing the value. For instance:
+When you want to stop capturing the value. These regular patterns would be in the end cap. For instance:
+```{front_cap}(?P<var>{end_cap}```
 
-- up to but not including the line with a seperator: ```((?!.+{sep}\?*)[\s\S])*)```
-- up to a keyword: ```((?!{next_col})[\s\S])*)```
-- up to the end of the same line as the column: ```.+)```
+- up to but not including the line with a separator: ```{front_cap}(?P<var>((?!.+{sep}\?*)[\s\S])*)```
+- up to a keyword: ```{front_cap}(?P<var>((?!{next_col})[\s\S])*)```
+- up to the end of the same line as the column: ```{front_cap}(?P<var>.+)```
 
 ### add {}
 
-If you want to add something the report column. For instance:
+If you want to add something the report column. These regular patterns would be in the front cap. For instance:
+```{front_cap}(?P<var>{end_cap}```
 
-- seperator (https://regex101.com/r/OJxapt/1): ```col1:(?P<var>.+)```
-- anchor (https://regex101.com/r/IDwCHq/1): ```^\d*\.* *col1(?P<var>.+)```
+- separator (https://regex101.com/r/OJxapt/1): ```col1:(?P<var>{end_cap}```
+- anchor (https://regex101.com/r/IDwCHq/1): ```^\d*\.* *col1(?P<var>{end_cap}```
 
 ### val on {}
 
-Whether the value is on the same line as the column or the next line. For instance:
+Whether the value is on the same line as the column or the next line. These regular patterns would be in the front
+cap.For instance:
+```{front_cap}(?P<var>{end_cap}```
 
-- same line (https://regex101.com/r/BxtXNo/1): ```col3:(?P<var>.+)```
-- next line (https://regex101.com/r/LZkuW9/1): ```col1\s*-*(?P<col1>.+)```
+- same line (https://regex101.com/r/BxtXNo/1): ```col3(?P<var>{end_cap}```
+- next line (https://regex101.com/r/LZkuW9/1): ```col1\s*-*(?P<var>{end_cap}```
 
 #### Example:
 
-A regular pattern for a column named "Indication" that uses a seperator, anchor, captures up to but not including the
-line with a seperator and is on the same line:
+A regular pattern for a column named "Indication" that uses a separator, anchor, captures up to but not including the
+line with a separator and is on the same line:
 ```^\d*\.* *Indication:(?P<var>((?!.+:\?*)[\s\S])*)``` -> see it in action here: https://regex101.com/r/mZw1ov/1
 
 The mentioned rules above are the current ones in place. If you want to add more rules please feel free to!
 
 # Training the pipeline
 
-You can train parts of the pipeline; the encoding portion and the extraction portion.
+You can train parts of the pipeline; the encoding portion, and the extraction portion.
 
 ## Training the encoding
 
+```python
+# using the pipeline object created earlier
+pipeline.run_pipeline(
+    baseline_versions=["baseline.csv"],
+    anchor=r"^ *-* *",
+    cols_to_skip=["study #", "nottingham score", "closest margin", "closest margin1"],
+    val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect", "Margins", "comment(s)", "Part(s) Involved:"],
+    encoding_tools={"nottingham_score": nottingham_score,
+                    "process_mm_val": process_mm_val,
+                    "number_of_foci": number_of_foci,
+                    "tumour_site": tumour_site,
+                    "archtectural_patterns": archtectural_patterns},
+    autocorrect_tools={"pathologic stage": find_pathologic_stage},
+    extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ, duplicate_lymph_nodes, find_num_foci],
+    train_thresholds=True,
+    # add these three new arguments to train the encoding
+    start_threshold=0.5,
+    end_threshold=1,
+    threshold_interval=.05)
+```
+
 ## Training the extraction (NEW)
+
+```python
+# using the pipeline object created earlier
+pipeline.run_pipeline(
+    baseline_versions=["baseline.csv"],
+    anchor=r"^ *-* *",
+    cols_to_skip=["study #", "nottingham score", "closest margin", "closest margin1"],
+    val_on_next_line_cols_to_add=["SPECIMEN", "Treatment Effect", "Margins", "comment(s)", "Part(s) Involved:"],
+    encoding_tools={"nottingham_score": nottingham_score,
+                    "process_mm_val": process_mm_val,
+                    "number_of_foci": number_of_foci,
+                    "tumour_site": tumour_site,
+                    "archtectural_patterns": archtectural_patterns},
+    autocorrect_tools={"pathologic stage": find_pathologic_stage},
+    extraction_tools=[no_lymph_node, negative_for_dcis, no_dcis_extent, in_situ, duplicate_lymph_nodes, find_num_foci],
+    # add this argument to train the regex
+    train_regex=True)
+```
 
 # Contact:
 
