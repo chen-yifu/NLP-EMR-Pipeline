@@ -2,7 +2,7 @@
 2021 Yifu (https://github.com/chen-yifu) and Lucy (https://github.com/lhao03)
 This file includes code that represents an EMRPipeline object.
 """
-from copy import copy, deepcopy
+from copy import  deepcopy
 from typing import List, Any, Tuple, Dict
 import os
 import pandas as pd
@@ -19,7 +19,7 @@ from pipeline.processing.turn_to_values import turn_reports_extractions_to_value
 from pipeline.utils.column import Column
 from pipeline.utils.import_tools import get_input_paths, import_code_book, import_columns, get_acronyms
 from pipeline.utils.paths import get_paths
-from pipeline.utils.regex_tools import synoptic_capture_regex_
+from pipeline.utils.regex_tools import synoptic_capture_regex_, synoptic_capture_regex
 from pipeline.utils.report import Report
 from pipeline.utils.report_type import ReportType
 from pipeline.utils.utils import find_all_vocabulary, get_current_time, create_rules
@@ -151,29 +151,29 @@ class EMRPipeline:
             print("Regex Training")
             print(regex_training_df)
 
-        # synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
-        #     {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
-        #     capture_till_end_of_val_list=single_line_list,
-        #     use_seperater_for_contained_capture=use_separator_to_capture,
-        #     contained_capture_list=contained_capture_list,
-        #     multi_line_cols_list=val_on_next_line_cols_to_add,
-        #     no_anchor_list=no_anchor_list,
-        #     anchor=anchor,
-        #     sep_list=sep_list,
-        #     anchor_list=anchor_list,
-        #     is_anchor=add_anchor)
-        #
-        # print(synoptic_regex)
-        # print(regex_variable_mappings)
-
-        synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
+        synoptic_regex, regex_variable_mappings = synoptic_capture_regex(
             {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
-            val_on_same_line_cols_to_add=val_on_same_line_cols_to_add,
-            val_on_next_line_cols_to_add=val_on_next_line_cols_to_add,
-            anchor=anchor)
+            capture_till_end_of_val_list=single_line_list,
+            use_seperater_for_contained_capture=use_separator_to_capture,
+            contained_capture_list=contained_capture_list,
+            multi_line_cols_list=val_on_next_line_cols_to_add,
+            no_anchor_list=no_anchor_list,
+            anchor=anchor,
+            sep_list=sep_list,
+            anchor_list=anchor_list,
+            is_anchor=add_anchor)
 
         print(synoptic_regex)
         print(regex_variable_mappings)
+
+        # synoptic_regex, regex_variable_mappings = synoptic_capture_regex_(
+        #     {k: v for k, v in self.column_mappings.items() if k.lower() not in cols_to_skip},
+        #     val_on_same_line_cols_to_add=val_on_same_line_cols_to_add,
+        #     val_on_next_line_cols_to_add=val_on_next_line_cols_to_add,
+        #     anchor=anchor)
+        #
+        # print(synoptic_regex)
+        # print(regex_variable_mappings)
 
         filtered_reports, autocorrect_df = process_synoptics_and_ids(
             cleaned_emr,
@@ -379,7 +379,7 @@ class EMRPipeline:
             os.makedirs(output_path + "training/")
 
         best_thresholds_df = pd.DataFrame(list(best_thresholds.values()))
-        best_thresholds_df.to_excel(output_path + "training/best_training.xlsx")
+        best_thresholds_df.to_excel(self.paths["path to thresholds"])
         training_df = pd.DataFrame(training)
         training_df.to_excel(output_path + "training/all_training_{}_{}.xlsx".format(self.report_name, timestamp))
         return best_thresholds_df
