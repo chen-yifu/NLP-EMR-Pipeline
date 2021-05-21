@@ -1,5 +1,7 @@
 # A Novel Natural Language Processing Extraction System
 
+## THIS BRANCH IS THE DEPRECATED VERSION OF THE REGULAR PATTERN GENERATION FUNCTION
+
 To install dependencies, run
 
 ```
