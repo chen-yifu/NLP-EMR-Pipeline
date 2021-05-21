@@ -82,13 +82,13 @@ class EMRPipeline:
         the pipeline if the values to be extracted are mostly numerical. Reports with values that are mostly
         alphabetical do not need to be preprocessed, as the pytesseract library will turn them into .txt files.
 
-        :param val_on_same_line_cols_to_add:
-        :param autocorrect_tools:
-        :param extraction_tools:
-        :param filter_values:
-        :param filter_func_args:
-        :param train_thresholds:
-        :param train_regex:
+        :param val_on_same_line_cols_to_add:   any columns that are not in the column mappings that you want to add to the regular pattern
+        :param autocorrect_tools:              functions that will be used after pipeline has extracted values (to autocorrect extractions)
+        :param extraction_tools:               functions to be used in the extraction process
+        :param filter_values:                  whether or not to filter reports
+        :param filter_func_args:               out of the column mappings, which feature to look for and remove the report from the pipeline process
+        :param train_thresholds:               whether or not to train the thresholds
+        :param train_regex:                    whether or not to train the regex
         :param threshold_interval:             what interval the pipeline should increment by in training
         :param end_threshold:                  where to stop training
         :param start_threshold:                base threshold for training
@@ -203,7 +203,6 @@ class EMRPipeline:
 
         reports_with_values = turn_reports_extractions_to_values(filtered_reports, self.column_mappings,
                                                                  list(self.acronyms))
-
 
         df_raw = save_dictionaries_into_csv_raw(reports_with_values, self.column_mappings,
                                                 csv_path=self.paths["csv path raw"],
