@@ -8,8 +8,8 @@ pip install -r requirements.txt
 
 ## For Windows:
 
-*WSL2 is highly recommended. You can try out command prompt or powershell at your own risk. For development, I reccomend
-Pycharm Professional or VSCode, as these development environemnts allow you to set up a remote connection to WSL2.*
+*WSL2 is highly recommended. You can try out command prompt or powershell at your own risk. For development, I recommend
+Pycharm Professional or VSCode, as these development environments allow you to set up a remote connection to WSL2.*
 
 - For pytesseract: https://school.geekwall.in/p/9QG6NstS/
 - For Tkinter: https://www.techinfected.net/2015/09/how-to-install-and-use-tkinter-in-ubuntu-debian-linux-mint.html
