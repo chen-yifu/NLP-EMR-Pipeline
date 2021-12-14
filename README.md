@@ -402,6 +402,12 @@ pipeline.run_pipeline(
     train_regex=True)
 ```
 
+## Additional Resources
+
+The interactive notebook for visualizing the Biomedical Word Embeddings is available on Google Colab [here](https://colab.research.google.com/drive/1ciw-GdCKHgJ6PjXjkxAF65plH2CjYL5I?usp=sharing).
+
+
+
 # Contact:
 
 Lucy: lhao03[at]student.ubc.ca
