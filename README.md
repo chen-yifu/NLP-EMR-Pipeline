@@ -425,6 +425,7 @@ The interactive notebook for visualizing the Biomedical Word Embeddings is avail
 # Contact:
 
 Lucy: lhao03[at]student.ubc.ca
+Yifu: yifuch01[at]student.ubc.ca
 
 # Reference:
 
