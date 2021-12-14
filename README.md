@@ -17,9 +17,7 @@ Pycharm Professional or VSCode, as these development environments allow you to s
   Professional: https://www.jetbrains.com/help/pycharm/using-wsl-as-a-remote-interpreter.html#configure-wsl
 - For using VSCode and WSL: https://code.visualstudio.com/docs/remote/wsl-tutorial
 
-## For Linux/MacOS:
 
-TODO
 
 # Sample usage
 
