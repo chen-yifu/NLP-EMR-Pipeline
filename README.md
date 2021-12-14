@@ -404,9 +404,23 @@ pipeline.run_pipeline(
 
 ## Additional Resources
 
-The interactive notebook for visualizing the Biomedical Word Embeddings is available on Google Colab [here](https://colab.research.google.com/drive/1ciw-GdCKHgJ6PjXjkxAF65plH2CjYL5I?usp=sharing).
+The interactive notebook for visualizing the Biomedical Word Embeddings is available on Google Colab [here](https://colab.research.google.com/drive/1ciw-GdCKHgJ6PjXjkxAF65plH2CjYL5I?usp=sharing). From there, you may compare the quality of embeddings produced by SciSpacy and PubMed BERT
 
+### Word embeddings prouced by SciSpacy en_core_sci_lg 
 
+#### 3D PCA Plot
+![SciSpacy word embeddings visualized](https://github.com/chen-yifu/EMR_pipeline/blob/f3048c75b99e35f3d5e8c770b3c817b8db665869/figures/Embeddings%20SciSpacy.gif)
+
+#### 2D PCA Plot
+![SciSpacy word embeddings visualized (2D)](https://github.com/chen-yifu/EMR_pipeline/blob/30bc738da656323d1ccdb565121be45112bef0e7/figures/Embeddings%20SciSpacy%202D.png)
+
+### Word embeddings prouced by PubMedBERT
+
+#### 3D PCA Plot
+![PubMedBERT word embeddings visualized](https://github.com/chen-yifu/EMR_pipeline/blob/f3048c75b99e35f3d5e8c770b3c817b8db665869/figures/Embeddings%20PubMedBERT.gif)
+
+#### 2D PCA Plot
+![PubMedBERT word embeddings visualized (2D)](https://github.com/chen-yifu/EMR_pipeline/blob/30bc738da656323d1ccdb565121be45112bef0e7/figures/Embeddings%20PubMed%20BERT%202D.png)
 
 # Contact:
 
