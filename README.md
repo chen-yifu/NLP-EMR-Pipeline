@@ -1,4 +1,5 @@
-# Automated Natural Language Processing Extraction System for Breast Cancer Electronic Health Records
+# Automated Medical Chart Review for Breast Cancer Outcomes Research: A Novel Natural Language Processing Extraction System![image](https://user-images.githubusercontent.com/45907512/146125338-ba1b776a-65df-4c47-87bb-e2da4fa11058.png)
+
 
 To install dependencies, run
 ```
