@@ -1,4 +1,4 @@
-# A Novel Natural Language Processing Extraction System
+# Automated Natural Language Processing Extraction System for Breast Cancer Electronic Health Records
 
 To install dependencies, run
 ```
