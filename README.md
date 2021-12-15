@@ -420,7 +420,8 @@ The interactive notebook for visualizing the Biomedical Word Embeddings is avail
 #### 2D PCA Plot
 ![PubMedBERT word embeddings visualized (2D)](https://github.com/chen-yifu/EMR_pipeline/blob/30bc738da656323d1ccdb565121be45112bef0e7/figures/Embeddings%20PubMed%20BERT%202D.png)
 
-### PCA Heatmap 
+### PCA Heatmap
+The following heatmap shows the cosine similarity between the first word's (mastectomy) embedding with the other words' (codebook candidates) embeddings.
 ![Word embeddings visualized (heatmap)](https://github.com/chen-yifu/EMR_pipeline/blob/8ecec7524b79ba75c6d0272d4eb0c5929cf55529/figures/Embeddings%20Heatmap.png)
 
 In our NLP pipeline implementation, we chose SciSpacy's word embedding model over PubMedBERT, because the former seems to perform better at embedding single tokens. Theoretically, the inferior performance of the latter can be explained by the lack of sentence-level contexts that BERT usually sees during pre-training.
