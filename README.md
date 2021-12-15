@@ -423,6 +423,7 @@ The interactive notebook for visualizing the Biomedical Word Embeddings is avail
 ### PCA Heatmap 
 ![Word embeddings visualized (heatmap)](https://github.com/chen-yifu/EMR_pipeline/blob/8ecec7524b79ba75c6d0272d4eb0c5929cf55529/figures/Embeddings%20Heatmap.png)
 
+In our NLP pipeline implementation, we chose SciSpacy's word embedding model over PubMedBERT, because the former seems to perform better at embedding single tokens. Theoretically, the inferior performance of the latter can be explained by the lack of sentence-level contexts that BERT usually sees during pre-training.
 
 # Contact:
 
