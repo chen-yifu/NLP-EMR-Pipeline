@@ -420,6 +420,10 @@ The interactive notebook for visualizing the Biomedical Word Embeddings is avail
 #### 2D PCA Plot
 ![PubMedBERT word embeddings visualized (2D)](https://github.com/chen-yifu/EMR_pipeline/blob/30bc738da656323d1ccdb565121be45112bef0e7/figures/Embeddings%20PubMed%20BERT%202D.png)
 
+### PCA Heatmap 
+![Word embeddings visualized (heatmap)](https://github.com/chen-yifu/EMR_pipeline/blob/8ecec7524b79ba75c6d0272d4eb0c5929cf55529/figures/Embeddings%20Heatmap.png)
+
+
 # Contact:
 
 Lucy: lhao03[at]student.ubc.ca
