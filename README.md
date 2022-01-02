@@ -311,13 +311,14 @@ The algorithm utilizes a template:
 ## The regex rules (NEW)
 
 There will be a csv that looks like this:
-**col**|**val on same line**|**val on next line**|**add anchor**|**add separator to col name**|**capture to end of val**
-|**capture up to line with separator**|**capture up to keyword**
-:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:
-Study #|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE Laterality|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE Surgical
-Indication|TRUE|FALSE|TRUE|TRUE|FALSE|TRUE|FALSE Pre-Operative Biopsy|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE
-Pre-Operative Diagnosis|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE Neoadjuvant
-Treatment|TRUE|FALSE|FALSE|FALSE|TRUE|FALSE|FALSE
+|**col**|**val on same line**|**val on next line**|**add anchor**|**add separator to col name**|**capture to end of val**|**capture up to line with separator**|**capture up to keyword**|
+|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|:-----:|
+|Study #|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE|
+|Laterality|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE|
+|Surgical Indication|TRUE|FALSE|TRUE|TRUE|FALSE|TRUE|FALSE|
+|Pre-Operative Biopsy|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE|
+|Pre-Operative Diagnosis|TRUE|FALSE|TRUE|FALSE|FALSE|TRUE|FALSE|
+|Neoadjuvant Treatment|TRUE|FALSE|FALSE|FALSE|TRUE|FALSE|FALSE|
 
 ### capture {}
 
