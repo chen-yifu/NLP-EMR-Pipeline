@@ -432,6 +432,4 @@ In our NLP pipeline implementation, we chose SciSpacy's word embedding model ove
 Lucy: lhao03[at]student.ubc.ca
 Yifu: yifuch01[at]student.ubc.ca
 
-# Reference:
 
-Preprint: https://www.medrxiv.org/content/10.1101/2021.05.04.21256134v1
