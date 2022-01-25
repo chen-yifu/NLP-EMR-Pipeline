@@ -1,5 +1,12 @@
 # Automated Medical Chart Review for Breast Cancer Outcomes Research: A Novel Natural Language Processing Extraction System
 
+# Contact:
+
+Yifu: yifuch01[at]student.ubc.ca (please call 6O4-6OO-52O6 for quicker support)
+Lucy: lhao03[at]student.ubc.ca
+
+
+
 To install dependencies, run
 ```
 pip install -r requirements.txt
@@ -413,7 +420,7 @@ The interactive notebook for visualizing the Biomedical Word Embeddings is avail
 #### 2D PCA Plot
 ![SciSpacy word embeddings visualized (2D)](https://github.com/chen-yifu/EMR_pipeline/blob/30bc738da656323d1ccdb565121be45112bef0e7/figures/Embeddings%20SciSpacy%202D.png)
 
-### Word embeddings prouced by PubMedBERT
+### Word embeddings produced by PubMedBERT
 
 #### 3D PCA Plot
 ![PubMedBERT word embeddings visualized](https://github.com/chen-yifu/EMR_pipeline/blob/f3048c75b99e35f3d5e8c770b3c817b8db665869/figures/Embeddings%20PubMedBERT.gif)
@@ -427,9 +434,5 @@ The following heatmap shows the cosine similarity between the first word's (mast
 
 In our NLP pipeline implementation, we chose SciSpacy's word embedding model over PubMedBERT, because the former seems to perform better at embedding single tokens. Theoretically, the inferior performance of the latter can be explained by the lack of sentence-level contexts that BERT usually sees during pre-training.
 
-# Contact:
-
-Lucy: lhao03[at]student.ubc.ca
-Yifu: yifuch01[at]student.ubc.ca
 
 
