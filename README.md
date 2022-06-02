@@ -6,6 +6,10 @@ Yifu: yifuch01[at]student.ubc.ca (please call 6O4-6OO-52O6 for quicker support)
 
 Lucy: lhao03[at]student.ubc.ca
 
+# Publication
+
+The work has been published on open-access, peer-reviewed journal *BioMed Central Research Methodologies* [here](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-022-01583-z).
+
 # Setup
 
 To install dependencies, run
