@@ -2,13 +2,13 @@
 
 # Contact:
 
-Yifu: yifuch01[at]student.ubc.ca (please call 6O4-6OO-52O6 for quicker support)
+Yifu: yifuch01[at]student.ubc.ca
 
 Lucy: lhao03[at]student.ubc.ca
 
 # Publication
 
-The work has been published on open-access, peer-reviewed journal *BioMed Central Research Methodologies* [here](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-022-01583-z).
+The work has been published on *BioMed Central Research Methodologies* [here](https://bmcmedresmethodol.biomedcentral.com/articles/10.1186/s12874-022-01583-z).
 
 # Setup
 
@@ -439,5 +439,6 @@ The following heatmap shows the cosine similarity between the first word's (mast
 
 In our NLP pipeline implementation, we chose SciSpacy's word embedding model over PubMedBERT, because the former seems to perform better at embedding single tokens. Theoretically, the inferior performance of the latter can be explained by the lack of sentence-level contexts that BERT usually sees during pre-training.
 
+## Cite this work
 
-
+Chen Y, Hao L, Zou VZ, Hollander Z, Ng RT, Isaac KV. Automated medical chart review for breast cancer outcomes research: a novel natural language processing extraction system. BMC Medical Research Methodology. 2022;22(1):136. doi:10.1186/s12874-022-01583-z
